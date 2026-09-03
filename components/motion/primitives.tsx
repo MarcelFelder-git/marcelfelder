@@ -35,7 +35,14 @@ export function Reveal({
       whileInView={{ opacity: 1, y: 0 }}
       // `once` ist Absicht: Bloecke, die bei jedem Vorbeiscrollen neu
       // einfliegen, machen ein Portfolio unruhig statt lebendig.
-      viewport={{ once: true, margin: "-12% 0px -12% 0px" }}
+      //
+      // Margin schrumpft NUR am unteren Rand, nicht am oberen: Inhalt in
+      // einer sticky-gepinnten Spalte (siehe ChapterSection) erscheint
+      // fertig positioniert, statt durch den Viewport nach oben zu
+      // wandern. Eine beidseitige Prozent-Marge wird fuer tiefer sitzende
+      // Elemente in so einer Spalte nie erfuellt, weil deren Position sich
+      // waehrend der ganzen Pin-Dauer kaum aendert.
+      viewport={{ once: true }}
       transition={{ duration: 0.7, delay, ease: EASE_OUT }}
     >
       {children}
@@ -82,7 +89,7 @@ export function SplitHeading({
         className="inline-block"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: true, margin: "-10% 0px" }}
+        viewport={{ once: true }}
         variants={{
           show: {
             transition: {
@@ -193,7 +200,13 @@ export function Counter({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-15% 0px" });
+  // Kein negativer Margin: Inhalt in einer sticky-gepinnten Spalte (siehe
+  // ChapterSection) erscheint fertig positioniert statt durch den Viewport
+  // zu wandern. Eine Prozent-Marge wird fuer tiefer sitzende Elemente in
+  // so einer Spalte nie erfuellt, weil sich ihre Position waehrend der
+  // ganzen Pin-Dauer kaum aendert - "irgendwo sichtbar" ist hier das
+  // richtige Kriterium, nicht "weit im sicheren Kern des Viewports".
+  const inView = useInView(ref, { once: true });
   const reduced = usePrefersReducedMotion();
   const [value, setValue] = useState(0);
 

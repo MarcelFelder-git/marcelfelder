@@ -1,15 +1,17 @@
 import { Hero } from "@/components/sections/Hero";
 import { Manifest } from "@/components/sections/Manifest";
 import { ChapterSection } from "@/components/sections/ChapterSection";
+import { Workshop } from "@/components/sections/Workshop";
 import { Capabilities } from "@/components/sections/Capabilities";
+import { SystemPanel } from "@/components/sections/SystemPanel";
 import { Vita, Outro } from "@/components/sections/Closing";
 import { CHAPTERS } from "@/content/resume";
 
 /**
  * Server Component. Die Seite ist eine durchgehende Fahrt: Hero, Prinzip,
- * drei Kapitel, Werkzeugkasten, Werdegang, Kontakt. Jedes Kapitel steuert
- * ueber `data-chapter` das Modell im Hintergrund - die Reihenfolge im DOM
- * ist damit zugleich die Dramaturgie der 3D-Szene.
+ * drei Kapitel, Werkstatt, Werkzeugkasten, System, Werdegang, Kontakt. Jedes
+ * Kapitel steuert ueber `data-chapter` das Modell im Hintergrund - die
+ * Reihenfolge im DOM ist damit zugleich die Dramaturgie der 3D-Szene.
  */
 export default function Home() {
   return (
@@ -27,7 +29,9 @@ export default function Home() {
         />
       ))}
 
+      <Workshop />
       <Capabilities />
+      <SystemPanel />
       <Vita />
       <Outro />
     </main>

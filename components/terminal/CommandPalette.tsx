@@ -149,6 +149,19 @@ const COMMANDS: Cmd[] = [
       ]),
   },
   {
+    id: "goto workshop",
+    label: "goto workshop",
+    hint: "Zum Agenten & Träger-Solver springen",
+    group: "Navigation",
+    Icon: MessageSquare,
+    run: (c) => {
+      document
+        .getElementById("workshop-heading")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      c.close();
+    },
+  },
+  {
     id: "goto contact",
     label: "goto contact",
     hint: "Zum Kontakt springen",

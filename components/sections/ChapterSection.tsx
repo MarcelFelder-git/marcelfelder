@@ -53,7 +53,7 @@ export function ChapterSection({
             aria-hidden
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-20% 0px" }}
+            viewport={{ once: true }}
             transition={{ duration: 0.9, ease: EASE_OUT }}
             className="block font-mono text-[clamp(4rem,10vw,8rem)] font-bold leading-none tracking-tighter text-transparent"
             style={{ WebkitTextStroke: "1px rgba(56,189,248,0.28)" }}
@@ -95,7 +95,7 @@ export function ChapterSection({
           <motion.ul
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, margin: "-10% 0px" }}
+            viewport={{ once: true }}
             variants={{ show: { transition: { staggerChildren: 0.05 } } }}
             className="mt-8 flex flex-wrap gap-2"
           >
