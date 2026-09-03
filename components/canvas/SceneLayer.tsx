@@ -35,7 +35,7 @@ export function SceneLayer() {
           lesbar bleibt. */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-[1] bg-[radial-gradient(78%_78%_at_50%_48%,transparent_30%,rgba(5,7,13,0.78)_100%)]"
+        className="pointer-events-none fixed inset-0 z-[1] bg-[radial-gradient(78%_78%_at_50%_48%,transparent_30%,rgba(10,10,11,0.8)_100%)]"
       />
     </>
   );

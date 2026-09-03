@@ -66,7 +66,7 @@ export function SpectrumMeter({ running }: { running: boolean }) {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="h-10 w-[104px] rounded-sm bg-blueprint-void/60"
+      className="h-10 w-[104px] bg-paper"
     />
   );
 }

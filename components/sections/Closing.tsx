@@ -29,10 +29,10 @@ export function Vita() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(65%_60%_at_35%_50%,rgba(5,7,13,0.92),transparent_80%)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(65%_60%_at_35%_50%,rgba(10,10,11,0.94),transparent_80%)]"
       />
 
-      <p className="label-tech">Werdegang</p>
+      <p className="meta">Werdegang</p>
       <SplitHeading
         as="h2"
         id="vita-heading"
@@ -42,10 +42,10 @@ export function Vita() {
 
       <div className="relative mt-16 pl-8 sm:pl-12">
         {/* Achse: unbelegt dunkel, belegt im Verlauf */}
-        <div className="absolute left-0 top-2 h-[calc(100%-1rem)] w-px bg-blueprint-line" />
+        <div className="absolute left-0 top-2 h-[calc(100%-1rem)] w-px bg-rule" />
         <motion.div
           style={{ height }}
-          className="absolute left-0 top-2 w-px bg-gradient-to-b from-signal-cyan to-signal-purple"
+          className="absolute left-0 top-2 w-px bg-accent"
         />
 
         <ol className="space-y-14">
@@ -54,16 +54,16 @@ export function Vita() {
               <li className="relative">
                 <span
                   aria-hidden
-                  className="absolute -left-8 top-2 size-2 -translate-x-1/2 rounded-full bg-signal-cyan ring-4 ring-blueprint-void sm:-left-12"
+                  className="absolute -left-8 top-2 size-2 -translate-x-1/2 bg-accent ring-4 ring-paper sm:-left-12"
                 />
-                <p className="label-tech">{entry.period}</p>
+                <p className="meta">{entry.period}</p>
                 <h3 className="mt-2 text-2xl font-medium tracking-tight">
                   {entry.title}
                 </h3>
-                <p className="mt-1 font-mono text-[12px] text-signal-cyan">
+                <p className="mt-1 font-mono text-[12px] text-accent">
                   {entry.org}
                 </p>
-                <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-muted">
+                <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-mute">
                   {entry.body}
                 </p>
               </li>
@@ -87,10 +87,10 @@ export function Outro() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(5,7,13,0.95)_30%)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(10,10,11,0.96)_30%)]"
       />
 
-      <p className="label-tech">Kontakt</p>
+      <p className="meta">Kontakt</p>
       <SplitHeading
         as="h2"
         id="outro-heading"
@@ -102,13 +102,13 @@ export function Outro() {
       <Reveal delay={0.1}>
         <a
           href={`mailto:${CONTACT_EMAIL}`}
-          className="group mt-10 inline-flex items-center gap-4 border-b border-blueprint-line pb-3 transition-colors hover:border-signal-cyan"
+          className="group mt-10 inline-flex items-center gap-4 border-b border-rule pb-3 transition-colors hover:border-accent"
         >
-          <span className="font-mono text-[clamp(1rem,2.4vw,1.75rem)] text-ink-primary transition-colors group-hover:text-signal-cyan">
+          <span className="font-mono text-[clamp(1rem,2.4vw,1.75rem)] text-ink transition-colors group-hover:text-accent">
             {CONTACT_EMAIL}
           </span>
           <motion.span
-            className="text-signal-cyan"
+            className="text-accent"
             initial={{ x: 0, y: 0 }}
             whileHover={{ x: 3, y: -3 }}
             transition={{ duration: 0.25, ease: EASE_OUT }}
@@ -118,8 +118,8 @@ export function Outro() {
         </a>
       </Reveal>
 
-      <div className="mt-20 flex flex-col gap-4 border-t border-blueprint-line/70 pt-8 sm:flex-row sm:items-center sm:justify-between">
-        <span className="label-tech">
+      <div className="mt-20 flex flex-col gap-4 border-t border-rule/70 pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <span className="meta">
           © {new Date().getFullYear()} — gebaut mit Next.js, Three.js und der
           Web Audio API
         </span>
@@ -130,7 +130,7 @@ export function Outro() {
               href={s.href}
               target="_blank"
               rel="noreferrer noopener"
-              className="label-tech transition-colors hover:text-signal-cyan"
+              className="meta transition-colors hover:text-accent"
             >
               {s.label}
             </a>

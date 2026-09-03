@@ -28,7 +28,7 @@ export function ControlBar() {
       <motion.div
         layout
         transition={{ type: "spring", stiffness: 320, damping: 34 }}
-        className="glass-panel pointer-events-auto rounded-2xl"
+        className="panel pointer-events-auto"
       >
         <AnimatePresence initial={false} mode="popLayout">
           {open && (
@@ -45,10 +45,10 @@ export function ControlBar() {
                   <Fader key={spec.key} spec={spec} />
                 ))}
 
-                <div className="hidden flex-col gap-2 border-l border-blueprint-line/70 pl-5 sm:flex">
-                  <span className="label-tech">Analyser · 512 pt</span>
+                <div className="hidden flex-col gap-2 border-l border-rule pl-5 sm:flex">
+                  <span className="meta">Analyser · 512 pt</span>
                   <SpectrumMeter running={isRunning} />
-                  <span className="font-mono text-[10px] text-ink-faint">
+                  <span className="font-mono text-[10px] text-faint">
                     {isRunning ? "signal present" : "no input"}
                   </span>
                 </div>
@@ -63,10 +63,10 @@ export function ControlBar() {
             onClick={() => void toggle()}
             aria-pressed={isRunning}
             className={cn(
-              "flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-2 px-3.5 py-2 text-sm font-medium transition-colors",
               isRunning
-                ? "bg-signal-cyan text-blueprint-void"
-                : "text-ink-primary hover:bg-white/5",
+                ? "bg-accent text-paper"
+                : "text-ink hover:bg-raise",
             )}
           >
             <Power className="size-4" strokeWidth={2} />
@@ -77,14 +77,14 @@ export function ControlBar() {
             aria-hidden
             className={cn(
               "size-1.5 rounded-full transition-colors",
-              isRunning ? "animate-pulse bg-signal-cyan" : "bg-ink-faint",
+              isRunning ? "animate-pulse bg-accent" : "bg-faint",
             )}
           />
 
           <button
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-white/5 hover:text-ink-primary"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-mute transition-colors hover:bg-raise hover:text-ink"
           >
             <SlidersHorizontal className="size-4" strokeWidth={1.75} />
             <span className="hidden sm:inline">Mixer</span>

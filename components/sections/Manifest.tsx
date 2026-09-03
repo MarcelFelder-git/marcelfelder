@@ -32,10 +32,10 @@ export function Manifest() {
           Falsche. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-10 bg-[linear-gradient(100deg,rgba(5,7,13,0.96)_0%,rgba(5,7,13,0.92)_48%,rgba(5,7,13,0.45)_76%,transparent_100%)]"
+        className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-10 bg-[linear-gradient(100deg,rgba(10,10,11,0.97)_0%,rgba(10,10,11,0.93)_48%,rgba(10,10,11,0.45)_76%,transparent_100%)]"
       />
 
-      <p className="label-tech mb-10">Prinzip</p>
+      <p className="meta mb-10">Prinzip</p>
 
       <div className="max-w-4xl space-y-2">
         {MANIFEST.map((line, i) => (
@@ -82,7 +82,7 @@ function ManifestLine({
       style={reduced ? undefined : { opacity, x }}
       className={cn(
         "text-[clamp(1.75rem,4.4vw,3.6rem)] font-medium leading-[1.15] tracking-[-0.02em]",
-        accent ? "text-gradient-signal" : "text-ink-primary",
+        accent ? "text-accent" : "text-ink",
       )}
     >
       {text}

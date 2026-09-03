@@ -80,9 +80,9 @@ export function BootSequence() {
           key="boot"
           exit={{ opacity: 0, filter: "blur(8px)" }}
           transition={{ duration: 0.55, ease: EASE_OUT }}
-          className="fixed inset-0 z-[60] flex flex-col justify-end bg-blueprint-void p-8 sm:p-14"
+          className="fixed inset-0 z-[60] flex flex-col justify-end bg-paper p-8 sm:p-14"
         >
-          <div className="absolute inset-0 blueprint-grid opacity-30" />
+          <div className="absolute inset-0 column-grid opacity-60" />
 
           <div className="relative max-w-lg font-mono text-[12px] leading-relaxed">
             {LINES.slice(0, step).map((line, i) => (
@@ -92,10 +92,10 @@ export function BootSequence() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
                 className={
-                  i === LINES.length - 1 ? "text-signal-cyan" : "text-ink-faint"
+                  i === LINES.length - 1 ? "text-accent" : "text-faint"
                 }
               >
-                <span className="text-ink-faint/50">
+                <span className="text-faint/50">
                   [{String(i + 1).padStart(2, "0")}]
                 </span>{" "}
                 {line}
@@ -104,15 +104,15 @@ export function BootSequence() {
           </div>
 
           <div className="relative mt-8 flex items-center gap-4">
-            <div className="h-px flex-1 bg-blueprint-line">
+            <div className="h-px flex-1 bg-rule">
               <motion.div
-                className="h-full origin-left bg-gradient-to-r from-signal-cyan to-signal-purple"
+                className="h-full origin-left bg-accent"
                 animate={{ scaleX: progress }}
                 style={{ transformOrigin: "left" }}
                 transition={{ duration: 0.18, ease: "linear" }}
               />
             </div>
-            <span className="font-mono text-[11px] tabular-nums text-signal-cyan">
+            <span className="font-mono text-[11px] tabular-nums text-accent">
               {String(Math.round(progress * 100)).padStart(3, "0")}%
             </span>
           </div>

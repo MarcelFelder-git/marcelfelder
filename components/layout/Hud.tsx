@@ -8,10 +8,10 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 import type { ViewportMode } from "@/types";
 
-const CHAPTERS: { id: ViewportMode; label: string }[] = [
-  { id: "structure", label: "Structure" },
-  { id: "signal", label: "Signal" },
-  { id: "code", label: "Code" },
+const CHAPTERS: { id: ViewportMode; label: string; index: string }[] = [
+  { id: "structure", label: "Structure", index: "01" },
+  { id: "signal", label: "Signal", index: "02" },
+  { id: "code", label: "Code", index: "03" },
 ];
 
 /**
@@ -47,11 +47,11 @@ export function Hud() {
 
   return (
     <>
-      {/* Fortschrittsbalken, ganz oben */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-40 h-px bg-blueprint-line/60">
+      {/* Fortschrittsbalken, ganz oben — 2px, keine Rundung, ein Ton */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-40 h-0.5 bg-rule">
         <div
           ref={barRef}
-          className="h-full origin-left bg-gradient-to-r from-signal-cyan to-signal-purple"
+          className="h-full origin-left bg-accent"
           style={{ transform: "scaleX(0)" }}
         />
       </div>
@@ -60,29 +60,30 @@ export function Hud() {
           unter ihr durch, und ohne Abdunklung kollidiert die Type. */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-40 h-24 bg-gradient-to-b from-blueprint-void via-blueprint-void/70 to-transparent"
+        className="pointer-events-none fixed inset-x-0 top-0 z-40 h-24 bg-gradient-to-b from-paper via-paper/75 to-transparent"
       />
       <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-center justify-between px-6 py-5 sm:px-10 lg:px-16">
         <a
           href="#top"
-          className="pointer-events-auto font-mono text-sm font-medium tracking-tight text-ink-primary transition-colors hover:text-signal-cyan"
+          className="pointer-events-auto font-mono text-sm font-medium tracking-tight text-ink transition-colors hover:text-accent"
         >
           MF
         </a>
         <div className="flex items-center gap-4">
-          <span className="label-tech hidden sm:inline">
+          <span className="meta hidden sm:inline">
             SCROLL <span ref={readoutRef}>000.0%</span>
           </span>
-          <kbd className="pointer-events-auto rounded border border-blueprint-line bg-blueprint-void/60 px-2 py-1 font-mono text-[10px] text-ink-muted backdrop-blur-sm">
+          <kbd className="pointer-events-auto border border-rule bg-paper px-2 py-1 font-mono text-[10px] text-mute">
             ⌘K
           </kbd>
         </div>
       </header>
 
-      {/* Kapitelnavigation, rechts mittig */}
+      {/* Kapitelnavigation, rechts mittig — nummeriert wie ein Register,
+          nicht wie ein Tab-Set. */}
       <nav
         aria-label="Kapitel"
-        className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-4 lg:flex"
+        className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-5 lg:flex"
       >
         {CHAPTERS.map((c) => {
           const active = c.id === mode;
@@ -95,20 +96,21 @@ export function Hud() {
             >
               <span
                 className={cn(
-                  "font-mono text-[10px] uppercase tracking-[0.2em] transition-all duration-300",
-                  active
-                    ? "text-signal-cyan opacity-100"
-                    : "text-ink-faint opacity-0 group-hover:opacity-100",
+                  "font-mono text-[10px] uppercase tracking-[0.2em] transition-colors duration-300",
+                  active ? "text-ink" : "text-faint group-hover:text-mute",
                 )}
               >
+                <span className={active ? "text-accent" : undefined}>
+                  {c.index}
+                </span>{" "}
                 {c.label}
               </span>
               <span
                 className={cn(
                   "block h-px transition-all duration-500",
                   active
-                    ? "w-10 bg-signal-cyan"
-                    : "w-4 bg-ink-faint group-hover:w-7 group-hover:bg-ink-muted",
+                    ? "w-10 bg-accent"
+                    : "w-4 bg-faint group-hover:w-7 group-hover:bg-mute",
                 )}
               />
             </button>
@@ -124,7 +126,8 @@ export function Hud() {
  *
  * Der native Cursor bleibt bewusst sichtbar - ihn zu verstecken macht eine
  * Seite schick und unbedienbar. Das Reticle liegt nur daneben und markiert,
- * wo die Last auf dem Tragwerk sitzt.
+ * wo die Last auf dem Tragwerk sitzt. Eckmarken statt Kreis - ein Fadenkreuz
+ * ist ein Messwerkzeug, kein Aufkleber.
  */
 export function Reticle() {
   const ref = useRef<HTMLDivElement>(null);
@@ -173,11 +176,12 @@ export function Reticle() {
       transition={{ duration: 0.6, delay: 0.4 }}
       className="pointer-events-none fixed left-0 top-0 z-30 size-10"
     >
-      <span className="absolute inset-0 rounded-full border border-signal-cyan/30" />
-      <span className="absolute left-1/2 top-0 h-2 w-px -translate-x-1/2 bg-signal-cyan/50" />
-      <span className="absolute bottom-0 left-1/2 h-2 w-px -translate-x-1/2 bg-signal-cyan/50" />
-      <span className="absolute left-0 top-1/2 h-px w-2 -translate-y-1/2 bg-signal-cyan/50" />
-      <span className="absolute right-0 top-1/2 h-px w-2 -translate-y-1/2 bg-signal-cyan/50" />
+      {/* vier Eckwinkel statt eines Kreises */}
+      <span className="absolute left-0 top-0 h-2.5 w-2.5 border-l border-t border-accent/50" />
+      <span className="absolute right-0 top-0 h-2.5 w-2.5 border-r border-t border-accent/50" />
+      <span className="absolute bottom-0 left-0 h-2.5 w-2.5 border-b border-l border-accent/50" />
+      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 border-b border-r border-accent/50" />
+      <span className="absolute left-1/2 top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 bg-accent" />
     </motion.div>
   );
 }

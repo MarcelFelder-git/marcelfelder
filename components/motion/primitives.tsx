@@ -103,7 +103,7 @@ export function SplitHeading({
           <motion.span
             className={cn(
               "inline-block",
-              highlight?.includes(word) && "text-gradient-signal",
+              highlight?.includes(word) && "text-accent",
             )}
             variants={{
               hidden: { y: "108%", opacity: 0 },
@@ -287,10 +287,10 @@ export function Marquee({
         {run.map((item, i) => (
           <span
             key={`${item}-${i}`}
-            className="flex shrink-0 items-center gap-10 font-mono text-sm uppercase tracking-[0.18em] text-ink-faint"
+            className="flex shrink-0 items-center gap-10 font-mono text-sm uppercase tracking-[0.18em] text-faint"
           >
             {item}
-            <span className="size-1 rounded-full bg-signal-cyan/40" />
+            <span className="size-1 rounded-full bg-accent/40" />
           </span>
         ))}
       </div>

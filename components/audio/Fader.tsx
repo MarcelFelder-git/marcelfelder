@@ -18,7 +18,7 @@ export function Fader({ spec }: { spec: FaderSpec }) {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <span className="label-tech">{spec.label}</span>
+      <span className="meta">{spec.label}</span>
 
       <div className="relative flex h-28 w-9 items-center justify-center">
         {/* Skalenstriche wie auf einem Mischpultzug */}
@@ -27,7 +27,7 @@ export function Fader({ spec }: { spec: FaderSpec }) {
           className="pointer-events-none absolute inset-y-1 left-1 flex w-1.5 flex-col justify-between"
         >
           {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} className="h-px w-full bg-blueprint-line" />
+            <span key={i} className="h-px w-full bg-rule" />
           ))}
         </div>
 
@@ -47,9 +47,9 @@ export function Fader({ spec }: { spec: FaderSpec }) {
         />
       </div>
 
-      <span className="font-mono text-[10px] tabular-nums text-ink-muted">
+      <span className="font-mono text-[10px] tabular-nums text-mute">
         {spec.format(value)}
-        <span className="ml-0.5 text-ink-faint">{spec.unit}</span>
+        <span className="ml-0.5 text-faint">{spec.unit}</span>
       </span>
     </div>
   );

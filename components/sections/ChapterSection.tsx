@@ -43,8 +43,8 @@ export function ChapterSection({
             className={cn(
               "pointer-events-none absolute -inset-x-16 -inset-y-20 -z-10",
               side === "left"
-                ? "bg-[linear-gradient(100deg,rgba(5,7,13,0.96)_0%,rgba(5,7,13,0.93)_55%,rgba(5,7,13,0.4)_82%,transparent_100%)]"
-                : "bg-[linear-gradient(260deg,rgba(5,7,13,0.96)_0%,rgba(5,7,13,0.93)_55%,rgba(5,7,13,0.4)_82%,transparent_100%)]",
+                ? "bg-[linear-gradient(100deg,rgba(10,10,11,0.97)_0%,rgba(10,10,11,0.94)_55%,rgba(10,10,11,0.4)_82%,transparent_100%)]"
+                : "bg-[linear-gradient(260deg,rgba(10,10,11,0.97)_0%,rgba(10,10,11,0.94)_55%,rgba(10,10,11,0.4)_82%,transparent_100%)]",
             )}
           />
 
@@ -62,8 +62,8 @@ export function ChapterSection({
           </motion.span>
 
           <Reveal delay={0.05} className="mt-4 flex items-center gap-3">
-            <span className="h-px w-8 bg-signal-cyan/60" />
-            <span className="label-tech text-signal-cyan">
+            <span className="h-px w-8 bg-accent/60" />
+            <span className="meta text-accent">
               {chapter.caption}
             </span>
           </Reveal>
@@ -78,7 +78,7 @@ export function ChapterSection({
           </span>
 
           <Reveal delay={0.1}>
-            <p className="mt-6 text-pretty text-[17px] leading-relaxed text-ink-muted">
+            <p className="mt-6 text-pretty text-[17px] leading-relaxed text-mute">
               {chapter.body}
             </p>
           </Reveal>
@@ -86,7 +86,7 @@ export function ChapterSection({
           {/* Was die Szene gerade tut - erklaert das Bild, statt es zu
               behaupten */}
           <Reveal delay={0.16}>
-            <p className="mt-6 border-l-2 border-signal-purple/45 pl-4 font-mono text-[12.5px] leading-relaxed text-ink-faint">
+            <p className="mt-6 border-l-2 border-accent/45 pl-4 font-mono text-[12.5px] leading-relaxed text-faint">
               {chapter.aside}
             </p>
           </Reveal>
@@ -110,7 +110,7 @@ export function ChapterSection({
                     transition: { duration: 0.45, ease: EASE_OUT },
                   },
                 }}
-                className="rounded-full border border-blueprint-line/90 bg-blueprint-deep/60 px-3.5 py-1.5 font-mono text-[11px] text-ink-muted backdrop-blur-sm"
+                className="border border-rule bg-surface px-3.5 py-1.5 font-mono text-[11px] text-mute"
               >
                 {skill}
               </motion.li>
@@ -118,18 +118,18 @@ export function ChapterSection({
           </motion.ul>
 
           {/* Messwerte */}
-          <dl className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-blueprint-line/70 bg-blueprint-line/70">
+          <dl className="mt-10 grid grid-cols-3 gap-px border border-rule bg-rule">
             {chapter.metrics.map((m, i) => (
               <Reveal
                 key={m.label}
                 delay={0.06 * i}
                 y={14}
-                className="bg-blueprint-deep/85 p-4 backdrop-blur-sm"
+                className="bg-surface p-4"
               >
-                <dt className="label-tech leading-relaxed">{m.label}</dt>
-                <dd className="mt-2 font-mono text-xl text-ink-primary">
+                <dt className="meta leading-relaxed">{m.label}</dt>
+                <dd className="mt-2 font-mono text-xl text-ink">
                   <Counter to={m.value} />
-                  <span className="text-signal-cyan">{m.suffix}</span>
+                  <span className="text-accent">{m.suffix}</span>
                 </dd>
               </Reveal>
             ))}

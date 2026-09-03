@@ -1,36 +1,37 @@
 @import "tailwindcss";
 
+/* ==================================================================== */
+/*  Design-System — Swiss Brutalist, dunkel                             */
+/*                                                                       */
+/*  Radikal reduziert: ein Akzent, keine Verläufe in der UI, keine       */
+/*  weichen Ecken, keine Glasflächen. Der Eindruck entsteht aus          */
+/*  Typografie, Raster und Haarlinien — nicht aus Effekten.              */
+/*  Zwei Farben bleiben ausschließlich der 3D-Szene vorbehalten, weil    */
+/*  sie dort Daten kodieren (Zug/Druck) statt zu dekorieren.             */
+/* ==================================================================== */
+
 @theme {
-  /* Substrat – kein reines Schwarz, sondern Tiefsee-Navy */
-  --color-blueprint-void: #05070d;
-  --color-blueprint-deep: #080c16;
-  --color-blueprint-panel: #0d121f;
-  --color-blueprint-line: #1b2437;
+  --color-paper: #0a0a0b;
+  --color-surface: #101013;
+  --color-raise: #17171b;
+  --color-rule: #26262c;
+  --color-rule-soft: #191920;
 
-  /* Akzente */
-  --color-signal-cyan: #38bdf8;
-  --color-signal-purple: #a855f7;
+  --color-ink: #ededee;
+  --color-mute: #8b8b94;
+  --color-faint: #55555e;
 
-  /* Typografie-Hierarchie */
-  --color-ink-primary: #e2e8f0;
-  --color-ink-muted: #7d8ba3;
-  --color-ink-faint: #46536b;
+  /* Der einzige Akzent in der gesamten Oberfläche. */
+  --color-accent: #38bdf8;
+  /* Nur für Datenkodierung in Diagrammen und 3D. */
+  --color-data-tension: #a855f7;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-stack), ui-monospace, monospace;
 
-  --radius-panel: 0.75rem;
-
-  --animate-scan: scan 7s linear infinite;
+  --animate-blink: blink 2.4s ease-in-out infinite;
 }
 
-@keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-/* Der Inhalt des Laufbands ist verdoppelt - eine Verschiebung um -50%
-   bringt die zweite Kopie exakt an den Startpunkt der ersten. */
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -49,105 +50,105 @@
   }
 
   body {
-    background-color: var(--color-blueprint-void);
-    color: var(--color-ink-primary);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
 
-  /* Fokus sichtbar halten – Recruiter tabben durch die Seite */
+  /* Display-Typo läuft grundsätzlich eng. Der Größensprung zwischen
+     Meta-Zeile (11px) und Headline (bis 9rem) ist das eigentliche
+     Gestaltungsmittel — nicht Farbe. */
+  h1, h2, h3 {
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
   :focus-visible {
-    outline: 2px solid var(--color-signal-cyan);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
-    border-radius: 2px;
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--color-signal-cyan) 30%, transparent);
+    background: var(--color-accent);
+    color: var(--color-paper);
   }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: var(--color-blueprint-void); }
+  ::-webkit-scrollbar-track { background: var(--color-paper); }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-blueprint-line);
-    border-radius: 99px;
-    border: 3px solid var(--color-blueprint-void);
+    background: var(--color-rule);
+    border: 3px solid var(--color-paper);
   }
-  ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-faint); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-faint); }
+
+  /* Kein Element bekommt Radius, sofern nicht ausdrücklich gesetzt. */
+  button, input, textarea, select {
+    border-radius: 0;
+    font: inherit;
+  }
 }
 
 @layer utilities {
-  /* Das CAD-Millimeterpapier: zwei überlagerte Gitter, fein + grob */
-  .blueprint-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklab, var(--color-signal-cyan) 6%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklab, var(--color-signal-cyan) 6%, transparent) 1px, transparent 1px),
-      linear-gradient(to right, color-mix(in oklab, var(--color-signal-cyan) 12%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklab, var(--color-signal-cyan) 12%, transparent) 1px, transparent 1px);
-    background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
-  }
-
-  /* Glassmorphism: Blur + Innenkante statt dickem Rand */
-  .glass-panel {
-    background: color-mix(in oklab, var(--color-blueprint-panel) 72%, transparent);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
-    border: 1px solid color-mix(in oklab, var(--color-signal-cyan) 10%, transparent);
-    box-shadow:
-      inset 0 1px 0 0 color-mix(in oklab, white 6%, transparent),
-      0 24px 60px -24px rgb(0 0 0 / 0.8);
-  }
-
-  .text-gradient-signal {
-    background: linear-gradient(100deg, var(--color-signal-cyan), var(--color-signal-purple));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  /* Technische Kleinschrift – Achsenbeschriftung, Statuszeilen, Labels */
-  .label-tech {
+  /* --- Meta-Schrift: Labels, Achsen, Statuszeilen ------------------ */
+  .meta {
     font-family: var(--font-mono);
     font-size: 10px;
-    line-height: 1;
-    letter-spacing: 0.2em;
+    line-height: 1.4;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--color-ink-faint);
+    color: var(--color-faint);
   }
 
-  /* Eckmarken wie auf einem technischen Plan */
-  .corner-ticks::before,
-  .corner-ticks::after {
-    content: "";
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    border-color: color-mix(in oklab, var(--color-signal-cyan) 45%, transparent);
-    pointer-events: none;
+  .meta-accent {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.4;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-accent);
   }
-  .corner-ticks::before {
-    top: 10px; left: 10px;
-    border-top: 1px solid; border-left: 1px solid;
-  }
-  .corner-ticks::after {
-    bottom: 10px; right: 10px;
-    border-bottom: 1px solid; border-right: 1px solid;
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  /* --- Flächen: solide, mit Haarlinie, ohne Radius ------------------ */
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
   }
+
+  .panel-raised {
+    background: var(--color-raise);
+    border: 1px solid var(--color-rule);
+  }
+
+  /* --- Das sichtbare Spaltenraster ---------------------------------- */
+  /* Swiss heisst: das Raster ist keine Hilfslinie, es ist Teil des
+     Bildes. Zwölf Spalten, nur die Trennlinien, sehr leise. */
+  .column-grid {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--color-rule-soft) 0 1px,
+      transparent 1px calc(100% / 12)
+    );
+    background-size: 100% 100%;
+  }
+
+  /* --- Invertierender Hover, das brutalistische Standardverhalten --- */
+  .invert-hover {
+    transition: background-color 120ms linear, color 120ms linear;
+  }
+  .invert-hover:hover {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .rule-t { border-top: 1px solid var(--color-rule); }
+  .rule-b { border-bottom: 1px solid var(--color-rule); }
 }
 
 /* ------------------------------------------------------------------ */
 /* Mischpult-Fader                                                      */
 /* Vertikale Range-Inputs sind seit Chrome 124 / Firefox 129 nativ      */
-/* ueber writing-mode moeglich - kein Rotations-Hack, kein Verlust der  */
+/* über writing-mode möglich — kein Rotations-Hack, kein Verlust der    */
 /* Tastatursteuerung.                                                   */
 /* ------------------------------------------------------------------ */
 .fader-input {
@@ -162,58 +163,46 @@
 }
 
 .fader-input::-webkit-slider-runnable-track {
-  width: 5px;
-  border-radius: 99px;
+  width: 3px;
   background: linear-gradient(
     to top,
-    var(--color-signal-cyan) var(--fill, 0%),
-    var(--color-blueprint-line) var(--fill, 0%)
+    var(--color-accent) var(--fill, 0%),
+    var(--color-rule) var(--fill, 0%)
   );
 }
 
 .fader-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 9px;
+  width: 20px;
+  height: 6px;
   margin-left: -8.5px;
-  border-radius: 2px;
-  background: linear-gradient(#f1f5f9, #94a3b8);
-  border: 1px solid #05070d;
-  box-shadow:
-    0 1px 3px rgb(0 0 0 / 0.6),
-    0 0 10px rgb(var(--audio-glow, 56 189 248) / 0.45);
+  background: var(--color-ink);
 }
 
 .fader-input::-moz-range-track {
-  width: 5px;
-  border-radius: 99px;
-  background: var(--color-blueprint-line);
+  width: 3px;
+  background: var(--color-rule);
 }
 
 .fader-input::-moz-range-progress {
-  width: 5px;
-  border-radius: 99px;
-  background: var(--color-signal-cyan);
+  width: 3px;
+  background: var(--color-accent);
 }
 
 .fader-input::-moz-range-thumb {
-  width: 22px;
-  height: 9px;
-  border-radius: 2px;
-  background: linear-gradient(#f1f5f9, #94a3b8);
-  border: 1px solid #05070d;
+  width: 20px;
+  height: 6px;
+  border: none;
+  border-radius: 0;
+  background: var(--color-ink);
 }
 
-/* ------------------------------------------------------------------ */
-/* Glass-Blur bewusst AUSSERHALB von @layer utilities.                  */
-/* Innerhalb des Layers kam die backdrop-filter-Deklaration nicht am    */
-/* Element an (Hintergrund und Schatten aus derselben Regel schon) -    */
-/* ungeschichtete Regeln gewinnen und sind hier die verlaessliche       */
-/* Variante. Ohne den Blur ist es kein Glassmorphism, sondern nur eine  */
-/* halbtransparente Box.                                                */
-/* ------------------------------------------------------------------ */
-.glass-panel {
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

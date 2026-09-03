@@ -214,13 +214,13 @@ export function CommandPalette() {
       onOpenChange={setOpen}
       label="Command Palette"
       className="fixed inset-0 z-50"
-      overlayClassName="fixed inset-0 bg-blueprint-void/70 backdrop-blur-sm"
+      overlayClassName="fixed inset-0 bg-paper/85"
       contentClassName="fixed left-1/2 top-[18vh] z-50 w-[92vw] max-w-xl -translate-x-1/2"
     >
-      <div className="glass-panel overflow-hidden rounded-panel shadow-2xl">
-        <div className="flex items-center gap-2 border-b border-blueprint-line/70 px-4">
+      <div className="panel overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-rule/70 px-4">
           <TerminalSquare
-            className="size-4 shrink-0 text-signal-cyan"
+            className="size-4 shrink-0 text-accent"
             strokeWidth={1.75}
           />
           {/* Escape haengt am Input, nicht am Dialog: dort abgefangen
@@ -229,20 +229,20 @@ export function CommandPalette() {
             onKeyDown={handleEscape}
             placeholder={output ? "Escape für zurück" : "Befehl eingeben…"}
             readOnly={!!output}
-            className="w-full bg-transparent py-3.5 font-mono text-sm text-ink-primary outline-none placeholder:text-ink-faint"
+            className="w-full bg-transparent py-3.5 font-mono text-sm text-ink outline-none placeholder:text-faint"
           />
-          <kbd className="label-tech shrink-0 rounded border border-blueprint-line px-1.5 py-1">
+          <kbd className="meta shrink-0 border border-rule px-1.5 py-1">
             ESC
           </kbd>
         </div>
 
         {output ? (
-          <pre className="max-h-[46vh] overflow-auto whitespace-pre-wrap px-4 py-4 font-mono text-[12.5px] leading-relaxed text-signal-cyan">
+          <pre className="max-h-[46vh] overflow-auto whitespace-pre-wrap px-4 py-4 font-mono text-[12.5px] leading-relaxed text-accent">
             {output.join("\n")}
           </pre>
         ) : (
           <Command.List className="max-h-[46vh] overflow-auto p-2">
-            <Command.Empty className="px-3 py-6 text-center font-mono text-xs text-ink-faint">
+            <Command.Empty className="px-3 py-6 text-center font-mono text-xs text-faint">
               command not found
             </Command.Empty>
 
@@ -250,21 +250,21 @@ export function CommandPalette() {
               <Command.Group
                 key={group}
                 heading={group}
-                className="mb-1 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.2em] [&_[cmdk-group-heading]]:text-ink-faint"
+                className="mb-1 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.2em] [&_[cmdk-group-heading]]:text-faint"
               >
                 {COMMANDS.filter((c) => c.group === group).map((cmd) => (
                   <Command.Item
                     key={cmd.id}
                     value={cmd.label}
                     onSelect={() => cmd.run(ctx)}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 font-mono text-sm text-ink-muted data-[selected=true]:bg-signal-cyan/10 data-[selected=true]:text-ink-primary"
+                    className="group flex cursor-pointer items-center gap-3 px-3 py-2.5 font-mono text-sm text-mute data-[selected=true]:bg-accent data-[selected=true]:text-paper"
                   >
                     <cmd.Icon
-                      className="size-4 shrink-0 text-ink-faint"
+                      className="size-4 shrink-0 text-faint group-data-[selected=true]:text-paper"
                       strokeWidth={1.75}
                     />
                     <span>{cmd.label}</span>
-                    <span className="ml-auto text-[11px] text-ink-faint">
+                    <span className="ml-auto text-[11px] text-faint group-data-[selected=true]:text-paper/70">
                       {cmd.hint}
                     </span>
                   </Command.Item>

@@ -42,17 +42,17 @@ export function Hero() {
             stehen soll. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -inset-x-24 -inset-y-28 -z-10 bg-[linear-gradient(102deg,rgba(5,7,13,0.97)_0%,rgba(5,7,13,0.93)_42%,rgba(5,7,13,0.55)_72%,transparent_100%)]"
+          className="pointer-events-none absolute -inset-x-24 -inset-y-28 -z-10 bg-[linear-gradient(102deg,rgba(10,10,11,0.97)_0%,rgba(10,10,11,0.94)_42%,rgba(10,10,11,0.55)_72%,transparent_100%)]"
         />
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: EASE_OUT }}
-          className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-signal-cyan"
+          className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-accent"
         >
           <span
-            className="size-1.5 rounded-full bg-signal-cyan"
+            className="size-1.5 rounded-full bg-accent"
             style={{ animation: "blink 2.4s ease-in-out infinite" }}
           />
           Rev. 02 — Structure · Signal · Code
@@ -72,16 +72,16 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.9 }}
           className="mt-8 flex flex-wrap items-baseline gap-x-4 gap-y-2 font-mono text-sm"
         >
-          <span className="text-ink-faint">$</span>
+          <span className="text-faint">$</span>
           <ScrambleText
             key={ROLES[role]}
             text={ROLES[role]}
-            className="text-ink-primary"
+            className="text-ink"
           />
-          <span className="text-ink-faint">
+          <span className="text-faint">
             /{" "}
             {String(role + 1).padStart(2, "0")}
-            <span className="text-ink-faint/60">
+            <span className="text-faint/60">
               _{String(ROLES.length).padStart(2, "0")}
             </span>
           </span>
@@ -91,7 +91,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.05, ease: EASE_OUT }}
-          className="mt-8 max-w-xl text-pretty text-lg leading-relaxed text-ink-muted"
+          className="mt-8 max-w-xl text-pretty text-lg leading-relaxed text-mute"
         >
           {PROFILE.summary}
         </motion.p>
@@ -105,11 +105,11 @@ export function Hero() {
         className="absolute inset-x-6 bottom-24 flex items-end justify-between sm:inset-x-10 sm:bottom-8 lg:inset-x-16"
       >
         <div className="flex items-center gap-3">
-          <ArrowDown className="size-4 animate-bounce text-signal-cyan" strokeWidth={2} />
-          <span className="label-tech">Scrollen bewegt die Kamera</span>
+          <ArrowDown className="size-4 animate-bounce text-accent" strokeWidth={2} />
+          <span className="meta">Scrollen bewegt die Kamera</span>
         </div>
 
-        <span className="label-tech hidden text-right sm:block">
+        <span className="meta hidden text-right sm:block">
           Zeiger belastet
           <br />
           das Tragwerk
