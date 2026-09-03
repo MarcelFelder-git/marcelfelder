@@ -65,7 +65,7 @@ export function Hero() {
           text={PROFILE.claim}
           delay={0.25}
           highlight={["hören", "kann."]}
-          className="mt-7 text-balance text-[clamp(2.6rem,8vw,7rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
+          className="chromatic mt-7 text-balance text-[clamp(2.6rem,8vw,7rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
         />
 
         <motion.div

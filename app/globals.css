@@ -58,6 +58,24 @@
   100% { opacity: 1; }
 }
 
+/* Glitch: lange Ruhe, kurze Störung. Über 90 % der Laufzeit passiert
+   nichts - genau das macht den Ausschlag zum Ereignis statt zum Flackern.
+   `steps(1)` verhindert weiche Übergänge zwischen den Keyframes: ein
+   Übertragungsfehler blendet nicht ein, er ist plötzlich da. */
+@keyframes glitch-a {
+  0%, 92%, 100% { clip-path: inset(100% 0 0 0); transform: translate(0); }
+  93% { clip-path: inset(12% 0 71% 0); transform: translate(-3px, -1px); }
+  95% { clip-path: inset(58% 0 22% 0); transform: translate(4px, 1px); }
+  97% { clip-path: inset(33% 0 49% 0); transform: translate(-2px, 0); }
+}
+
+@keyframes glitch-b {
+  0%, 92%, 100% { clip-path: inset(100% 0 0 0); transform: translate(0); }
+  94% { clip-path: inset(41% 0 38% 0); transform: translate(3px, 1px); }
+  96% { clip-path: inset(9% 0 76% 0); transform: translate(-4px, -1px); }
+  98% { clip-path: inset(67% 0 15% 0); transform: translate(2px, 0); }
+}
+
 @layer base {
   html {
     color-scheme: dark;
@@ -219,6 +237,88 @@
       transparent 1px,
       transparent 3px
     );
+  }
+
+  /* --- Chromatische Aberration -------------------------------------- */
+  /* Der Rot/Blau-Versatz einer billigen Linse. Auf Type als doppelter
+     Textschatten - kostet nichts und liest sich sofort als "Signal, das
+     durch etwas hindurchgegangen ist". Bewusst asymmetrisch: eine echte
+     Linse verschiebt die Kanäle nicht spiegelgleich. */
+  .chromatic {
+    text-shadow:
+      -0.02em 0 rgb(56 189 248 / 0.75),
+      0.025em 0 rgb(168 85 247 / 0.65);
+  }
+
+  .chromatic-strong {
+    text-shadow:
+      -0.045em 0 rgb(56 189 248 / 0.9),
+      0.05em 0 rgb(168 85 247 / 0.8);
+  }
+
+  /* Für Medien: zwei versetzte Kopien in Cyan und Violett, additiv über
+     dem Original. Nur bei Hover, sonst ist es Dauerlärm. */
+  .chromatic-media::before,
+  .chromatic-media::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 220ms linear;
+    mix-blend-mode: screen;
+    background: inherit;
+  }
+  .chromatic-media::before {
+    background-color: rgb(56 189 248 / 0.4);
+    transform: translateX(-3px);
+  }
+  .chromatic-media::after {
+    background-color: rgb(168 85 247 / 0.4);
+    transform: translateX(3px);
+  }
+  .group:hover .chromatic-media::before,
+  .group:hover .chromatic-media::after {
+    opacity: 0.35;
+  }
+
+  /* --- Glitch -------------------------------------------------------- */
+  /* Zwei versetzte Klone des Textes, die in unregelmäßigen Scheiben
+     aufblitzen. `clip-path` schneidet pro Keyframe einen anderen
+     Querstreifen heraus - dadurch wirkt es wie ein Übertragungsfehler
+     und nicht wie eine gleichmäßige Wackelanimation.
+     Die Klone kommen aus data-text, damit im DOM nur EIN lesbarer Text
+     steht und ein Screenreader nicht dreimal dasselbe vorliest. */
+  .glitch {
+    position: relative;
+  }
+  .glitch::before,
+  .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--color-paper);
+    overflow: hidden;
+  }
+  .glitch::before {
+    color: var(--color-accent);
+    animation: glitch-a 3.4s steps(1) infinite;
+  }
+  .glitch::after {
+    color: var(--color-accent-alt);
+    animation: glitch-b 3.4s steps(1) infinite;
+  }
+
+  .glitch-hover::before,
+  .glitch-hover::after {
+    animation-play-state: paused;
+    opacity: 0;
+  }
+  .glitch-hover:hover::before,
+  .glitch-hover:hover::after {
+    animation-play-state: running;
+    opacity: 1;
   }
 
   /* --- HUD-Eckwinkel ------------------------------------------------ */

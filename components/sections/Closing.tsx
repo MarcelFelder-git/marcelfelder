@@ -95,7 +95,7 @@ export function Outro() {
         as="h2"
         id="outro-heading"
         text="Reden wir über das nächste System."
-        className="mt-4 max-w-3xl text-balance text-[clamp(2rem,5vw,4.2rem)] font-semibold leading-[1.02] tracking-[-0.03em]"
+        className="chromatic mt-4 max-w-3xl text-balance text-[clamp(2rem,5vw,4.2rem)] font-semibold leading-[1.02] tracking-[-0.03em]"
         highlight={["System."]}
       />
 

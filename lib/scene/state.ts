@@ -21,6 +21,12 @@ export interface SceneState {
   pointer: { x: number; y: number };
   /** Fortschritt innerhalb des aktiven Kapitels, 0..1. */
   chapterProgress: number;
+  /**
+   * Der Projekttunnel. `active` blendet ihn ein und uebernimmt dabei die
+   * Kamera von der Kapitelfuehrung; `progress` ist die Position auf der
+   * Fahrt durch den Korridor, 0 = Eingang, 1 = Ende.
+   */
+  tunnel: { active: number; progress: number };
 }
 
 export const sceneState: SceneState = {
@@ -28,6 +34,7 @@ export const sceneState: SceneState = {
   weights: { structure: 1, signal: 0, code: 0 },
   pointer: { x: 0, y: 0 },
   chapterProgress: 0,
+  tunnel: { active: 0, progress: 0 },
 };
 
 export function damp(current: number, target: number, lambda: number, dt: number) {

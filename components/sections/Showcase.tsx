@@ -1,39 +1,46 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Code2, Play } from "lucide-react";
 import { PROJECTS, type Project } from "@/content/projects";
 import { Reveal, SplitHeading } from "@/components/motion/primitives";
+import { GlitchText } from "@/components/motion/GlitchText";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { sceneState } from "@/lib/scene/state";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
  * Projekte — der Teil, den ein Recruiter zuerst liest.
  *
- * Bewusst medienlastig: jede Karte trägt einen echten Screenshot aus dem
- * jeweiligen Repository, zwei davon einen kurzen Loop. Keine Mockup-Rahmen,
- * keine Stockbilder, kein "Coming soon".
+ * Zwei Darstellungen desselben Inhalts:
  *
- * Video startet ausschließlich auf Hover oder Fokus und nie mit Ton. Ein
- * Autoplay-Loop pro Karte wären fünf gleichzeitig dekodierende Videos —
- * das kostet Akku und Aufmerksamkeit, ohne etwas zu erklären.
+ *   1. Die Fahrt durch den 3D-Korridor. Die Tafeln haengen im Canvas, der
+ *      Text laeuft als DOM darueber und wechselt an jeder Station.
+ *   2. Eine flache Kartenliste als Rueckfallebene fuer `prefers-reduced-
+ *      motion` — gleicher Inhalt, gleiche Links, ohne Fahrt.
+ *
+ * Darunter steht in beiden Faellen ein kompaktes Register mit allen
+ * Projekten als echte Links. Das ist nicht nur Zierde: waehrend der Fahrt
+ * ist immer nur eine Station im Text sichtbar, und ohne dieses Register
+ * koennte man per Tastatur nicht an alle Projekte kommen.
  */
 export function Showcase() {
+  const reduced = usePrefersReducedMotion();
+
   return (
     <section
       id="projects"
-      className="relative py-[14vh]"
+      className="relative"
       aria-labelledby="projects-heading"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(8,9,14,0.95)_10%,rgba(8,9,14,0.95)_90%,transparent)]"
-      />
-
-      <header className="px-6 sm:px-10 lg:px-16">
+      <header className="relative px-6 py-[12vh] sm:px-10 lg:px-16">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(8,9,14,0.95)_30%,rgba(8,9,14,0.95))]"
+        />
         <div className="flex items-baseline justify-between gap-4">
           <p className="meta-accent">Projekte</p>
           <p className="meta">{PROJECTS.length} Stück · alle im Repo einsehbar</p>
@@ -46,126 +53,271 @@ export function Showcase() {
           highlight={["nachlesbar."]}
         />
         <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-mute">
-          Jede Karte verlinkt Live-Deployment und Quellcode. Die Screenshots
-          kommen aus den Repositories, nicht aus einem Mockup-Generator.
+          {reduced
+            ? "Jede Karte verlinkt Live-Deployment und Quellcode. Die Screenshots kommen aus den Repositories, nicht aus einem Mockup-Generator."
+            : "Scrollen fährt durch den Korridor. Jede Tafel an der Wand ist ein Projekt — Live-Deployment und Quellcode jeweils darunter verlinkt."}
         </p>
       </header>
 
-      <div className="mt-14 flex flex-col gap-px bg-rule">
-        {PROJECTS.map((project, i) => (
-          <ProjectRow key={project.id} project={project} flip={i % 2 === 1} />
-        ))}
-      </div>
+      {reduced ? <FlatList /> : <TunnelRide />}
+
+      <ProjectIndex />
     </section>
   );
 }
 
-function ProjectRow({
-  project,
-  flip,
-}: {
-  project: Project;
-  flip: boolean;
-}) {
-  return (
-    <Reveal className="bg-paper">
-      <article
-        className={cn(
-          "grid items-stretch gap-px bg-rule lg:grid-cols-2",
-          // Jede zweite Zeile dreht die Anordnung. Fünf identisch
-          // aufgebaute Zeilen liest niemand bis zum Ende.
-          flip && "lg:[&>*:first-child]:order-2",
-        )}
-      >
-        <ProjectMediaFrame project={project} />
+/* ================================================================== */
+/* Fahrt durch den Korridor                                            */
+/* ================================================================== */
 
-        <div className="flex flex-col justify-center bg-paper p-6 sm:p-10 lg:p-12">
-          <div className="flex items-baseline gap-4">
-            <span
-              aria-hidden
-              className="font-mono text-[clamp(2rem,4vw,3rem)] font-bold leading-none text-transparent"
-              style={{ WebkitTextStroke: "1px rgba(56,189,248,0.35)" }}
-            >
-              {project.index}
+function TunnelRide() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [station, setStation] = useState(0);
+
+  // Der aktive Abschnitt wird aus demselben Fortschritt abgeleitet, der
+  // auch die Kamera fuehrt - per rAF gelesen statt per Scroll-Listener,
+  // damit Text und Kamera denselben Frame teilen und nicht auseinander
+  // laufen.
+  useEffect(() => {
+    let frame = 0;
+    const tick = () => {
+      const p = sceneState.tunnel.progress;
+      // Stationen liegen im Korridor bei 12, 29, 46, 63, 80 von 99
+      // Einheiten Fahrt; in Fortschritt umgerechnet ergibt das etwa
+      // gleiche Abstaende mit etwas Vorlauf.
+      const index = Math.min(
+        PROJECTS.length - 1,
+        Math.max(0, Math.floor(p * PROJECTS.length * 1.04)),
+      );
+      setStation((prev) => (prev === index ? prev : index));
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const project = PROJECTS[station];
+
+  return (
+    <div
+      ref={ref}
+      data-tunnel
+      // Eine Bildschirmhoehe pro Projekt plus Vor- und Nachlauf. Kuerzer
+      // wirkt die Fahrt gehetzt, laenger wird sie zur Geduldsprobe.
+      style={{ height: `${PROJECTS.length * 100 + 80}vh` }}
+      className="relative"
+    >
+      <div className="sticky top-0 flex h-screen items-end px-6 pb-[14vh] sm:px-10 lg:px-16">
+        {/* Der Text sitzt links unten und laesst die Roehre frei. */}
+        <div className="relative w-full max-w-lg">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 bg-[radial-gradient(70%_70%_at_30%_60%,rgba(8,9,14,0.95),transparent_75%)]"
+          />
+
+          <div className="flex items-center gap-3">
+            <span className="meta-accent">
+              Station {String(station + 1).padStart(2, "0")} /{" "}
+              {String(PROJECTS.length).padStart(2, "0")}
             </span>
-            <div>
-              <h3 className="text-[clamp(1.5rem,2.6vw,2.1rem)] font-semibold leading-tight tracking-[-0.02em]">
-                {project.title}
-              </h3>
-              <p className="meta mt-1.5">
-                {project.scope} · {project.year}
-              </p>
-            </div>
+            <span className="h-px flex-1 bg-rule" />
           </div>
 
-          <p className="mt-6 text-pretty text-[17px] leading-snug text-ink">
-            {project.tagline}
-          </p>
-          <p className="mt-4 text-[14.5px] leading-relaxed text-mute">
-            {project.body}
-          </p>
+          {/* key erzwingt Remount bei Stationswechsel - der Glitch laeuft
+              dadurch bei jedem Wechsel neu an. */}
+          <motion.div
+            key={project.id}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: EASE_OUT }}
+            className="mt-4"
+          >
+            <GlitchText
+              as="h3"
+              text={project.title}
+              className="block text-[clamp(1.9rem,4vw,3.2rem)] font-semibold leading-none tracking-[-0.03em]"
+            />
+            <p className="meta mt-3">
+              {project.scope} · {project.year}
+            </p>
 
-          {/* Der technische Kern - was das Projekt über "hab ich gebaut"
-              hinaus interessant macht. */}
-          <p className="mt-5 border-l border-accent/50 pl-4 font-mono text-[12px] leading-relaxed text-faint">
-            {project.detail}
-          </p>
+            <p className="mt-5 text-pretty text-[17px] leading-snug text-ink">
+              {project.tagline}
+            </p>
+            <p className="mt-3 text-[14px] leading-relaxed text-mute">
+              {project.detail}
+            </p>
 
-          <ul className="mt-6 flex flex-wrap gap-1.5">
-            {project.stack.map((tech) => (
-              <li
-                key={tech}
-                className="border border-rule bg-surface px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.08em] text-mute"
-              >
-                {tech}
-              </li>
-            ))}
-          </ul>
+            <ul className="mt-5 flex flex-wrap gap-1.5">
+              {project.stack.slice(0, 6).map((tech) => (
+                <li
+                  key={tech}
+                  className="border border-rule bg-surface/90 px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.08em] text-mute"
+                >
+                  {tech}
+                </li>
+              ))}
+            </ul>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            {project.links.live && (
+            <ProjectLinks project={project} />
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Flache Liste — Rueckfallebene ohne Bewegung                         */
+/* ================================================================== */
+
+function FlatList() {
+  return (
+    <div className="flex flex-col gap-px bg-rule">
+      {PROJECTS.map((project, i) => (
+        <Reveal key={project.id} className="bg-paper">
+          <article
+            className={cn(
+              "grid items-stretch gap-px bg-rule lg:grid-cols-2",
+              i % 2 === 1 && "lg:[&>*:first-child]:order-2",
+            )}
+          >
+            <ProjectMediaFrame project={project} />
+            <div className="flex flex-col justify-center bg-paper p-6 sm:p-10 lg:p-12">
+              <div className="flex items-baseline gap-4">
+                <span
+                  aria-hidden
+                  className="font-mono text-[clamp(2rem,4vw,3rem)] font-bold leading-none text-transparent"
+                  style={{ WebkitTextStroke: "1px rgba(56,189,248,0.35)" }}
+                >
+                  {project.index}
+                </span>
+                <div>
+                  <h3 className="text-[clamp(1.5rem,2.6vw,2.1rem)] font-semibold leading-tight tracking-[-0.02em]">
+                    {project.title}
+                  </h3>
+                  <p className="meta mt-1.5">
+                    {project.scope} · {project.year}
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-6 text-pretty text-[17px] leading-snug text-ink">
+                {project.tagline}
+              </p>
+              <p className="mt-4 text-[14.5px] leading-relaxed text-mute">
+                {project.body}
+              </p>
+              <p className="mt-5 border-l border-accent/50 pl-4 font-mono text-[12px] leading-relaxed text-faint">
+                {project.detail}
+              </p>
+
+              <ul className="mt-6 flex flex-wrap gap-1.5">
+                {project.stack.map((tech) => (
+                  <li
+                    key={tech}
+                    className="border border-rule bg-surface px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.08em] text-mute"
+                  >
+                    {tech}
+                  </li>
+                ))}
+              </ul>
+
+              <ProjectLinks project={project} />
+            </div>
+          </article>
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Register — immer vorhanden, immer per Tastatur erreichbar           */
+/* ================================================================== */
+
+function ProjectIndex() {
+  return (
+    <div className="relative border-y border-rule bg-paper/90">
+      <div className="px-6 py-10 sm:px-10 lg:px-16">
+        <h3 className="meta mb-5">Register — alle Projekte</h3>
+        <ul className="grid gap-px bg-rule sm:grid-cols-2 lg:grid-cols-3">
+          {PROJECTS.map((project) => (
+            <li key={project.id} className="bg-paper">
               <a
-                href={project.links.live}
+                href={project.links.live ?? project.links.repo}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="group flex items-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
+                className="group flex h-full flex-col gap-1 p-5 transition-colors hover:bg-raise"
               >
-                Live ansehen
-                <ArrowUpRight
-                  className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  strokeWidth={2}
-                />
+                <span className="flex items-baseline gap-2">
+                  <span className="font-mono text-[11px] text-accent">
+                    {project.index}
+                  </span>
+                  <span className="font-medium text-ink group-hover:text-accent">
+                    {project.title}
+                  </span>
+                  <ArrowUpRight
+                    className="ml-auto size-3.5 shrink-0 text-faint transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent"
+                    strokeWidth={2}
+                  />
+                </span>
+                <span className="text-[13px] leading-snug text-mute">
+                  {project.tagline}
+                </span>
+                <span className="meta mt-1">{project.scope}</span>
               </a>
-            )}
-            <a
-              href={project.links.repo}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="invert-hover flex items-center gap-2 border border-rule px-4 py-2.5 text-sm text-mute"
-            >
-              <Code2 className="size-4" strokeWidth={1.75} />
-              Quellcode
-            </a>
-            {!project.links.live && (
-              <span className="meta">kein öffentliches Deployment</span>
-            )}
-          </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
-          {project.aiAssisted && (
-            <p className="mt-5 font-mono text-[11px] leading-relaxed text-faint">
-              Entstanden im KI-Pair-Programming (Claude Code) — Architektur und
-              Entscheidungen von mir, jede davon erklärbar.
-            </p>
-          )}
-        </div>
-      </article>
-    </Reveal>
+/* ================================================================== */
+
+function ProjectLinks({ project }: { project: Project }) {
+  return (
+    <div className="mt-7 flex flex-wrap items-center gap-3">
+      {project.links.live && (
+        <a
+          href={project.links.live}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="group flex items-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
+        >
+          Live ansehen
+          <ArrowUpRight
+            className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            strokeWidth={2}
+          />
+        </a>
+      )}
+      <a
+        href={project.links.repo}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="invert-hover flex items-center gap-2 border border-rule px-4 py-2.5 text-sm text-mute"
+      >
+        <Code2 className="size-4" strokeWidth={1.75} />
+        Quellcode
+      </a>
+      {!project.links.live && (
+        <span className="meta">kein öffentliches Deployment</span>
+      )}
+      {project.aiAssisted && (
+        <span className="meta w-full pt-1">
+          Entstanden im KI-Pair-Programming — Architektur von mir
+        </span>
+      )}
+    </div>
   );
 }
 
 /**
- * Medienrahmen mit HUD-Anleihen: Eckwinkel, Scanlines, Duoton-Kante.
- * Bei vorhandenem Video übernimmt es bei Hover/Fokus das Standbild.
+ * Medienrahmen der flachen Liste: HUD-Eckwinkel, Scanlines, Duoton-Kante.
+ * Bei vorhandenem Video übernimmt es bei Hover oder Fokus das Standbild.
  */
 function ProjectMediaFrame({ project }: { project: Project }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -176,8 +328,6 @@ function ProjectMediaFrame({ project }: { project: Project }) {
 
   const start = () => {
     if (!hasVideo || !videoRef.current) return;
-    // `play()` gibt ein Promise zurueck, das bei schnellem Hover-Wechsel
-    // abgebrochen wird - der Fehler ist erwartbar und irrelevant.
     void videoRef.current.play().then(
       () => setPlaying(true),
       () => undefined,
@@ -195,9 +345,6 @@ function ProjectMediaFrame({ project }: { project: Project }) {
     <div
       className={cn(
         "scanlines hud-corners group relative overflow-hidden bg-surface",
-        // Portrait bekommt einen festen, hohen Rahmen mit Innenabstand -
-        // ein Handy-Screenshot soll als Handy lesbar sein, nicht als
-        // beschnittener Streifen. Landscape füllt randlos.
         portrait
           ? "aspect-[4/3] p-6 sm:p-10 lg:aspect-auto lg:py-14"
           : "aspect-[16/10] lg:aspect-auto",
@@ -207,8 +354,6 @@ function ProjectMediaFrame({ project }: { project: Project }) {
       onFocus={start}
       onBlur={stop}
     >
-      {/* Bei Portrait ein weicher Schein hinter dem Gerät, damit es nicht
-          im Nichts schwebt. */}
       {portrait && (
         <div
           aria-hidden
@@ -223,12 +368,7 @@ function ProjectMediaFrame({ project }: { project: Project }) {
         sizes="(min-width: 1024px) 50vw, 100vw"
         className={cn(
           "transition-all duration-500",
-          portrait
-            ? "object-contain object-center"
-            : "object-cover object-left-top",
-          // Leicht entsättigt im Ruhezustand, volle Farbe bei Hover: das
-          // lenkt den Blick auf die Karte, über die man gerade fährt,
-          // ohne dass irgendwas springt.
+          portrait ? "object-contain object-center" : "object-cover object-left-top",
           "saturate-[0.75] group-hover:saturate-100",
           playing ? "opacity-0" : "opacity-100",
         )}
@@ -253,7 +393,6 @@ function ProjectMediaFrame({ project }: { project: Project }) {
         </video>
       )}
 
-      {/* Duoton-Schleier, nur bei Hover - Cyan/Violett über dem Bild */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
@@ -264,7 +403,6 @@ function ProjectMediaFrame({ project }: { project: Project }) {
         }}
       />
 
-      {/* Duoton-Kante unten */}
       <div
         aria-hidden
         className="edge-duotone pointer-events-none absolute inset-x-0 bottom-0 h-px opacity-60"

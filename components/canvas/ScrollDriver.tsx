@@ -37,6 +37,28 @@ export function ScrollDriver() {
       const max = doc.scrollHeight - vh;
       sceneState.progress = max > 0 ? window.scrollY / max : 0;
 
+      // --- Projekttunnel --------------------------------------------
+      // Zuerst, weil er die Kapitel verdraengt: waehrend der Fahrt durch
+      // den Korridor darf kein Kapitelmodell mehr im Bild stehen.
+      const tunnelEl = document.querySelector<HTMLElement>("[data-tunnel]");
+      if (tunnelEl) {
+        const r = tunnelEl.getBoundingClientRect();
+        const travel = Math.max(1, r.height - vh);
+        const raw = -r.top / travel;
+        sceneState.tunnel.progress = Math.min(1, Math.max(0, raw));
+
+        // Ein- und Ausblenden ueber je eine Viewporthoehe vor und nach
+        // dem Abschnitt, damit die Uebergabe von der Kapitelfuehrung
+        // nicht springt.
+        const enter = Math.min(1, Math.max(0, 1 - r.top / vh));
+        const exit = Math.min(1, Math.max(0, (r.bottom - vh * 0.1) / vh));
+        sceneState.tunnel.active = Math.min(enter, exit);
+      } else {
+        sceneState.tunnel.active = 0;
+      }
+
+      const tunnelActive = sceneState.tunnel.active > 0.5;
+
       // --- Kapitelgewichte ------------------------------------------
       let best: ViewportMode = announced;
       let bestScore = -1;
@@ -60,7 +82,9 @@ export function ScrollDriver() {
           const distance = Math.abs(centre - vh / 2) / (vh * 0.7);
           raw = Math.max(raw, 1 - distance);
         }
-        const w = Math.max(0, raw);
+        // Im Tunnel werden alle Kapitel auf null gezogen - er ersetzt sie,
+        // statt sich mit ihnen zu ueberlagern.
+        const w = tunnelActive ? 0 : Math.max(0, raw);
         sceneState.weights[id] = w;
         sum += w;
 
@@ -71,8 +95,9 @@ export function ScrollDriver() {
       }
 
       // Ausserhalb aller Kapitel (Intro, Outro) haelt das naechstgelegene
-      // Modell die Szene - ein leerer Hintergrund waere ein Loch.
-      if (sum < 0.05) sceneState.weights[best] = 1;
+      // Modell die Szene - ein leerer Hintergrund waere ein Loch. Im
+      // Tunnel gilt das nicht, dort ist der Korridor der Inhalt.
+      if (sum < 0.05 && !tunnelActive) sceneState.weights[best] = 1;
 
       const matches = document.querySelectorAll<HTMLElement>(
         `[data-chapter="${best}"]`,

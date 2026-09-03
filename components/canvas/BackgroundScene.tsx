@@ -6,6 +6,7 @@ import { Rig } from "./Rig";
 import { StructureMode } from "./modes/StructureMode";
 import { SignalMode } from "./modes/SignalMode";
 import { CodeMode } from "./modes/CodeMode";
+import { TunnelMode } from "./modes/TunnelMode";
 
 /**
  * Die Szene liegt vollflaechig HINTER der Seite, nicht in einer Kachel
@@ -34,12 +35,16 @@ export default function BackgroundScene() {
       }}
       camera={{ position: [5, 4.1, 5], fov: 42, near: 0.1, far: 100 }}
     >
-      <fog attach="fog" args={["#08090e", 9, 20]} />
+      {/* Weiter gefasst als fuer die Kapitelmodelle noetig: der Tunnel ist
+          100 Einheiten lang und lebt davon, dass sich sein Ende im Grund
+          verliert statt hart abzuschneiden. */}
+      <fog attach="fog" args={["#08090e", 10, 55]} />
 
       <Suspense fallback={null}>
         <StructureMode />
         <SignalMode />
         <CodeMode />
+        <TunnelMode />
         <Rig />
       </Suspense>
     </Canvas>

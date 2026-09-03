@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
+import { TUNNEL_LENGTH } from "./modes/TunnelMode";
 import type { ViewportMode } from "@/types";
 
 /**
@@ -46,7 +47,28 @@ export function Rig() {
   );
 
   useFrame((_, delta) => {
-    const { weights, pointer, progress } = sceneState;
+    const { weights, pointer, progress, tunnel } = sceneState;
+
+    // --- Tunnelfahrt uebernimmt die Kamera --------------------------
+    // Der Korridor liegt entlang der negativen Z-Achse; die Kamera faehrt
+    // vom Eingang bis kurz vor das Ende. Kein Blenden mit den
+    // Kapitelstationen: waehrend der Fahrt gibt es keine.
+    if (tunnel.active > 0.5) {
+      const z = 4 - tunnel.progress * (TUNNEL_LENGTH - 6);
+      // Sanftes Schlingern, damit die Fahrt nicht wie eine Schiene wirkt.
+      const swayX = Math.sin(tunnel.progress * 9) * 0.5 + pointer.x * 0.6;
+      const swayY = Math.cos(tunnel.progress * 7) * 0.35 + pointer.y * 0.4;
+
+      v.station.set(swayX, swayY, z);
+      const k = 1 - Math.pow(0.0005, Math.min(delta, 0.1));
+      camera.position.lerp(v.station, k);
+
+      // Blick nach vorne in die Roehre, leicht der Schlingerbewegung
+      // hinterher - das erzeugt den Eindruck von Traegheit.
+      v.lookAt.lerp(v.target.set(swayX * 0.3, swayY * 0.3, z - 12), k);
+      camera.lookAt(v.lookAt);
+      return;
+    }
 
     let sum = 0;
     v.station.set(0, 0, 0);
