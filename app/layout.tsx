@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0b",
+  themeColor: "#08090e",
   colorScheme: "dark",
 };
 
@@ -81,6 +81,11 @@ export default function RootLayout({
         <Reticle />
 
         <div className="relative z-10">{children}</div>
+
+        {/* Filmkorn ganz oben auf dem Stapel, aber unter Overlays wie
+            Palette und Boot-Sequenz. Ohne diese Ebene sieht die Seite
+            aus wie ein Entwurf; mit ihr wie ein Bild. */}
+        <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[45]" />
 
         <ControlBar />
         <CommandPalette />

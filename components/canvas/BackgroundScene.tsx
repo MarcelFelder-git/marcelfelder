@@ -34,7 +34,7 @@ export default function BackgroundScene() {
       }}
       camera={{ position: [5, 4.1, 5], fov: 42, near: 0.1, far: 100 }}
     >
-      <fog attach="fog" args={["#0a0a0b", 9, 20]} />
+      <fog attach="fog" args={["#08090e", 9, 20]} />
 
       <Suspense fallback={null}>
         <StructureMode />

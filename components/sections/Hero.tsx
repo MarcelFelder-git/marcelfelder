@@ -7,7 +7,9 @@ import { PROFILE } from "@/content/resume";
 import { ScrambleText, SplitHeading } from "@/components/motion/primitives";
 import { EASE_OUT } from "@/lib/motion";
 
-const ROLES = ["BAUINGENIEUR", "TONTECHNIKER", "FULLSTACK-ENTWICKLER"];
+// Entwickler zuerst: das ist die Rolle, um die es geht. Die anderen zwei
+// erklaeren, warum er sie anders ausfuellt als andere Bewerber.
+const ROLES = ["FULLSTACK-ENTWICKLER", "TONTECHNIKER", "BAUINGENIEUR"];
 
 export function Hero() {
   const [role, setRole] = useState(0);
@@ -42,7 +44,7 @@ export function Hero() {
             stehen soll. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -inset-x-24 -inset-y-28 -z-10 bg-[linear-gradient(102deg,rgba(10,10,11,0.97)_0%,rgba(10,10,11,0.94)_42%,rgba(10,10,11,0.55)_72%,transparent_100%)]"
+          className="pointer-events-none absolute -inset-x-24 -inset-y-28 -z-10 bg-[linear-gradient(102deg,rgba(8,9,14,0.97)_0%,rgba(8,9,14,0.94)_42%,rgba(8,9,14,0.55)_72%,transparent_100%)]"
         />
 
         <motion.div
@@ -55,7 +57,7 @@ export function Hero() {
             className="size-1.5 rounded-full bg-accent"
             style={{ animation: "blink 2.4s ease-in-out infinite" }}
           />
-          Rev. 02 — Structure · Signal · Code
+          Rev. 03 — Code · Signal · Structure
         </motion.div>
 
         <SplitHeading
@@ -95,6 +97,29 @@ export function Hero() {
         >
           {PROFILE.summary}
         </motion.p>
+
+        {/* Direkter Weg zu den Projekten - wer eine Stelle zu besetzen
+            hat, soll nicht erst durch drei Kapitel scrollen muessen. */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 1.2, ease: EASE_OUT }}
+          className="mt-9 flex flex-wrap items-center gap-3"
+        >
+          <a
+            href="#projects"
+            className="group flex items-center gap-2 bg-accent px-5 py-3 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
+          >
+            Projekte ansehen
+            <ArrowDown className="size-4 transition-transform group-hover:translate-y-0.5" strokeWidth={2} />
+          </a>
+          <a
+            href="#workshop-heading"
+            className="invert-hover border border-rule px-5 py-3 text-sm text-mute"
+          >
+            Agent ausprobieren
+          </a>
+        </motion.div>
       </motion.div>
 
       {/* --- Fusszeile des Heros ------------------------------------ */}

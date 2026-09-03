@@ -1,21 +1,28 @@
 @import "tailwindcss";
 
 /* ==================================================================== */
-/*  Design-System — Swiss Brutalist, dunkel                             */
+/*  Design-System — technisches Instrument, dunkel                      */
 /*                                                                       */
-/*  Radikal reduziert: ein Akzent, keine Verläufe in der UI, keine       */
-/*  weichen Ecken, keine Glasflächen. Der Eindruck entsteht aus          */
-/*  Typografie, Raster und Haarlinien — nicht aus Effekten.              */
-/*  Zwei Farben bleiben ausschließlich der 3D-Szene vorbehalten, weil    */
-/*  sie dort Daten kodieren (Zug/Druck) statt zu dekorieren.             */
+/*  Grundlage bleibt streng: hartes Raster, Haarlinien, keine weichen    */
+/*  Ecken, keine Glasflächen. Die Strenge allein wirkte allerdings nur   */
+/*  clean statt modern — deshalb kommen drei Dinge dazu, die Tiefe       */
+/*  machen, ohne die Struktur aufzuweichen:                              */
+/*                                                                       */
+/*    1. Ein Grund, der nach Raum aussieht statt nach Papier             */
+/*       (kühler Farbstich, radialer Verlauf statt Volltonfläche).       */
+/*    2. Filmkorn über allem — nimmt der Fläche das Sterile.             */
+/*    3. Leuchten (`glow`) und Duoton nur an Kanten und Medien,          */
+/*       nie flächig. Cyan führt, Violett antwortet.                     */
 /* ==================================================================== */
 
 @theme {
-  --color-paper: #0a0a0b;
-  --color-surface: #101013;
-  --color-raise: #17171b;
-  --color-rule: #26262c;
-  --color-rule-soft: #191920;
+  /* Kühler und leicht bläulich statt neutralschwarz: der Unterschied
+     zwischen "Papier" und "Raum" sind wenige Prozent Blauanteil. */
+  --color-paper: #08090e;
+  --color-surface: #0e1018;
+  --color-raise: #151822;
+  --color-rule: #262a36;
+  --color-rule-soft: #191c26;
 
   --color-ink: #ededee;
   --color-mute: #8b8b94;
@@ -25,9 +32,13 @@
      schlicht zu dunkel, um das als Nebensache abzutun. */
   --color-faint: #808088;
 
-  /* Der einzige Akzent in der gesamten Oberfläche. */
+  /* Cyan führt: Interaktion, aktive Zustände, Messwerte. */
   --color-accent: #38bdf8;
-  /* Nur für Datenkodierung in Diagrammen und 3D. */
+  /* Violett antwortet: Kanten, Medienverläufe, Gegenpol im Duoton.
+     Bewusst NICHT für Text oder Bedienelemente - sonst konkurrieren
+     zwei Akzente um dieselbe Aufmerksamkeit. */
+  --color-accent-alt: #a855f7;
+  /* Datenkodierung in Diagrammen und 3D (Zug/Druck). */
   --color-data-tension: #a855f7;
 
   --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
@@ -54,7 +65,15 @@
   }
 
   body {
+    /* Zwei sehr weite, sehr schwache Radialverläufe über dem Grundton:
+       oben ein kühler Cyan-Hauch, unten rechts ein violetter. Beide
+       liegen bei ~4 % Deckkraft - man sieht sie nicht als Verlauf,
+       man merkt nur, dass die Fläche nicht totes Schwarz ist. */
     background-color: var(--color-paper);
+    background-image:
+      radial-gradient(70rem 45rem at 15% -10%, rgb(56 189 248 / 0.05), transparent 60%),
+      radial-gradient(60rem 40rem at 95% 20%, rgb(168 85 247 / 0.045), transparent 60%);
+    background-attachment: fixed;
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
@@ -147,6 +166,86 @@
 
   .rule-t { border-top: 1px solid var(--color-rule); }
   .rule-b { border-bottom: 1px solid var(--color-rule); }
+
+  /* --- Filmkorn ----------------------------------------------------- */
+  /* Erzeugt vom Browser aus einem SVG-Rauschfilter, keine Bilddatei und
+     kein Netzwerk-Request. Liegt als fixe Ebene über allem und nimmt der
+     Fläche das Sterile - der einzige Grund, warum die Seite nicht wie
+     eine Vorlage aussieht, sondern wie ein Bild.
+     `overlay` statt `normal`, damit das Korn dunkle Stellen aufhellt und
+     helle abdunkelt, statt alles grau zu überziehen. */
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+    opacity: 0.14;
+  }
+
+  /* --- Leuchten: nur an Kanten, nie flächig ------------------------- */
+  /* Ein Rand, der Licht abgibt, statt eines Rands mit Schlagschatten.
+     Der innere Ring hält die Kante scharf, der äußere gibt den Schein. */
+  .glow-accent {
+    box-shadow:
+      0 0 0 1px rgb(56 189 248 / 0.5),
+      0 0 24px -6px rgb(56 189 248 / 0.45),
+      inset 0 0 20px -14px rgb(56 189 248 / 0.6);
+  }
+
+  .glow-soft {
+    box-shadow: 0 0 32px -12px rgb(56 189 248 / 0.35);
+  }
+
+  /* Duoton-Kante: Cyan links, Violett rechts. Ein Pixel hoch, als
+     Abschluss über Medien und Panels. */
+  .edge-duotone {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-accent),
+      var(--color-accent-alt)
+    );
+  }
+
+  /* --- Scanlines: CRT-Zitat für Medienrahmen ------------------------ */
+  /* 3px-Raster, sehr schwach. Auf Standbildern kaum sichtbar, auf
+     bewegtem Bild sorgt es für das HUD-Gefühl. */
+  .scanlines::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.22) 0px,
+      rgb(0 0 0 / 0.22) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  /* --- HUD-Eckwinkel ------------------------------------------------ */
+  /* Vier Winkel statt eines Rahmens - markiert eine Fläche als
+     Messfeld, ohne sie einzukästeln. */
+  .hud-corners::before,
+  .hud-corners::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    border-color: var(--color-accent);
+    opacity: 0.7;
+  }
+  .hud-corners::before {
+    top: 0;
+    left: 0;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+  .hud-corners::after {
+    bottom: 0;
+    right: 0;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+  }
 }
 
 /* ------------------------------------------------------------------ */

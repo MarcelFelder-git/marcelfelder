@@ -23,7 +23,7 @@ export const MANIFEST = [
 export const CHAPTERS: Chapter[] = [
   {
     id: "structure",
-    index: "01",
+    index: "03",
     label: "Structure",
     caption: "Bauingenieurwesen",
     headline: "Tragwerke denken in Lastpfaden.",
@@ -69,7 +69,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     id: "code",
-    index: "03",
+    index: "01",
     label: "Code",
     caption: "Entwicklung",
     headline: "Interfaces sind gebaute Systeme.",

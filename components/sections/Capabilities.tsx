@@ -28,7 +28,7 @@ export function Capabilities() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(10,10,11,0.94)_18%,rgba(10,10,11,0.94)_82%,transparent)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(8,9,14,0.94)_18%,rgba(8,9,14,0.94)_82%,transparent)]"
       />
 
       <div className="px-6 sm:px-10 lg:px-16">

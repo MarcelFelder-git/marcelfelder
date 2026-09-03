@@ -32,7 +32,7 @@ export function Manifest() {
           Falsche. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-10 bg-[linear-gradient(100deg,rgba(10,10,11,0.97)_0%,rgba(10,10,11,0.93)_48%,rgba(10,10,11,0.45)_76%,transparent_100%)]"
+        className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-10 bg-[linear-gradient(100deg,rgba(8,9,14,0.97)_0%,rgba(8,9,14,0.93)_48%,rgba(8,9,14,0.45)_76%,transparent_100%)]"
       />
 
       <p className="meta mb-10">Prinzip</p>

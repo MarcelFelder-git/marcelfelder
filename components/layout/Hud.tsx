@@ -7,12 +7,16 @@ import { useViewportMode } from "@/lib/store/useViewportMode";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 import type { ViewportMode } from "@/types";
+import { CHAPTERS as CONTENT_CHAPTERS } from "@/content/resume";
 
-const CHAPTERS: { id: ViewportMode; label: string; index: string }[] = [
-  { id: "structure", label: "Structure", index: "01" },
-  { id: "signal", label: "Signal", index: "02" },
-  { id: "code", label: "Code", index: "03" },
-];
+// Aus dem Inhalt abgeleitet statt hier zweitgepflegt: sonst zeigt die
+// Navigation eine andere Reihenfolge als die Seite, sobald sich die
+// Kapitelnummern aendern.
+const NAV_CHAPTERS: { id: ViewportMode; label: string; index: string }[] = [
+  ...CONTENT_CHAPTERS,
+]
+  .sort((a, b) => a.index.localeCompare(b.index))
+  .map((c) => ({ id: c.id, label: c.label, index: c.index }));
 
 /**
  * Instrumententafel.
@@ -85,7 +89,7 @@ export function Hud() {
         aria-label="Kapitel"
         className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-5 lg:flex"
       >
-        {CHAPTERS.map((c) => {
+        {NAV_CHAPTERS.map((c) => {
           const active = c.id === mode;
           return (
             <button
