@@ -1,8 +1,12 @@
 # Flagship Portfolio — Structure · Signal · Code
 
 Interaktives Engineering-Portfolio an der Schnittstelle von Bauingenieurwesen,
-Tontechnik und Fullstack-Entwicklung. Ein 3D-Viewport erzählt alle drei
-Disziplinen über denselben Körper, gespeist aus einem echten Web-Audio-Graphen.
+Tontechnik und Fullstack-Entwicklung.
+
+Die Seite ist **scrollgetrieben**: eine einzige 3D-Szene liegt vollflächig
+hinter dem Inhalt und wechselt beim Scrollen zwischen drei Modellen, während
+der Scrollfortschritt die Kamera um die Szene fährt. Es gibt keine Umschalter
+und keine 3D-Kachel neben dem Text — der Hintergrund *ist* die Erzählung.
 
 ## Schnellstart
 
@@ -22,12 +26,28 @@ Läuft auf http://localhost:3100 (Port in `package.json` bzw. `.claude/launch.js
 | --- | --- |
 | Framework | Next.js 15 App Router, React 19, TypeScript, Turbopack |
 | Styling | Tailwind v4 (Design-Tokens in `@theme`, keine `tailwind.config.ts`) |
-| 3D | Three.js + React Three Fiber 9, `@react-three/postprocessing` (Bloom) |
+| 3D | Three.js + React Three Fiber 9, eigene GLSL-Shader (kein Postprocessing) |
 | Audio | Native Web Audio API — Oszillatoren, BiquadFilter, Delay-Bus, Analyser |
 | State | Zustand (zwei Stores), bewusst kein Context |
-| Backend | Supabase (Postgres + Realtime) für das Gästebuch |
+| Motion | Framer Motion — Split-Headings, Scroll-Reveals, Parallax, Marquee |
 
-## Die drei Viewport-Modi
+## Wie die Szene gesteuert wird
+
+`ScrollDriver` misst in einem einzigen rAF-Loop, wie nah die Mitte jedes
+Kapitels an der Bildschirmmitte liegt, und schreibt daraus Gewichte nach
+`lib/scene/state.ts`. Alle drei Modelle sind gleichzeitig montiert; jedes
+liest sein Gewicht in `useFrame` und blendet sich darüber ein oder aus. Während
+eines Übergangs sind zwei Modelle gleichzeitig halb sichtbar — der Wechsel
+liest sich als Umbau, nicht als Schnitt. Dieselben Gewichte mischen auch die
+Kamerastationen, damit Geometrie und Blickwinkel eine Bewegung sind.
+
+Der State ist bewusst ein mutierbares Modul-Objekt statt React-State: die
+Werte ändern sich in jedem Frame, und ein `setState` pro Frame würde den
+gesamten Komponentenbaum durchrendern. Dasselbe Prinzip an drei weiteren
+Stellen — Fortschrittsbalken, Scroll-Readout und die audio-reaktive
+UI-Beleuchtung schreiben direkt in CSS-Custom-Properties.
+
+## Die drei Modelle
 
 **Structure** — Ein zweilagiges Raumfachwerk, allseitig gelagert. Der Cursor
 bringt eine Einzellast auf; die Durchbiegung folgt einer Einflussfunktion
@@ -69,35 +89,31 @@ gesamten Baum durchrendern würde.
 `play audio`, `view signal`, `copy email` und Sprungzielen. Ausgaben landen in
 einer Ausgabeansicht innerhalb der Palette; `Escape` führt zurück zur Liste.
 
-## Gästebuch (Supabase)
+## Kein Postprocessing
 
-Ohne Credentials läuft die Seite normal weiter, das Gästebuch zeigt einen
-Offline-Zustand. Zum Aktivieren:
-
-1. `.env.local.example` nach `.env.local` kopieren und ausfüllen
-   (Supabase-Dashboard → Project Settings → API).
-2. `supabase/migrations/0001_guestbook.sql` im SQL-Editor ausführen.
-
-Der `anon`-Key ist bewusst öffentlich — abgesichert wird über Row Level
-Security: lesen und einfügen für alle, kein `update`/`delete`.
+Der Bloom-Pass aus `@react-three/postprocessing` ist bewusst entfernt: bei
+einem transparenten Canvas reicht der EffectComposer kein Alpha durch und legt
+seinen Halo als grauen Schleier über die gesamte Fläche. In einer kleinen
+Kachel fällt das nicht auf, vollflächig ruiniert es die Seite. Das Leuchten
+kommt stattdessen aus den Farben selbst — ungetonte Basismaterialien auf fast
+schwarzem Grund.
 
 ## Projektstruktur
 
 ```
 app/                 Routen, Root-Layout, globals.css (Design-System)
 components/
-  canvas/            Alles innerhalb von <Canvas> — importiert kein React-DOM
+  canvas/            Alles innerhalb von <Canvas> plus ScrollDriver
+  motion/            Reveal, SplitHeading, Scramble, Counter, Parallax, Marquee
   audio/             Mischpult, Fader, Analyzer, Ambient-Glow
   terminal/          Command Palette
-  guestbook/         Realtime-Feed und Formular
-  sections/          Hero, Disziplinen
-  layout/            TopBar
+  sections/          Hero, Manifest, ChapterSection, Capabilities, Closing
+  layout/            HUD, Reticle, Boot-Sequenz
 lib/
   audio/engine.ts    Der Web-Audio-Graph (Singleton)
-  store/             Zustand-Stores für Viewport-Modus und Audio
-  supabase/          Browser-Client mit Offline-Fallback
-content/             Texte, Stack, Resume — typisiert
-supabase/migrations/ SQL für das Gästebuch
+  scene/state.ts     Scrollfortschritt und Kapitelgewichte (kein React-State)
+  store/             Zustand-Stores für aktives Kapitel und Audio
+content/             Texte, Kapitel, Kennzahlen, Vita — typisiert
 ```
 
 Leitregel: `components/canvas/` ist eine Insel. Nichts darin importiert
@@ -111,8 +127,11 @@ stellt CSS-Animationen ab. Die Fader sind native `<input type="range">` mit
 vertikalem `writing-mode` — Tastatursteuerung und ARIA-Werte bleiben erhalten.
 Ein Skip-Link führt am 3D-Bereich vorbei.
 
-## Offen
+## Offen — muss von Marcel gefüllt werden
 
-- Component Playground (`/playground`) und Case Studies (`/work/[slug]`)
-- Supabase-Projekt anlegen und Migration ausführen
-- Kontaktadresse und Social-Links in `content/site.ts` sind Platzhalter
+- **`VITA` in `content/resume.ts`** ist ein Platzhalter: Jahreszahlen,
+  Hochschule und Stationen stehen dort wörtlich als „eintragen". Ich habe
+  bewusst keine Biografie erfunden.
+- **Kontaktadresse und Social-Links** in `content/site.ts` sind Platzhalter
+  (`mail@marcelfelder.dev` existiert nicht).
+- Case Studies (`/work/[slug]`) und Component Playground (`/playground`)

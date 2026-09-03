@@ -4,27 +4,26 @@ import { create } from "zustand";
 import type { ViewportMode } from "@/types";
 
 interface ViewportState {
+  /** Das Kapitel, in dem der Nutzer gerade steht. Nur fuer UI-Beschriftung. */
   mode: ViewportMode;
-  /** Node-Index, über dem der Cursor im Structure-Mode schwebt (-1 = keiner). */
-  hoveredNode: number;
+  /** Sprungziel, das der ScrollDriver anfaehrt (Command Palette, Nav). */
   setMode: (mode: ViewportMode) => void;
-  cycleMode: () => void;
-  setHoveredNode: (index: number) => void;
 }
 
-const ORDER: ViewportMode[] = ["structure", "signal", "code"];
-
 /**
- * Bewusst ein Store und kein Context: R3F rendert ausserhalb des React-Trees,
- * und useFrame darf pro Frame lesen, ohne ein Re-Render auszuloesen.
+ * Nur noch fuer alles, was ein Re-Render braucht: HUD-Label, Kapitelnavigation,
+ * Hinweistexte. Die Szene selbst liest ihre Gewichte pro Frame aus
+ * `sceneState` und laesst React dabei komplett aussen vor.
  */
-export const useViewportMode = create<ViewportState>((set, get) => ({
+export const useViewportMode = create<ViewportState>((set) => ({
   mode: "structure",
-  hoveredNode: -1,
-  setMode: (mode) => set({ mode, hoveredNode: -1 }),
-  cycleMode: () => {
-    const next = ORDER[(ORDER.indexOf(get().mode) + 1) % ORDER.length];
-    set({ mode: next, hoveredNode: -1 });
+  setMode: (mode) => {
+    set({ mode });
+    if (typeof document !== "undefined") {
+      // Der Hero traegt dieselbe Kennung wie Kapitel 01 - angesteuert wird
+      // das letzte Vorkommen, also der echte Kapitelabschnitt.
+      const els = document.querySelectorAll(`[data-chapter="${mode}"]`);
+      els[els.length - 1]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   },
-  setHoveredNode: (hoveredNode) => set({ hoveredNode }),
 }));

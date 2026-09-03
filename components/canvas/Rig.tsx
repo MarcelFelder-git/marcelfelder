@@ -1,54 +1,84 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { useViewportMode } from "@/lib/store/useViewportMode";
+import { sceneState } from "@/lib/scene/state";
 import type { ViewportMode } from "@/types";
 
 /**
  * Kamerafuehrung.
  *
- * Jeder Modus hat eine eigene Aufstellung - Fachwerk von schraeg oben wie ein
- * Isometrie-Plan, Spektrum flacher und frontaler, Code-Matrix fast auf
- * Augenhoehe. Der Wechsel wird interpoliert statt geschnitten: ein harter
- * Schnitt wuerde die raeumliche Orientierung zerstoeren.
+ * Jedes Kapitel hat eine eigene Aufstellung - Fachwerk von schraeg oben wie
+ * ein Isometrie-Plan, Spektrum flacher und frontaler, Code-Matrix fast auf
+ * Augenhoehe. Waehrend eines Uebergangs wird zwischen den Aufstellungen
+ * gemischt, gewichtet mit denselben Werten, die auch die Modelle ein- und
+ * ausblenden. Kamera und Geometrie bewegen sich dadurch als eine Bewegung.
+ *
+ * Zusaetzlich dreht der Scrollfortschritt die Kamera langsam um die Szene:
+ * Scrollen soll sich anfuehlen wie Fahren, nicht wie Umblaettern.
  */
 
 const STATIONS: Record<ViewportMode, THREE.Vector3> = {
-  structure: new THREE.Vector3(3.6, 3.1, 3.6),
-  signal: new THREE.Vector3(0.15, 2.5, 5.3),
-  code: new THREE.Vector3(2.4, 0.5, 4.3),
+  structure: new THREE.Vector3(5.0, 4.1, 5.0),
+  signal: new THREE.Vector3(0.2, 3.4, 6.8),
+  code: new THREE.Vector3(3.0, 0.6, 6.2),
 };
 
 const TARGETS: Record<ViewportMode, THREE.Vector3> = {
-  structure: new THREE.Vector3(0, -0.42, 0),
-  signal: new THREE.Vector3(0, 0.2, 0),
+  structure: new THREE.Vector3(0, -0.35, 0),
+  signal: new THREE.Vector3(0, 0.3, 0),
   code: new THREE.Vector3(0, 0, 0),
 };
 
+const MODES: ViewportMode[] = ["structure", "signal", "code"];
+
 export function Rig() {
-  const mode = useViewportMode((s) => s.mode);
   const { camera } = useThree();
 
-  const desired = useRef(new THREE.Vector3());
-  const lookAt = useRef(new THREE.Vector3());
+  const v = useMemo(
+    () => ({
+      station: new THREE.Vector3(),
+      target: new THREE.Vector3(),
+      lookAt: new THREE.Vector3(),
+    }),
+    [],
+  );
 
-  useFrame((state, delta) => {
-    const station = STATIONS[mode];
-    const target = TARGETS[mode];
+  useFrame((_, delta) => {
+    const { weights, pointer, progress } = sceneState;
 
-    // Mausparallaxe: dezent, sonst wirkt der Viewport nervoes.
-    const px = state.pointer.x * 0.55;
-    const py = state.pointer.y * 0.35;
+    let sum = 0;
+    v.station.set(0, 0, 0);
+    v.target.set(0, 0, 0);
 
-    desired.current.set(station.x + px, station.y + py, station.z);
+    for (const m of MODES) {
+      const w = weights[m];
+      if (w <= 0.001) continue;
+      sum += w;
+      v.station.addScaledVector(STATIONS[m], w);
+      v.target.addScaledVector(TARGETS[m], w);
+    }
+    if (sum <= 0.001) return;
+
+    v.station.divideScalar(sum);
+    v.target.divideScalar(sum);
+
+    // Langsame Umrundung ueber die gesamte Seitenlaenge.
+    const orbit = progress * 0.75;
+    const cos = Math.cos(orbit);
+    const sin = Math.sin(orbit);
+    const x = v.station.x * cos - v.station.z * sin;
+    const z = v.station.x * sin + v.station.z * cos;
+
+    // Mausparallaxe: dezent, sonst wirkt die Szene nervoes.
+    v.station.set(x + pointer.x * 0.7, v.station.y + pointer.y * 0.45, z);
 
     // Framerate-unabhaengige Daempfung statt fixem Lerp-Faktor.
-    const k = 1 - Math.pow(0.0016, delta);
-    camera.position.lerp(desired.current, k);
-    lookAt.current.lerp(target, k);
-    camera.lookAt(lookAt.current);
+    const k = 1 - Math.pow(0.0009, Math.min(delta, 0.1));
+    camera.position.lerp(v.station, k);
+    v.lookAt.lerp(v.target, k);
+    camera.lookAt(v.lookAt);
   });
 
   return null;

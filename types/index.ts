@@ -1,18 +1,21 @@
 export type ViewportMode = "structure" | "signal" | "code";
 
-export interface Discipline {
+export interface ChapterMetric {
+  label: string;
+  value: number;
+  suffix: string;
+}
+
+export interface Chapter {
   id: ViewportMode;
+  /** Zweistellige Kapitelnummer, als Outline-Type gesetzt. */
+  index: string;
   label: string;
   caption: string;
   headline: string;
   body: string;
-  metrics: { label: string; value: string }[];
-}
-
-export interface GuestbookEntry {
-  id: string;
-  name: string;
-  message: string;
-  role: string | null;
-  created_at: string;
+  /** Was die 3D-Szene in diesem Kapitel gerade tut. */
+  aside: string;
+  skills: string[];
+  metrics: ChapterMetric[];
 }

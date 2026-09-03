@@ -29,6 +29,19 @@
   100% { transform: translateY(100%); }
 }
 
+/* Der Inhalt des Laufbands ist verdoppelt - eine Verschiebung um -50%
+   bringt die zweite Kopie exakt an den Startpunkt der ersten. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes blink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0.15; }
+  100% { opacity: 1; }
+}
+
 @layer base {
   html {
     color-scheme: dark;

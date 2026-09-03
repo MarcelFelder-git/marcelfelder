@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { sceneState } from "@/lib/scene/state";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 
 /**
@@ -17,10 +18,10 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
  * kein Texture-Fetch, damit die Ebene auch auf schwachen GPUs frei laeuft.
  */
 
-const LAYERS = [-0.9, 0, 0.9]; // z-Positionen der drei Ebenen
+const LAYERS = [-1.25, 0, 1.25]; // z-Positionen der drei Ebenen
 const LINES = 20;
-const LINE_HEIGHT = 0.13;
-const TOKEN_HEIGHT = 0.055;
+const LINE_HEIGHT = 0.175;
+const TOKEN_HEIGHT = 0.072;
 
 const COL_IDLE = new THREE.Color("#243044");
 const COL_ACTIVE = new THREE.Color("#38bdf8");
@@ -58,12 +59,12 @@ function buildTokens(): Token[] {
     for (let line = 0; line < LINES; line++) {
       // Einrueckungstiefe wandert wie in echtem Code: rein, halten, raus.
       const depth = Math.floor(Math.abs(Math.sin(line * 0.55 + l) * 3));
-      let cursor = -1.5 + depth * 0.16;
+      let cursor = -2.0 + depth * 0.22;
       const count = 1 + Math.floor(rand() * 3);
 
       for (let t = 0; t < count; t++) {
-        const width = 0.12 + rand() * 0.5;
-        if (cursor + width > 1.5) break;
+        const width = 0.16 + rand() * 0.68;
+        if (cursor + width > 2.0) break;
         tokens.push({
           x: cursor + width / 2,
           y: (line - LINES / 2) * LINE_HEIGHT,
@@ -71,7 +72,7 @@ function buildTokens(): Token[] {
           width,
           accent: rand() > 0.78,
         });
-        cursor += width + 0.07;
+        cursor += width + 0.1;
       }
     }
   }
@@ -92,6 +93,7 @@ const FRAGMENT = /* glsl */ `
   uniform float uTime;
   uniform vec3 uColorA;
   uniform vec3 uColorB;
+  uniform float uOpacity;
 
   // Weiches Raster: Ableitung als Linienbreite, damit es nicht aliast.
   float grid(vec2 uv, float divisions) {
@@ -120,7 +122,7 @@ const FRAGMENT = /* glsl */ `
     vec2 d = abs(vUv - 0.5) * 2.0;
     float edge = 1.0 - smoothstep(0.55, 1.0, max(d.x, d.y));
 
-    gl_FragColor = vec4(col, alpha * edge);
+    gl_FragColor = vec4(col, alpha * edge * uOpacity);
     #include <colorspace_fragment>
   }
 `;
@@ -131,6 +133,7 @@ export function CodeMode() {
 
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const groupRef = useRef<THREE.Group>(null);
+  const spinRef = useRef<THREE.Group>(null);
 
   const scratch = useMemo(
     () => ({ dummy: new THREE.Object3D(), color: new THREE.Color() }),
@@ -156,17 +159,28 @@ export function CodeMode() {
           uTime: { value: 0 },
           uColorA: { value: new THREE.Color("#38bdf8") },
           uColorB: { value: new THREE.Color("#a855f7") },
+          uOpacity: { value: 1 },
         },
       }),
     [],
   );
 
   useFrame((state) => {
+    const weight = sceneState.weights.code;
+    const group = groupRef.current;
+    const mesh = meshRef.current;
+    if (!group || !mesh) return;
+
+    group.visible = weight > 0.01;
+    if (!group.visible) return;
+
+    const eased = weight * weight * (3 - 2 * weight);
+    group.scale.setScalar(0.76 + eased * 0.24);
+    group.position.y = (1 - eased) * -0.5;
+    shader.uniforms.uOpacity.value = eased;
+
     const t = state.clock.elapsedTime;
     shader.uniforms.uTime.value = reducedMotion ? 0 : t;
-
-    const mesh = meshRef.current;
-    if (!mesh) return;
 
     const { dummy, color } = scratch;
     const span = LINES * LINE_HEIGHT;
@@ -194,27 +208,29 @@ export function CodeMode() {
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
 
-    if (groupRef.current && !reducedMotion) {
+    if (spinRef.current && !reducedMotion) {
       // Minimale Eigenrotation, damit die Staffelung der Ebenen lesbar wird.
-      groupRef.current.rotation.y = Math.sin(t * 0.18) * 0.22;
+      spinRef.current.rotation.y = Math.sin(t * 0.18) * 0.24;
     }
+    (mesh.material as THREE.MeshBasicMaterial).opacity = eased;
   });
 
   return (
     <group ref={groupRef}>
+      <group ref={spinRef}>
       <instancedMesh
         ref={meshRef}
         args={[undefined, undefined, tokens.length]}
         frustumCulled={false}
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshBasicMaterial toneMapped={false} />
+        <meshBasicMaterial toneMapped={false} transparent />
       </instancedMesh>
 
       {/* Shader-Ebenen hinter jeder Token-Schicht */}
       {LAYERS.map((z) => (
         <mesh key={z} position={[0, 0, z - 0.06]} material={shader}>
-          <planeGeometry args={[3.6, 3.0]} />
+          <planeGeometry args={[4.8, 4.0]} />
         </mesh>
       ))}
 
@@ -226,7 +242,7 @@ export function CodeMode() {
         <lineSegments
           key={s}
           geometry={boxEdges}
-          scale={[s * 3.4, s * 2.8, s * 2.0]}
+          scale={[s * 4.5, s * 3.7, s * 2.8]}
         >
           <lineBasicMaterial
             color={i === 1 ? "#a855f7" : "#38bdf8"}
@@ -236,6 +252,7 @@ export function CodeMode() {
           />
         </lineSegments>
       ))}
+      </group>
     </group>
   );
 }

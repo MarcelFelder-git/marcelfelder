@@ -3,7 +3,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { useViewportMode } from "@/lib/store/useViewportMode";
+import { sceneState } from "@/lib/scene/state";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 
 /**
@@ -19,20 +19,22 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
  * eingefaerbt: Verkuerzung = Druck (cyan), Verlaengerung = Zug (violett).
  */
 
-const GRID = 7; // Knoten je Richtung in der Obergurtebene
-const SPAN = 3.4; // Stuetzweite in Weltkoordinaten
-const DEPTH = 0.62; // Fachwerkhoehe (Abstand Ober-/Untergurt)
-const AMPLITUDE = 0.55; // maximale Durchbiegung unter Einzellast
-const SIGMA = 0.9; // Wirkungsradius der Last
+const GRID = 8; // Knoten je Richtung in der Obergurtebene
+const SPAN = 4.6; // Stuetzweite in Weltkoordinaten
+const DEPTH = 0.8; // Fachwerkhoehe (Abstand Ober-/Untergurt)
+const AMPLITUDE = 0.75; // maximale Durchbiegung unter Einzellast
+const SIGMA = 1.15; // Wirkungsradius der Last
 
-const COL_NEUTRAL = new THREE.Color("#334155");
+const COL_NEUTRAL = new THREE.Color("#2a3a55");
 const COL_COMPRESSION = new THREE.Color("#38bdf8");
 const COL_TENSION = new THREE.Color("#a855f7");
 
+const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
 interface Lattice {
-  base: Float32Array; // Ruhelage der Knoten (x,y,z)
-  mask: Float32Array; // Auflager-Maske je Knoten, 0 = unverschieblich
-  edges: Uint16Array; // Stabliste als Knotenpaare
+  base: Float32Array;
+  mask: Float32Array;
+  edges: Uint16Array;
   restLengths: Float32Array;
   topCount: number;
   nodeCount: number;
@@ -41,14 +43,11 @@ interface Lattice {
 function buildLattice(): Lattice {
   const positions: number[] = [];
   const mask: number[] = [];
-
   const coord = (i: number) => (i / (GRID - 1) - 0.5) * SPAN;
 
-  // --- Obergurt: regelmaessiges Raster --------------------------------
   for (let i = 0; i < GRID; i++) {
     for (let j = 0; j < GRID; j++) {
       positions.push(coord(i), 0, coord(j));
-      // Randknoten sind Auflager -> Maske 0, nach innen weich ansteigend.
       const edgeDist = Math.min(i, j, GRID - 1 - i, GRID - 1 - j);
       const t = edgeDist / ((GRID - 1) / 2);
       mask.push(t * t * (3 - 2 * t)); // smoothstep
@@ -56,7 +55,6 @@ function buildLattice(): Lattice {
   }
   const topCount = positions.length / 3;
 
-  // --- Untergurt: um eine halbe Masche versetzt ------------------------
   const lower = (i: number) => ((i + 0.5) / (GRID - 1) - 0.5) * SPAN;
   for (let i = 0; i < GRID - 1; i++) {
     for (let j = 0; j < GRID - 1; j++) {
@@ -70,17 +68,14 @@ function buildLattice(): Lattice {
   const nodeCount = positions.length / 3;
   const top = (i: number, j: number) => i * GRID + j;
   const bot = (i: number, j: number) => topCount + i * (GRID - 1) + j;
-
   const edges: number[] = [];
 
-  // Obergurt-Staebe in beide Richtungen
   for (let i = 0; i < GRID; i++) {
     for (let j = 0; j < GRID; j++) {
       if (i < GRID - 1) edges.push(top(i, j), top(i + 1, j));
       if (j < GRID - 1) edges.push(top(i, j), top(i, j + 1));
     }
   }
-  // Untergurt-Staebe
   for (let i = 0; i < GRID - 1; i++) {
     for (let j = 0; j < GRID - 1; j++) {
       if (i < GRID - 2) edges.push(bot(i, j), bot(i + 1, j));
@@ -124,23 +119,23 @@ export function StructureMode() {
   const lattice = useMemo(buildLattice, []);
   const reducedMotion = usePrefersReducedMotion();
 
-  const hoveredNode = useViewportMode((s) => s.hoveredNode);
-  const setHoveredNode = useViewportMode((s) => s.setHoveredNode);
-
+  const groupRef = useRef<THREE.Group>(null);
   const linesRef = useRef<THREE.LineSegments>(null);
   const nodesRef = useRef<THREE.InstancedMesh>(null);
   const arrowRef = useRef<THREE.Group>(null);
 
-  // Arbeitspuffer - werden pro Frame mutiert, nie neu alloziert.
   const buffers = useMemo(() => {
     const { edges, nodeCount } = lattice;
     return {
-      current: new Float32Array(nodeCount), // aktuelle Durchbiegung je Knoten
+      current: new Float32Array(nodeCount),
       target: new Float32Array(nodeCount),
       linePos: new Float32Array(edges.length * 3),
       lineCol: new Float32Array(edges.length * 3),
       dummy: new THREE.Object3D(),
       color: new THREE.Color(),
+      ndc: new THREE.Vector2(),
+      hit: new THREE.Vector3(),
+      load: { index: -1, x: 0, z: 0 },
     };
   }, [lattice]);
 
@@ -152,33 +147,62 @@ export function StructureMode() {
   }, [buffers]);
 
   useFrame((state) => {
+    const weight = sceneState.weights.structure;
+    const group = groupRef.current;
+    if (!group) return;
+
+    // Unter der Sichtbarkeitsschwelle wird gar nicht erst gerechnet.
+    group.visible = weight > 0.01;
+    if (!group.visible) return;
+
+    const eased = weight * weight * (3 - 2 * weight);
+    group.scale.setScalar(0.78 + eased * 0.22);
+    group.position.y = (1 - eased) * -0.7;
+    group.rotation.y = (1 - eased) * 0.35;
+
     const { base, mask, edges, restLengths, nodeCount, topCount } = lattice;
-    const { current, target, linePos, lineCol, dummy, color } = buffers;
+    const { current, target, linePos, lineCol, dummy, color, ndc, hit, load } =
+      buffers;
     const t = state.clock.elapsedTime;
 
-    // --- 1. Zielverformung bestimmen ---------------------------------
-    const hasLoad = hoveredNode >= 0 && hoveredNode < topCount;
-    const lx = hasLoad ? base[hoveredNode * 3] : 0;
-    const lz = hasLoad ? base[hoveredNode * 3 + 2] : 0;
+    // --- 1. Lastpunkt aus dem Mauszeiger ------------------------------
+    // Kein Raycast auf die Knoten: die sind wenige Pixel gross, und der
+    // Canvas nimmt bewusst keine Pointer-Events entgegen (der Inhalt liegt
+    // darueber und muss klickbar bleiben). Stattdessen wird der Zeiger auf
+    // die Obergurtebene projiziert und der naechste Knoten gesucht.
+    load.index = -1;
+    if (!reducedMotion && weight > 0.35) {
+      ndc.set(sceneState.pointer.x, sceneState.pointer.y);
+      state.raycaster.setFromCamera(ndc, state.camera);
+      if (state.raycaster.ray.intersectPlane(GROUND, hit)) {
+        const i = Math.round((hit.x / SPAN + 0.5) * (GRID - 1));
+        const j = Math.round((hit.z / SPAN + 0.5) * (GRID - 1));
+        if (i >= 0 && i < GRID && j >= 0 && j < GRID) {
+          load.index = i * GRID + j;
+          load.x = base[load.index * 3];
+          load.z = base[load.index * 3 + 2];
+        }
+      }
+    }
+    const hasLoad = load.index >= 0 && load.index < topCount;
 
+    // --- 2. Zielverformung --------------------------------------------
     for (let n = 0; n < nodeCount; n++) {
       if (hasLoad) {
-        const dx = base[n * 3] - lx;
-        const dz = base[n * 3 + 2] - lz;
+        const dx = base[n * 3] - load.x;
+        const dz = base[n * 3 + 2] - load.z;
         const d2 = dx * dx + dz * dz;
         target[n] = -AMPLITUDE * Math.exp(-d2 / (SIGMA * SIGMA)) * mask[n];
       } else if (reducedMotion) {
         target[n] = 0;
       } else {
-        // Ruhezustand: eine langsam wandernde Welle, damit das Tragwerk lebt.
         const phase = base[n * 3] * 0.8 + base[n * 3 + 2] * 0.6;
-        target[n] = Math.sin(t * 0.55 + phase) * 0.045 * mask[n];
+        target[n] = Math.sin(t * 0.55 + phase) * 0.05 * mask[n];
       }
-      // Gedaempfte Annaeherung - kein Ueberschwingen.
       current[n] += (target[n] - current[n]) * 0.12;
     }
 
-    // --- 2. Staebe neu aufbauen und nach Dehnung einfaerben -----------
+    // --- 3. Staebe aufbauen und nach Dehnung faerben -------------------
     for (let e = 0; e < restLengths.length; e++) {
       const ia = edges[e * 2];
       const ib = edges[e * 2 + 1];
@@ -198,7 +222,6 @@ export function StructureMode() {
       linePos[o + 5] = bz;
 
       const len = Math.hypot(bx - ax, by - ay, bz - az);
-      // Dehnung eps = dL / L, auf einen sichtbaren Bereich skaliert.
       const strain = ((len - restLengths[e]) / restLengths[e]) * 26;
       const amount = Math.min(1, Math.abs(strain));
       color
@@ -217,9 +240,11 @@ export function StructureMode() {
       const geo = linesRef.current.geometry;
       geo.attributes.position.needsUpdate = true;
       geo.attributes.color.needsUpdate = true;
+      const mat = linesRef.current.material as THREE.LineBasicMaterial;
+      mat.opacity = eased * 0.9;
     }
 
-    // --- 3. Knotenpunkte setzen --------------------------------------
+    // --- 4. Knoten ----------------------------------------------------
     const mesh = nodesRef.current;
     if (mesh) {
       for (let n = 0; n < nodeCount; n++) {
@@ -228,32 +253,33 @@ export function StructureMode() {
           base[n * 3 + 1] + current[n],
           base[n * 3 + 2],
         );
-        const active = n === hoveredNode;
-        dummy.scale.setScalar(active ? 2.1 : 1);
+        const active = n === load.index;
+        dummy.scale.setScalar(active ? 2.4 : 1);
         dummy.updateMatrix();
         mesh.setMatrixAt(n, dummy.matrix);
         mesh.setColorAt(
           n,
-          color.set(active ? "#38bdf8" : mask[n] < 0.05 ? "#a855f7" : "#475569"),
+          color.set(active ? "#38bdf8" : mask[n] < 0.05 ? "#a855f7" : "#3f5170"),
         );
       }
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      (mesh.material as THREE.MeshBasicMaterial).opacity = eased;
     }
 
-    // --- 4. Lastpfeil ueber dem belasteten Knoten --------------------
+    // --- 5. Lastpfeil -------------------------------------------------
     if (arrowRef.current) {
       arrowRef.current.visible = hasLoad;
       if (hasLoad) {
-        arrowRef.current.position.set(lx, current[hoveredNode] + 0.62, lz);
+        arrowRef.current.position.set(load.x, current[load.index] + 0.75, load.z);
       }
     }
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       <lineSegments ref={linesRef} geometry={lineGeometry} frustumCulled={false}>
-        <lineBasicMaterial vertexColors transparent opacity={0.85} />
+        <lineBasicMaterial vertexColors transparent opacity={0.9} />
       </lineSegments>
 
       <instancedMesh
@@ -261,55 +287,21 @@ export function StructureMode() {
         args={[undefined, undefined, lattice.nodeCount]}
         frustumCulled={false}
       >
-        <octahedronGeometry args={[0.05, 0]} />
-        <meshBasicMaterial toneMapped={false} />
+        <octahedronGeometry args={[0.055, 0]} />
+        <meshBasicMaterial toneMapped={false} transparent />
       </instancedMesh>
-
-      {/*
-        Pickebene statt Treffer auf den Knoten selbst: ein Knoten mit 5 cm
-        Radius ist auf dem Bildschirm ein paar Pixel gross, den trifft
-        niemand absichtlich. Stattdessen faengt eine unsichtbare Ebene den
-        Cursor und rechnet den naechstgelegenen Obergurtknoten aus - die
-        Last landet immer dort, wo der Nutzer offensichtlich hinzeigt.
-      */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        onPointerMove={(e) => {
-          e.stopPropagation();
-          const i = Math.round((e.point.x / SPAN + 0.5) * (GRID - 1));
-          const j = Math.round((e.point.z / SPAN + 0.5) * (GRID - 1));
-          if (i < 0 || i > GRID - 1 || j < 0 || j > GRID - 1) return;
-          const id = i * GRID + j;
-          if (id !== hoveredNode) setHoveredNode(id);
-        }}
-        onPointerOut={() => setHoveredNode(-1)}
-      >
-        <planeGeometry args={[SPAN * 1.05, SPAN * 1.05]} />
-        <meshBasicMaterial
-          transparent
-          opacity={0}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
 
       {/* Lastpfeil: Schaft + Spitze, nach unten wie im Statik-Schema */}
       <group ref={arrowRef} visible={false}>
-        <mesh position={[0, 0.16, 0]}>
-          <cylinderGeometry args={[0.008, 0.008, 0.32, 6]} />
+        <mesh position={[0, 0.2, 0]}>
+          <cylinderGeometry args={[0.009, 0.009, 0.4, 6]} />
           <meshBasicMaterial color="#38bdf8" toneMapped={false} />
         </mesh>
-        <mesh position={[0, -0.04, 0]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.05, 0.14, 8]} />
+        <mesh position={[0, -0.05, 0]} rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.06, 0.17, 8]} />
           <meshBasicMaterial color="#38bdf8" toneMapped={false} />
         </mesh>
       </group>
-
-      {/* Auflagerebene als Referenz - wie die Grundrisslinie im Plan */}
-      <gridHelper
-        args={[SPAN * 1.7, 12, "#1b2437", "#0f172a"]}
-        position={[0, -DEPTH - 0.55, 0]}
-      />
     </group>
   );
 }

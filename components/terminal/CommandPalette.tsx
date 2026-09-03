@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useViewportMode } from "@/lib/store/useViewportMode";
 import { useAudioStore } from "@/lib/store/useAudioStore";
-import { RESUME_LINES, STACK } from "@/content/resume";
+import { CHAPTERS, RESUME_LINES, STACK_MARQUEE } from "@/content/resume";
 import { CONTACT_EMAIL } from "@/content/site";
 
 /**
@@ -116,11 +116,11 @@ const COMMANDS: Cmd[] = [
     group: "System",
     Icon: Layers,
     run: (c) =>
-      c.print(
-        STACK.flatMap((s) => [
-          `${s.group.toUpperCase().padEnd(14)} ${s.items.join(" · ")}`,
-        ]),
-      ),
+      c.print([
+        "STACK",
+        "",
+        ...STACK_MARQUEE.map((item) => `  ${item}`),
+      ]),
   },
   {
     id: "copy email",
@@ -134,15 +134,30 @@ const COMMANDS: Cmd[] = [
     },
   },
   {
-    id: "goto guestbook",
-    label: "goto guestbook",
-    hint: "Zum Gästebuch springen",
+    id: "cat chapters",
+    label: "cat chapters",
+    hint: "Kapitelübersicht",
+    group: "System",
+    Icon: MessageSquare,
+    run: (c) =>
+      c.print([
+        "CHAPTERS",
+        "",
+        ...CHAPTERS.map(
+          (ch) => `  ${ch.index}  ${ch.label.padEnd(10)} ${ch.caption}`,
+        ),
+      ]),
+  },
+  {
+    id: "goto contact",
+    label: "goto contact",
+    hint: "Zum Kontakt springen",
     group: "Navigation",
     Icon: MessageSquare,
     run: (c) => {
       document
-        .getElementById("guestbook")
-        ?.scrollIntoView({ behavior: "smooth" });
+        .getElementById("outro-heading")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
       c.close();
     },
   },

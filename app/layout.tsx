@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { SceneLayer } from "@/components/canvas/SceneLayer";
 import { CommandPalette } from "@/components/terminal/CommandPalette";
 import { AmbientGlow } from "@/components/audio/AmbientGlow";
 import { ControlBar } from "@/components/audio/ControlBar";
+import { BootSequence } from "@/components/layout/BootSequence";
+import { Hud, Reticle } from "@/components/layout/Hud";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,7 +34,7 @@ export const metadata: Metadata = {
     siteName: "Marcel Felder",
     title: "Marcel Felder — Structural, Signal & Software Engineering",
     description:
-      "Ein 3D- und Audio-Showcase: Tragwerk, Frequenzspektrum und Komponenten-Matrix in einem Viewport.",
+      "Ein scrollgetriebenes 3D- und Audio-Showcase: Tragwerk, Frequenzspektrum und Komponenten-Matrix in einer Szene.",
   },
 };
 
@@ -46,34 +49,39 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${inter.variable} ${mono.variable}`}>
       <body className="min-h-dvh bg-blueprint-void font-sans antialiased">
-        {/* Skip-Link: die Seite ist 3D-lastig, Tastaturnutzer brauchen den Ausweg */}
+        {/* Skip-Link: die Seite ist 3D- und animationslastig, Tastaturnutzer
+            brauchen den Ausweg */}
         <a
-          href="#main"
+          href="#top"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-signal-cyan focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-blueprint-void"
         >
           Zum Inhalt springen
         </a>
 
-        {/* Ambient-Layer: Gitter + audio-reaktiver Lichtkegel, klick-transparent */}
+        {/* Ambient: Raster und audio-reaktiver Lichtkegel, ganz hinten */}
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-          <div className="absolute inset-0 blueprint-grid opacity-40" />
+          <div className="absolute inset-0 blueprint-grid opacity-30" />
           <div
             className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(58rem 38rem at 50% -8%, rgb(var(--audio-glow, 56 189 248) / calc(0.10 + var(--audio-level, 0) * 0.22)), transparent 70%)",
+                "radial-gradient(58rem 38rem at 50% 0%, rgb(var(--audio-glow, 56 189 248) / calc(0.08 + var(--audio-level, 0) * 0.22)), transparent 70%)",
             }}
           />
-          {/* Vignette bewusst weich: dieser Layer ist fixed, ein harter
-              Abfall wuerde das Raster auf jeder Scrollposition ab der
-              halben Viewporthoehe komplett ausloeschen. */}
-          <div className="absolute inset-0 bg-[radial-gradient(145%_120%_at_50%_0%,transparent_45%,rgba(5,7,13,0.55)_100%)]" />
         </div>
 
+        {/* Die 3D-Szene liegt hinter dem gesamten Inhalt */}
+        <SceneLayer />
+
         <AmbientGlow />
-        {children}
+        <Hud />
+        <Reticle />
+
+        <div className="relative z-10">{children}</div>
+
         <ControlBar />
         <CommandPalette />
+        <BootSequence />
       </body>
     </html>
   );

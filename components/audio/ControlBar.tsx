@@ -22,9 +22,9 @@ export function ControlBar() {
   const toggle = useAudioStore((s) => s.toggle);
 
   return (
-    // Auf breiten Schirmen nach rechts gedockt: mittig wuerde die Leiste
-    // ausgerechnet die Hinweiszeile im Viewport verdecken.
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-4 lg:justify-end lg:px-6">
+    // Nach rechts gedockt, sobald Platz da ist: mittig verdeckt die Leiste
+    // ausgerechnet die Hinweiszeile am unteren Rand des Heros.
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-4 sm:justify-end sm:px-6">
       <motion.div
         layout
         transition={{ type: "spring", stiffness: 320, damping: 34 }}
