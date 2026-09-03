@@ -1,26 +1,206 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Substrat – kein reines Schwarz, sondern Tiefsee-Navy */
+  --color-blueprint-void: #05070d;
+  --color-blueprint-deep: #080c16;
+  --color-blueprint-panel: #0d121f;
+  --color-blueprint-line: #1b2437;
+
+  /* Akzente */
+  --color-signal-cyan: #38bdf8;
+  --color-signal-purple: #a855f7;
+
+  /* Typografie-Hierarchie */
+  --color-ink-primary: #e2e8f0;
+  --color-ink-muted: #7d8ba3;
+  --color-ink-faint: #46536b;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-stack), ui-monospace, monospace;
+
+  --radius-panel: 0.75rem;
+
+  --animate-scan: scan 7s linear infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-blueprint-void);
+    color: var(--color-ink-primary);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Fokus sichtbar halten – Recruiter tabben durch die Seite */
+  :focus-visible {
+    outline: 2px solid var(--color-signal-cyan);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-signal-cyan) 30%, transparent);
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--color-blueprint-void); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-blueprint-line);
+    border-radius: 99px;
+    border: 3px solid var(--color-blueprint-void);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-faint); }
+}
+
+@layer utilities {
+  /* Das CAD-Millimeterpapier: zwei überlagerte Gitter, fein + grob */
+  .blueprint-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--color-signal-cyan) 6%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--color-signal-cyan) 6%, transparent) 1px, transparent 1px),
+      linear-gradient(to right, color-mix(in oklab, var(--color-signal-cyan) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--color-signal-cyan) 12%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  }
+
+  /* Glassmorphism: Blur + Innenkante statt dickem Rand */
+  .glass-panel {
+    background: color-mix(in oklab, var(--color-blueprint-panel) 72%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid color-mix(in oklab, var(--color-signal-cyan) 10%, transparent);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklab, white 6%, transparent),
+      0 24px 60px -24px rgb(0 0 0 / 0.8);
+  }
+
+  .text-gradient-signal {
+    background: linear-gradient(100deg, var(--color-signal-cyan), var(--color-signal-purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Technische Kleinschrift – Achsenbeschriftung, Statuszeilen, Labels */
+  .label-tech {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+
+  /* Eckmarken wie auf einem technischen Plan */
+  .corner-ticks::before,
+  .corner-ticks::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: color-mix(in oklab, var(--color-signal-cyan) 45%, transparent);
+    pointer-events: none;
+  }
+  .corner-ticks::before {
+    top: 10px; left: 10px;
+    border-top: 1px solid; border-left: 1px solid;
+  }
+  .corner-ticks::after {
+    bottom: 10px; right: 10px;
+    border-bottom: 1px solid; border-right: 1px solid;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Mischpult-Fader                                                      */
+/* Vertikale Range-Inputs sind seit Chrome 124 / Firefox 129 nativ      */
+/* ueber writing-mode moeglich - kein Rotations-Hack, kein Verlust der  */
+/* Tastatursteuerung.                                                   */
+/* ------------------------------------------------------------------ */
+.fader-input {
+  -webkit-appearance: none;
+  appearance: none;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 24px;
+  height: 100%;
+  background: transparent;
+  cursor: ns-resize;
+}
+
+.fader-input::-webkit-slider-runnable-track {
+  width: 5px;
+  border-radius: 99px;
+  background: linear-gradient(
+    to top,
+    var(--color-signal-cyan) var(--fill, 0%),
+    var(--color-blueprint-line) var(--fill, 0%)
+  );
+}
+
+.fader-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 9px;
+  margin-left: -8.5px;
+  border-radius: 2px;
+  background: linear-gradient(#f1f5f9, #94a3b8);
+  border: 1px solid #05070d;
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.6),
+    0 0 10px rgb(var(--audio-glow, 56 189 248) / 0.45);
+}
+
+.fader-input::-moz-range-track {
+  width: 5px;
+  border-radius: 99px;
+  background: var(--color-blueprint-line);
+}
+
+.fader-input::-moz-range-progress {
+  width: 5px;
+  border-radius: 99px;
+  background: var(--color-signal-cyan);
+}
+
+.fader-input::-moz-range-thumb {
+  width: 22px;
+  height: 9px;
+  border-radius: 2px;
+  background: linear-gradient(#f1f5f9, #94a3b8);
+  border: 1px solid #05070d;
+}
+
+/* ------------------------------------------------------------------ */
+/* Glass-Blur bewusst AUSSERHALB von @layer utilities.                  */
+/* Innerhalb des Layers kam die backdrop-filter-Deklaration nicht am    */
+/* Element an (Hintergrund und Schatten aus derselben Regel schon) -    */
+/* ungeschichtete Regeln gewinnen und sind hier die verlaessliche       */
+/* Variante. Ohne den Blur ist es kein Glassmorphism, sondern nur eine  */
+/* halbtransparente Box.                                                */
+/* ------------------------------------------------------------------ */
+.glass-panel {
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
 }
