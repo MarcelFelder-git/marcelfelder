@@ -95,7 +95,7 @@ export function BootSequence() {
                   i === LINES.length - 1 ? "text-accent" : "text-faint"
                 }
               >
-                <span className="text-faint/50">
+                <span className="text-faint">
                   [{String(i + 1).padStart(2, "0")}]
                 </span>{" "}
                 {line}

@@ -81,7 +81,7 @@ export function Hero() {
           <span className="text-faint">
             /{" "}
             {String(role + 1).padStart(2, "0")}
-            <span className="text-faint/60">
+            <span className="text-faint">
               _{String(ROLES.length).padStart(2, "0")}
             </span>
           </span>
