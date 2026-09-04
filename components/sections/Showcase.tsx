@@ -10,7 +10,7 @@ import { GlitchText } from "@/components/motion/GlitchText";
 import { LivePreview } from "@/components/projects/LivePreview";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { sceneState } from "@/lib/scene/state";
-import { nearestStation, stationNearness } from "@/lib/scene/tunnel";
+import { activeStation, stationNearness } from "@/lib/scene/tunnel";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,7 @@ export function Showcase() {
       <header className="relative px-6 py-[12vh] sm:px-10 lg:px-16">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(8,9,14,0.95)_30%,rgba(8,9,14,0.95))]"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),0.95)_30%,rgba(var(--ground-rgb),0.95))]"
         />
         <div className="flex items-baseline justify-between gap-4">
           <p className="meta-accent">Projekte</p>
@@ -104,7 +104,7 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
       // fuehrt. Vorher stand hier eine aus Fahrtweg und Stationsabstand
       // abgeleitete Naeherung samt Korrekturfaktor; die stimmte nur fuer
       // genau eine Projektanzahl.
-      const index = nearestStation(p);
+      const index = activeStation(p);
       setStation((prev) => (prev === index ? prev : index));
 
       // Auf Hundertstel gerundet: sonst setzt jeder Frame neuen State und
@@ -144,7 +144,7 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
         <div className="relative w-full max-w-lg">
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 bg-[radial-gradient(70%_70%_at_30%_60%,rgba(8,9,14,0.95),transparent_75%)]"
+            className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 bg-[radial-gradient(70%_70%_at_30%_60%,rgba(var(--ground-rgb),0.95),transparent_75%)]"
           />
 
           {/* Ankunftsanzeige: die Linie faerbt sich, waehrend man auf die

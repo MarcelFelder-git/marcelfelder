@@ -80,6 +80,12 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+
+    /* Grundton der Szene als Komponenten, damit die Textkaesten darueber
+       ihn mit eigener Deckkraft benutzen koennen. ScrollDriver
+       ueberschreibt den Wert je nach Abschnitt; dieser hier gilt fuer den
+       ersten Frame und fuer den Fall, dass kein JavaScript laeuft. */
+    --ground-rgb: 8, 9, 14;
   }
 
   body {

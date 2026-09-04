@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useMemo, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import {
   EffectComposer,
@@ -16,6 +16,8 @@ import { SignalMode } from "./modes/SignalMode";
 import { CodeMode } from "./modes/CodeMode";
 import { TunnelMode } from "./modes/TunnelMode";
 import { HeroMode } from "./modes/HeroMode";
+import { sceneState } from "@/lib/scene/state";
+import { GROUND, RIM, blend } from "@/lib/scene/palette";
 
 /**
  * Die Szene liegt vollflaechig HINTER der Seite, nicht in einer Kachel
@@ -53,6 +55,68 @@ import { HeroMode } from "./modes/HeroMode";
  */
 const CHROMATIC_OFFSET = new THREE.Vector2(0.0006, 0.0004);
 
+/**
+ * Farbklima der Szene, gemischt aus denselben Gewichten wie Kamera und
+ * Modelle.
+ *
+ * Grundton und Nebel bekommen denselben Wert - waeren sie verschieden,
+ * loeste sich die Geometrie in der Ferne in eine andere Farbe auf als der
+ * Grund dahinter, und man saehe einen Horizont, wo keiner ist.
+ *
+ * Das Fuehrungslicht bleibt weiss. Nur das Gegenlicht faerbt sich: es ist
+ * das, was den Koerpern ihre Kante gibt, und genau dort faellt ein
+ * Farbwechsel auf, ohne die Materialien umzufaerben.
+ */
+function SceneGrade() {
+  const scene = useThree((s) => s.scene);
+  const rimRef = useRef<THREE.DirectionalLight>(null);
+
+  const v = useMemo(
+    () => ({
+      ground: [8, 9, 14] as [number, number, number],
+      rim: [56, 189, 248] as [number, number, number],
+    }),
+    [],
+  );
+
+  useFrame(() => {
+    const { weights } = sceneState;
+
+    blend(GROUND, weights, v.ground);
+    const background = scene.background as THREE.Color | null;
+    if (background) {
+      // setRGB rechnet aus dem angegebenen Raum in den Arbeitsraum um;
+      // die Tabelle steht in sRGB, also muss das hier auch dranstehen.
+      background.setRGB(
+        v.ground[0] / 255,
+        v.ground[1] / 255,
+        v.ground[2] / 255,
+        THREE.SRGBColorSpace,
+      );
+      if (scene.fog) scene.fog.color.copy(background);
+    }
+
+    blend(RIM, weights, v.rim);
+    if (rimRef.current) {
+      rimRef.current.color.setRGB(
+        v.rim[0] / 255,
+        v.rim[1] / 255,
+        v.rim[2] / 255,
+        THREE.SRGBColorSpace,
+      );
+    }
+  });
+
+  return (
+    <directionalLight
+      ref={rimRef}
+      position={[-5, -2, -4]}
+      intensity={0.6}
+      color="#38bdf8"
+    />
+  );
+}
+
 export default function BackgroundScene() {
   return (
     <Canvas
@@ -77,9 +141,10 @@ export default function BackgroundScene() {
       <Suspense fallback={null}>
         {/* Grundhelligkeit, damit unbeleuchtete Seiten nicht absaufen */}
         <ambientLight intensity={0.35} />
-        {/* Fuehrungslicht von schraeg oben, Gegenlicht in der Akzentfarbe */}
+        {/* Fuehrungslicht von schraeg oben; das Gegenlicht steckt in
+            SceneGrade, weil es mit dem Abschnitt die Farbe wechselt. */}
         <directionalLight position={[4, 6, 3]} intensity={1.1} />
-        <directionalLight position={[-5, -2, -4]} intensity={0.6} color="#38bdf8" />
+        <SceneGrade />
 
         <Environment resolution={256}>
           {/* Ein Studio aus drei Leuchtflaechen: gross und weich von oben,

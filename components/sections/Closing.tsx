@@ -29,7 +29,7 @@ export function Vita() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(65%_60%_at_35%_50%,rgba(8,9,14,0.94),transparent_80%)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(65%_60%_at_35%_50%,rgba(var(--ground-rgb),0.94),transparent_80%)]"
       />
 
       <p className="meta">Werdegang</p>
@@ -87,7 +87,7 @@ export function Outro() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(8,9,14,0.96)_30%)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),0.96)_30%)]"
       />
 
       <p className="meta">Kontakt</p>

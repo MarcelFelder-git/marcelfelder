@@ -54,36 +54,66 @@ export function tunnelCameraZ(progress: number) {
 }
 
 /**
+ * Wie weit eine Station voraus noch zaehlt, und wie schnell sie hinter
+ * einem verfaellt. Bewusst sehr unterschiedlich, siehe unten.
+ */
+const REACH_AHEAD = 30;
+const REACH_BEHIND = 9;
+
+/**
  * Wie "angekommen" man an einer Station ist, 0..1.
  *
  * Wird an vier Stellen gebraucht — Tafelhelligkeit, Lichtfleck, das
  * wandernde Licht im Korridor und die Anzeige im DOM. Deshalb hier einmal
  * definiert statt viermal mit leicht anderen Schwellen nachgebaut.
+ *
+ * ## Warum das Fenster nicht symmetrisch ist
+ *
+ * Vorher zaehlte nur der Abstand, egal ob die Tafel vor oder hinter einem
+ * lag. Damit war eine Tafel, an der man gerade vorbeigefahren ist, genauso
+ * "nah" wie eine gleich weit entfernte voraus — sie blieb hell, ihr Bild
+ * wechselte weiter, und die naechste blieb dunkel, bis man die Haelfte des
+ * Weges hinter sich hatte.
+ *
+ * Fahren ist aber gerichtet. Voraus reicht der Einfluss deshalb weit (eine
+ * Tafel wird interessant, lange bevor man an ihr ist), hinter einem faellt
+ * er schnell ab (was vorbei ist, ist vorbei). Genau das laesst die naechste
+ * Tafel uebernehmen, sobald man die letzte passiert hat.
  */
 export function stationNearness(progress: number, index: number) {
-  const distance = Math.abs(tunnelCameraZ(progress) - stationZ(index));
-  return Math.max(0, 1 - distance / 22);
+  // > 0: die Tafel liegt noch voraus. < 0: schon passiert.
+  const gap = tunnelCameraZ(progress) - stationZ(index);
+  return gap >= 0
+    ? Math.max(0, 1 - gap / REACH_AHEAD)
+    : Math.max(0, 1 + gap / REACH_BEHIND);
 }
 
 /**
- * Die Station, an der man gerade steht.
+ * Wie weit vor einer Tafel die naechste uebernimmt.
  *
- * Vorher rechnete das Overlay das aus dem Fortschritt mal Anzahl mal
- * einem Korrekturfaktor 1.04 — eine Zahl, die zu genau einer Kombination
- * aus Fahrtweg und Stationsabstand passte und bei jeder Aenderung
- * daneben lag. Hier gewinnt schlicht die naechste Station; das stimmt
- * per Definition immer.
+ * Zwei Einheiten Vorlauf: die Umschaltung faellt damit genau in den
+ * Moment, in dem die Tafel seitlich aus dem Bild laeuft. Genau dann steht
+ * schon die naechste im Blick, und der Text soll ueber sie sprechen.
  */
-export function nearestStation(progress: number) {
+const HANDOVER_LEAD = 2;
+
+/**
+ * Die Station, ueber die gerade gesprochen wird.
+ *
+ * Nicht die naechstgelegene, sondern die naechste, die noch vor einem
+ * liegt. Der Unterschied ist der ganze Punkt: bei "naechstgelegen"
+ * wechselt der Text erst auf halber Strecke zwischen zwei Tafeln, also
+ * lange nachdem man die eine passiert hat und waehrend die andere schon
+ * gross im Bild steht. Man liest dann ueber etwas, das hinter einem
+ * haengt.
+ *
+ * Davor stand hier eine Naeherung aus Fortschritt mal Anzahl mal
+ * Korrekturfaktor 1.04, die nur zu genau einer Projektanzahl passte.
+ */
+export function activeStation(progress: number) {
   const z = tunnelCameraZ(progress);
-  let best = 0;
-  let bestDistance = Infinity;
   for (let i = 0; i < PROJECTS.length; i++) {
-    const distance = Math.abs(z - stationZ(i));
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = i;
-    }
+    if (z > stationZ(i) + HANDOVER_LEAD) return i;
   }
-  return best;
+  return PROJECTS.length - 1;
 }

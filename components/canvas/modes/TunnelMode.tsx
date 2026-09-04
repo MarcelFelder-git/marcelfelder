@@ -12,7 +12,7 @@ import {
   RING_COUNT,
   RING_SPACING,
   TUNNEL_LENGTH,
-  nearestStation,
+  activeStation,
   stationNearness,
   stationZ,
 } from "@/lib/scene/tunnel";
@@ -275,7 +275,7 @@ export function TunnelMode() {
     const lamp = lampRef.current;
     if (lamp) {
       const progress = sceneState.tunnelProgress;
-      const index = nearestStation(progress);
+      const index = activeStation(progress);
       const nearness = stationNearness(progress, index);
       const side = index % 2 === 0 ? -1 : 1;
       // Gegenueber der Tafel und ein Stueck hinter ihr.

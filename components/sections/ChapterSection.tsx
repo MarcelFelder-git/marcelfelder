@@ -43,8 +43,8 @@ export function ChapterSection({
             className={cn(
               "pointer-events-none absolute -inset-x-16 -inset-y-20 -z-10",
               side === "left"
-                ? "bg-[linear-gradient(100deg,rgba(8,9,14,0.97)_0%,rgba(8,9,14,0.94)_55%,rgba(8,9,14,0.4)_82%,transparent_100%)]"
-                : "bg-[linear-gradient(260deg,rgba(8,9,14,0.97)_0%,rgba(8,9,14,0.94)_55%,rgba(8,9,14,0.4)_82%,transparent_100%)]",
+                ? "bg-[linear-gradient(100deg,rgba(var(--ground-rgb),0.97)_0%,rgba(var(--ground-rgb),0.94)_55%,rgba(var(--ground-rgb),0.4)_82%,transparent_100%)]"
+                : "bg-[linear-gradient(260deg,rgba(var(--ground-rgb),0.97)_0%,rgba(var(--ground-rgb),0.94)_55%,rgba(var(--ground-rgb),0.4)_82%,transparent_100%)]",
             )}
           />
 

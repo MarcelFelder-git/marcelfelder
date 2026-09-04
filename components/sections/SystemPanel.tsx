@@ -18,7 +18,7 @@ export function SystemPanel() {
     <section className="relative py-[14vh]" aria-labelledby="system-heading">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(8,9,14,0.94)_16%,rgba(8,9,14,0.94)_84%,transparent)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),0.94)_16%,rgba(var(--ground-rgb),0.94)_84%,transparent)]"
       />
 
       <div className="px-6 sm:px-10 lg:px-16">

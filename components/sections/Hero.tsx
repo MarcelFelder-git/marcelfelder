@@ -44,7 +44,7 @@ export function Hero() {
             stehen soll. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -inset-x-24 -inset-y-28 -z-10 bg-[linear-gradient(102deg,rgba(8,9,14,0.97)_0%,rgba(8,9,14,0.94)_42%,rgba(8,9,14,0.55)_72%,transparent_100%)]"
+          className="pointer-events-none absolute -inset-x-24 -inset-y-28 -z-10 bg-[linear-gradient(102deg,rgba(var(--ground-rgb),0.97)_0%,rgba(var(--ground-rgb),0.94)_42%,rgba(var(--ground-rgb),0.55)_72%,transparent_100%)]"
         />
 
         <motion.div

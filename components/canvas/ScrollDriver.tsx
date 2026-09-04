@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { SCENE_KEYS, damp, sceneState, type SceneKey } from "@/lib/scene/state";
+import { GROUND, blend } from "@/lib/scene/palette";
 import { useViewportMode } from "@/lib/store/useViewportMode";
 import type { ViewportMode } from "@/types";
 
@@ -33,6 +34,9 @@ export function ScrollDriver() {
     let announced: ViewportMode = "structure";
 
     const target = { x: 0, y: 0 };
+    // Wiederverwendet statt pro Frame neu angelegt.
+    const ground: [number, number, number] = [8, 9, 14];
+    let lastGround = "";
     const onPointer = (e: PointerEvent) => {
       target.x = (e.clientX / window.innerWidth) * 2 - 1;
       target.y = -((e.clientY / window.innerHeight) * 2 - 1);
@@ -158,6 +162,21 @@ export function ScrollDriver() {
       const fade =
         1 - Math.min(1, Math.max(0, (sceneState.progress - 0.9) / 0.1)) * 0.8;
       doc.style.setProperty("--scene-opacity", (0.78 * fade).toFixed(3));
+
+      // Grundton der aktuellen Mischung ans CSS weitergeben. Die
+      // Textkaesten legen sich als fast deckende Flaechen ueber die Szene;
+      // blieben sie in einer festen Farbe stehen, waehrend der Raum
+      // dahinter sein Klima wechselt, saehe man ihre Kanten als Rechtecke.
+      //
+      // Nur schreiben, wenn sich der gerundete Wert geaendert hat: eine
+      // Custom Property zu setzen macht das gesamte Dokument ungueltig,
+      // und das 60-mal pro Sekunde fuer denselben Wert ist teuer.
+      blend(GROUND, sceneState.weights, ground);
+      const css = `${Math.round(ground[0])}, ${Math.round(ground[1])}, ${Math.round(ground[2])}`;
+      if (css !== lastGround) {
+        lastGround = css;
+        doc.style.setProperty("--ground-rgb", css);
+      }
 
       frame = requestAnimationFrame(tick);
     };
