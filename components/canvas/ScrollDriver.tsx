@@ -37,6 +37,19 @@ export function ScrollDriver() {
       const max = doc.scrollHeight - vh;
       sceneState.progress = max > 0 ? window.scrollY / max : 0;
 
+      // --- Systemgraph im Hero --------------------------------------
+      // Voll da, solange der Hero die Buehne hat; ausgeblendet, sobald er
+      // zur Haelfte hinausgescrollt ist.
+      const heroEl = document.querySelector<HTMLElement>("[data-hero]");
+      if (heroEl) {
+        const r = heroEl.getBoundingClientRect();
+        const gone = Math.min(1, Math.max(0, -r.top / (r.height * 0.55)));
+        sceneState.hero.active = 1 - gone;
+      } else {
+        sceneState.hero.active = 0;
+      }
+      const heroActive = sceneState.hero.active > 0.5;
+
       // --- Projekttunnel --------------------------------------------
       // Zuerst, weil er die Kapitel verdraengt: waehrend der Fahrt durch
       // den Korridor darf kein Kapitelmodell mehr im Bild stehen.
@@ -82,9 +95,9 @@ export function ScrollDriver() {
           const distance = Math.abs(centre - vh / 2) / (vh * 0.7);
           raw = Math.max(raw, 1 - distance);
         }
-        // Im Tunnel werden alle Kapitel auf null gezogen - er ersetzt sie,
-        // statt sich mit ihnen zu ueberlagern.
-        const w = tunnelActive ? 0 : Math.max(0, raw);
+        // Im Tunnel und im Hero werden alle Kapitel auf null gezogen -
+        // beide ersetzen sie, statt sich mit ihnen zu ueberlagern.
+        const w = tunnelActive || heroActive ? 0 : Math.max(0, raw);
         sceneState.weights[id] = w;
         sum += w;
 
@@ -97,7 +110,9 @@ export function ScrollDriver() {
       // Ausserhalb aller Kapitel (Intro, Outro) haelt das naechstgelegene
       // Modell die Szene - ein leerer Hintergrund waere ein Loch. Im
       // Tunnel gilt das nicht, dort ist der Korridor der Inhalt.
-      if (sum < 0.05 && !tunnelActive) sceneState.weights[best] = 1;
+      if (sum < 0.05 && !tunnelActive && !heroActive) {
+        sceneState.weights[best] = 1;
+      }
 
       const matches = document.querySelectorAll<HTMLElement>(
         `[data-chapter="${best}"]`,

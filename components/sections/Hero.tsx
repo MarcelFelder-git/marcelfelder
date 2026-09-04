@@ -33,7 +33,7 @@ export function Hero() {
 
   return (
     <section
-      data-chapter="structure"
+      data-hero
       className="relative flex min-h-[100svh] flex-col justify-center px-6 pb-28 pt-28 sm:px-10 lg:px-16"
     >
       <motion.div style={{ y, opacity }} className="relative max-w-4xl">
@@ -135,9 +135,9 @@ export function Hero() {
         </div>
 
         <span className="meta hidden text-right sm:block">
-          Zeiger belastet
+          Signale laufen
           <br />
-          das Tragwerk
+          durch den Graphen
         </span>
       </motion.div>
     </section>

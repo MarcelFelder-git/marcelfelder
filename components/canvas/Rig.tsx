@@ -47,7 +47,19 @@ export function Rig() {
   );
 
   useFrame((_, delta) => {
-    const { weights, pointer, progress, tunnel } = sceneState;
+    const { weights, pointer, progress, tunnel, hero } = sceneState;
+
+    // --- Hero: der Systemgraph steht frontal --------------------------
+    // Keine Mischung mit den Kapitelstationen: solange man oben steht,
+    // gibt es nur dieses eine Motiv.
+    if (hero.active > 0.5 && tunnel.active < 0.5) {
+      v.station.set(pointer.x * 0.85, 0.25 + pointer.y * 0.55, 7.6);
+      const k = 1 - Math.pow(0.0012, Math.min(delta, 0.1));
+      camera.position.lerp(v.station, k);
+      v.lookAt.lerp(v.target.set(0, 0, 0), k);
+      camera.lookAt(v.lookAt);
+      return;
+    }
 
     // --- Tunnelfahrt uebernimmt die Kamera --------------------------
     // Der Korridor liegt entlang der negativen Z-Achse; die Kamera faehrt

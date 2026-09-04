@@ -47,8 +47,48 @@ const COL_CORRIDOR = new THREE.Color("#2f6f9e");
 /** Jeder vierte Ring heller: gibt der Fahrt einen Takt. */
 const COL_MARKER = new THREE.Color("#5cc8f5");
 
-function stationZ(i: number) {
+export function stationZ(i: number) {
   return STATION_START - i * STATION_GAP;
+}
+
+/** Kameraposition auf der Fahrt, aus dem Fortschritt gerechnet. */
+export function tunnelCameraZ(progress: number) {
+  return 4 - progress * (RING_COUNT * RING_SPACING - 6);
+}
+
+/**
+ * Wie "angekommen" man an einer Station ist, 0..1.
+ *
+ * Wird an drei Stellen gebraucht - Tafelhelligkeit, Glanz im Korridor und
+ * der Zustand der Anzeige im DOM. Deshalb hier einmal definiert statt
+ * dreimal mit leicht anderen Schwellen nachgebaut.
+ */
+export function stationNearness(progress: number, index: number) {
+  const distance = Math.abs(tunnelCameraZ(progress) - stationZ(index));
+  return Math.max(0, 1 - distance / 22);
+}
+
+/** Radialer Lichtfleck als Textur - kein Asset, vom Canvas erzeugt. */
+function makeGlowTexture() {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const gradient = ctx.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2,
+  );
+  gradient.addColorStop(0, "rgba(255,255,255,0.9)");
+  gradient.addColorStop(0.45, "rgba(255,255,255,0.25)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
 }
 
 /** Gitterkorridor: Ringe plus Laengsverbindungen an jeder Ecke. */
@@ -207,8 +247,10 @@ function Panel({
   portrait: boolean;
   index: number;
 }) {
+  const holderRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const frameRef = useRef<THREE.LineSegments>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
 
   const [w, h] = portrait ? [3.1, 6.4] : [7.4, 3.6];
 
@@ -216,38 +258,62 @@ function Panel({
     () => new THREE.EdgesGeometry(new THREE.PlaneGeometry(w, h)),
     [w, h],
   );
+  const glowTexture = useMemo(makeGlowTexture, []);
 
   useFrame(() => {
     const mesh = meshRef.current;
-    if (!mesh) return;
+    const holder = holderRef.current;
+    if (!mesh || !holder) return;
 
-    // Die Kameraposition auf der Fahrt, aus demselben Fortschritt
-    // gerechnet wie im Rig - so bleiben Bild und Beleuchtung synchron.
-    const camZ = 4 - sceneState.tunnel.progress * (LENGTH - 6);
-    const distance = Math.abs(camZ - z);
+    const { active, progress } = sceneState.tunnel;
+    const nearness = stationNearness(progress, index);
 
-    // Weiter Anlauf und hoeherer Grundwert als zuerst gebaut: die Tafeln
-    // sind der Inhalt, nicht die Dekoration. Bei 14 Einheiten Reichweite
-    // und 0.25 Grundhelligkeit waren sie waehrend der Annaeherung kaum zu
-    // erkennen - man sah einen huebschen Korridor und verpasste die
-    // Projekte darin.
-    const nearness = Math.max(0, 1 - distance / 22);
-    const intensity = 0.45 + nearness * nearness * 0.55;
+    // Ankunft ist der letzte Teil der Annaeherung. Erst hier wird die
+    // Tafel voll aufgeblendet, herangeholt und mit Licht hinterlegt -
+    // vorher bleibt sie erkennbar, aber zurueckhaltend. Ohne diese
+    // Trennung sind alle fuenf Tafeln gleich laut und keine ist die,
+    // an der man gerade steht.
+    const arrival = Math.max(0, (nearness - 0.55) / 0.45);
+    const intensity = 0.4 + nearness * nearness * 0.45 + arrival * 0.15;
 
-    const material = mesh.material as THREE.MeshBasicMaterial;
-    material.opacity = sceneState.tunnel.active * intensity;
+    (mesh.material as THREE.MeshBasicMaterial).opacity = active * intensity;
+
+    // Leicht herangefahren und aufgerichtet: die Tafel wendet sich dem
+    // Betrachter zu, wenn er ankommt.
+    const scale = 1 + arrival * 0.08;
+    holder.scale.setScalar(scale);
+    holder.rotation.y = side * (-0.34 + arrival * 0.12);
 
     if (frameRef.current) {
       (frameRef.current.material as THREE.LineBasicMaterial).opacity =
-        sceneState.tunnel.active * (0.4 + nearness * 0.6);
+        active * (0.3 + nearness * 0.4 + arrival * 0.3);
+    }
+    if (glowRef.current) {
+      (glowRef.current.material as THREE.MeshBasicMaterial).opacity =
+        active * arrival * 0.28;
     }
   });
 
   return (
-    <group
-      position={[side * 3.5, portrait ? 0.2 : 0.4, z]}
-      rotation={[0, side * -0.34, 0]}
-    >
+    <group ref={holderRef} position={[side * 3.5, portrait ? 0.2 : 0.4, z]}>
+      {/* Lichtfleck hinter der Tafel - erscheint erst bei Ankunft und
+          hebt sie aus dem Korridor heraus, ohne dass ein Postprocessing
+          noetig waere. */}
+      {/* Nur wenig groesser als die Tafel. Mit dem urspruenglichen Faktor
+          1.9 war die Flaeche direkt neben der Kamera 14 Einheiten breit
+          und hat additiv das gesamte Bild ueberstrahlt. */}
+      <mesh ref={glowRef} position={[0, 0, -0.35]} scale={[w * 1.25, h * 1.25, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={glowTexture}
+          color={index % 2 === 0 ? "#38bdf8" : "#a855f7"}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
       <mesh ref={meshRef}>
         <planeGeometry args={[w, h]} />
         <meshBasicMaterial

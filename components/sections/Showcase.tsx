@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Code2, Play } from "lucide-react";
+import { ArrowUpRight, Code2, Play, SquareArrowOutUpRight } from "lucide-react";
 import { PROJECTS, type Project } from "@/content/projects";
 import { Reveal, SplitHeading } from "@/components/motion/primitives";
 import { GlitchText } from "@/components/motion/GlitchText";
+import { LivePreview } from "@/components/projects/LivePreview";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { sceneState } from "@/lib/scene/state";
+import { stationNearness } from "@/components/canvas/modes/TunnelMode";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +31,7 @@ import { cn } from "@/lib/utils";
  */
 export function Showcase() {
   const reduced = usePrefersReducedMotion();
+  const [preview, setPreview] = useState<Project | null>(null);
 
   return (
     <section
@@ -59,9 +62,21 @@ export function Showcase() {
         </p>
       </header>
 
-      {reduced ? <FlatList /> : <TunnelRide />}
+      {reduced ? (
+        <FlatList onPreview={setPreview} />
+      ) : (
+        <TunnelRide onPreview={setPreview} />
+      )}
 
       <ProjectIndex />
+
+      {preview?.links.live && (
+        <LivePreview
+          url={preview.links.live}
+          title={preview.title}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </section>
   );
 }
@@ -70,9 +85,11 @@ export function Showcase() {
 /* Fahrt durch den Korridor                                            */
 /* ================================================================== */
 
-function TunnelRide() {
+function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [station, setStation] = useState(0);
+  // Wie nah man der aktuellen Station ist - treibt die Ankunftsanzeige.
+  const [arrival, setArrival] = useState(0);
 
   // Der aktive Abschnitt wird aus demselben Fortschritt abgeleitet, der
   // auch die Kamera fuehrt - per rAF gelesen statt per Scroll-Listener,
@@ -90,6 +107,12 @@ function TunnelRide() {
         Math.max(0, Math.floor(p * PROJECTS.length * 1.04)),
       );
       setStation((prev) => (prev === index ? prev : index));
+
+      // Auf Hundertstel gerundet: sonst setzt jeder Frame neuen State und
+      // React rendert 60-mal pro Sekunde fuer eine Balkenbreite.
+      const near = Math.round(stationNearness(p, index) * 100) / 100;
+      setArrival((prev) => (prev === near ? prev : near));
+
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -115,12 +138,34 @@ function TunnelRide() {
             className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 bg-[radial-gradient(70%_70%_at_30%_60%,rgba(8,9,14,0.95),transparent_75%)]"
           />
 
+          {/* Ankunftsanzeige: die Linie faerbt sich, waehrend man auf die
+              Station zufaehrt, und steht voll, wenn man davor ist. Damit
+              weiss man, ob die Tafel im Korridor gerade "die eigene" ist
+              oder nur eine, an der man vorbeikommt. */}
           <div className="flex items-center gap-3">
-            <span className="meta-accent">
+            <span
+              className={cn(
+                "font-mono text-[10px] uppercase tracking-[0.18em] transition-colors duration-300",
+                arrival > 0.55 ? "text-accent" : "text-faint",
+              )}
+            >
               Station {String(station + 1).padStart(2, "0")} /{" "}
               {String(PROJECTS.length).padStart(2, "0")}
             </span>
-            <span className="h-px flex-1 bg-rule" />
+            <span className="relative h-px flex-1 bg-rule">
+              <span
+                className="absolute inset-y-0 left-0 bg-accent transition-[width] duration-200"
+                style={{ width: `${Math.round(arrival * 100)}%` }}
+              />
+            </span>
+            <span
+              className={cn(
+                "font-mono text-[10px] uppercase tracking-[0.18em] transition-opacity duration-300",
+                arrival > 0.55 ? "text-accent opacity-100" : "opacity-0",
+              )}
+            >
+              angekommen
+            </span>
           </div>
 
           {/* key erzwingt Remount bei Stationswechsel - der Glitch laeuft
@@ -159,7 +204,7 @@ function TunnelRide() {
               ))}
             </ul>
 
-            <ProjectLinks project={project} />
+            <ProjectLinks project={project} onPreview={onPreview} />
           </motion.div>
         </div>
       </div>
@@ -171,7 +216,7 @@ function TunnelRide() {
 /* Flache Liste — Rueckfallebene ohne Bewegung                         */
 /* ================================================================== */
 
-function FlatList() {
+function FlatList({ onPreview }: { onPreview: (p: Project) => void }) {
   return (
     <div className="flex flex-col gap-px bg-rule">
       {PROJECTS.map((project, i) => (
@@ -223,7 +268,7 @@ function FlatList() {
                 ))}
               </ul>
 
-              <ProjectLinks project={project} />
+              <ProjectLinks project={project} onPreview={onPreview} />
             </div>
           </article>
         </Reveal>
@@ -277,17 +322,32 @@ function ProjectIndex() {
 
 /* ================================================================== */
 
-function ProjectLinks({ project }: { project: Project }) {
+function ProjectLinks({
+  project,
+  onPreview,
+}: {
+  project: Project;
+  onPreview?: (p: Project) => void;
+}) {
   return (
     <div className="mt-7 flex flex-wrap items-center gap-3">
+      {project.links.live && onPreview && (
+        <button
+          onClick={() => onPreview(project)}
+          className="group flex items-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
+        >
+          Live-Vorschau
+          <SquareArrowOutUpRight className="size-4" strokeWidth={2} />
+        </button>
+      )}
       {project.links.live && (
         <a
           href={project.links.live}
           target="_blank"
           rel="noreferrer noopener"
-          className="group flex items-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
+          className="invert-hover flex items-center gap-2 border border-rule px-4 py-2.5 text-sm text-mute"
         >
-          Live ansehen
+          Neuer Tab
           <ArrowUpRight
             className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
             strokeWidth={2}

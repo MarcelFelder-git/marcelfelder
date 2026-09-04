@@ -7,6 +7,7 @@ import { StructureMode } from "./modes/StructureMode";
 import { SignalMode } from "./modes/SignalMode";
 import { CodeMode } from "./modes/CodeMode";
 import { TunnelMode } from "./modes/TunnelMode";
+import { HeroMode } from "./modes/HeroMode";
 
 /**
  * Die Szene liegt vollflaechig HINTER der Seite, nicht in einer Kachel
@@ -41,6 +42,7 @@ export default function BackgroundScene() {
       <fog attach="fog" args={["#08090e", 10, 55]} />
 
       <Suspense fallback={null}>
+        <HeroMode />
         <StructureMode />
         <SignalMode />
         <CodeMode />

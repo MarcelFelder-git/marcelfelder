@@ -27,14 +27,24 @@ export interface SceneState {
    * Fahrt durch den Korridor, 0 = Eingang, 1 = Ende.
    */
   tunnel: { active: number; progress: number };
+  /**
+   * Der Systemgraph im Hero. Wie der Tunnel ein eigener Zustand statt eines
+   * vierten Kapitels: er taucht in keiner Kapitelnavigation auf und wird
+   * nicht mit den Kapitelstationen gemischt - er uebernimmt schlicht,
+   * solange man oben steht.
+   */
+  hero: { active: number };
 }
 
 export const sceneState: SceneState = {
   progress: 0,
-  weights: { structure: 1, signal: 0, code: 0 },
+  weights: { structure: 0, signal: 0, code: 0 },
   pointer: { x: 0, y: 0 },
   chapterProgress: 0,
   tunnel: { active: 0, progress: 0 },
+  // Startwert 1: beim ersten Frame steht man oben, und der Graph soll
+  // sofort da sein statt erst nach dem ersten Scroll-Tick einzublenden.
+  hero: { active: 1 },
 };
 
 export function damp(current: number, target: number, lambda: number, dt: number) {
