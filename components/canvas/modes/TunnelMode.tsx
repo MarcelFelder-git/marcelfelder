@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
 import { PROJECTS } from "@/content/projects";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { createTubeScratch, setTube } from "@/lib/scene/tube";
 import {
   RING_COUNT,
   RING_SPACING,
@@ -68,12 +69,29 @@ function makeGlowTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-/** Gitterkorridor: Ringe plus Laengsverbindungen an jeder Ecke. */
-function buildCorridor() {
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const color = new THREE.Color();
+/**
+ * Gitterkorridor als Strebenliste: Ringe plus Laengsverbindungen.
+ *
+ * Frueher war das eine einzige `lineSegments`-Geometrie. Linien sind aber
+ * unbeleuchtet und sahen neben den beleuchteten Koerpern der uebrigen
+ * Szene flach aus. Jetzt liefert die Funktion Streckenpaare, aus denen
+ * eine InstancedMesh aus Zylindern gebaut wird - dieselbe Materialsprache
+ * wie Fachwerk und Systemgraph.
+ *
+ * Der Korridor verformt sich nie, also werden die Matrizen genau einmal
+ * gesetzt und danach nie wieder angefasst.
+ */
+interface Strut {
+  ax: number;
+  ay: number;
+  az: number;
+  bx: number;
+  by: number;
+  bz: number;
+  marker: boolean;
+}
 
+function buildCorridor(): Strut[] {
   const vertex = (ring: number, side: number) => {
     const angle = (side / SIDES) * Math.PI * 2 + Math.PI / SIDES;
     return [
@@ -83,44 +101,64 @@ function buildCorridor() {
     ] as const;
   };
 
-  const push = (p: readonly number[], ring: number) => {
-    positions.push(p[0], p[1], p[2]);
-    color.copy(ring % 4 === 0 ? COL_MARKER : COL_CORRIDOR);
-    colors.push(color.r, color.g, color.b);
-  };
+  const struts: Strut[] = [];
 
   for (let ring = 0; ring <= RING_COUNT; ring++) {
+    const marker = ring % 4 === 0;
     for (let side = 0; side < SIDES; side++) {
       const a = vertex(ring, side);
       const b = vertex(ring, (side + 1) % SIDES);
-      push(a, ring);
-      push(b, ring);
+      struts.push({
+        ax: a[0], ay: a[1], az: a[2],
+        bx: b[0], by: b[1], bz: b[2],
+        marker,
+      });
 
       if (ring < RING_COUNT) {
         const c = vertex(ring + 1, side);
-        push(a, ring);
-        push(c, ring + 1);
+        struts.push({
+          ax: a[0], ay: a[1], az: a[2],
+          bx: c[0], by: c[1], bz: c[2],
+          marker: false,
+        });
       }
     }
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3),
-  );
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  return geometry;
+  return struts;
 }
 
 export function TunnelMode() {
   const groupRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
-  const linesRef = useRef<THREE.LineSegments>(null);
+  const strutsRef = useRef<THREE.InstancedMesh>(null);
   const motesRef = useRef<THREE.Points>(null);
   const reduced = usePrefersReducedMotion();
 
   const corridor = useMemo(buildCorridor, []);
+
+  // Der Korridor ist starr: Matrizen und Farben werden genau einmal
+  // geschrieben, sobald das Mesh existiert - nicht in jedem Frame.
+  const placeStruts = useCallback(
+    (mesh: THREE.InstancedMesh | null) => {
+      strutsRef.current = mesh;
+      if (!mesh) return;
+      const scratch = createTubeScratch();
+      const color = new THREE.Color();
+      corridor.forEach((st, i) => {
+        setTube(
+          mesh, i, scratch,
+          st.ax, st.ay, st.az,
+          st.bx, st.by, st.bz,
+          st.marker ? 1.5 : 1,
+        );
+        mesh.setColorAt(i, color.copy(st.marker ? COL_MARKER : COL_CORRIDOR));
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    },
+    [corridor],
+  );
 
   const textures = useTexture(PROJECTS.map((p) => p.media.image));
 
@@ -163,9 +201,9 @@ export function TunnelMode() {
       spinRef.current.rotation.z = state.clock.elapsedTime * 0.018;
     }
 
-    if (linesRef.current) {
-      (linesRef.current.material as THREE.LineBasicMaterial).opacity =
-        eased * 0.9;
+    if (strutsRef.current) {
+      (strutsRef.current.material as THREE.MeshStandardMaterial).opacity =
+        eased * 0.92;
     }
 
     // Motes driften dem Betrachter entgegen und setzen am Ende neu an.
@@ -187,25 +225,26 @@ export function TunnelMode() {
       {/* Alles Drehende steckt in dieser Gruppe. Die Tafeln liegen
           bewusst daneben und bleiben dadurch aufrecht. */}
       <group ref={spinRef}>
-        <lineSegments
-          ref={linesRef}
-          geometry={corridor}
+        {/* Streben des Korridors. renderOrder haelt sie hinter den
+            Tafeln: transparente Objekte werden nach dem Abstand ihres
+            Ursprungs sortiert, und der Ursprung dieser einen Instanz-
+            Sammlung liegt am Tunneleingang - also scheinbar ganz vorne. */}
+        <instancedMesh
+          ref={placeStruts}
+          args={[undefined, undefined, corridor.length]}
           frustumCulled={false}
-          // Ohne diese beiden Angaben zeichnet der Korridor ueber den
-          // Tafeln: transparente Objekte werden nach dem Abstand ihres
-          // Ursprungs sortiert, und der Ursprung dieser einen grossen
-          // Geometrie liegt am Tunneleingang - also scheinbar ganz vorne.
-          // renderOrder erzwingt die richtige Reihenfolge, depthWrite
-          // verhindert, dass die Linien den Tiefenpuffer blockieren.
           renderOrder={0}
         >
-          <lineBasicMaterial
-            vertexColors
+          <cylinderGeometry args={[0.018, 0.018, 1, 5, 1, true]} />
+          <meshStandardMaterial
+            metalness={0.85}
+            roughness={0.4}
+            envMapIntensity={1.1}
             transparent
             opacity={0}
             depthWrite={false}
           />
-        </lineSegments>
+        </instancedMesh>
 
         <points
           ref={motesRef}
@@ -276,15 +315,34 @@ function Panel({
     const { active, progress } = sceneState.tunnel;
     const nearness = stationNearness(progress, index);
 
-    // Ankunft ist der letzte Teil der Annaeherung. Erst hier wird die
-    // Tafel voll aufgeblendet, herangeholt und mit Licht hinterlegt -
-    // vorher bleibt sie erkennbar, aber zurueckhaltend. Ohne diese
-    // Trennung sind alle fuenf Tafeln gleich laut und keine ist die,
-    // an der man gerade steht.
+    // Ankunft ist der letzte Teil der Annaeherung. Erst hier steht die
+    // Tafel voll da, wird herangeholt und mit Licht hinterlegt - vorher
+    // bleibt sie erkennbar, aber zurueckhaltend. Ohne diese Trennung sind
+    // alle fuenf gleich laut und keine ist die, an der man gerade steht.
     const arrival = Math.max(0, (nearness - 0.55) / 0.45);
-    const intensity = 0.4 + nearness * nearness * 0.45 + arrival * 0.15;
 
-    (mesh.material as THREE.MeshBasicMaterial).opacity = active * intensity;
+    const material = mesh.material as THREE.MeshStandardMaterial;
+
+    // Deckkraft und Helligkeit sind bewusst getrennt:
+    //
+    // Sichtbarkeit wird ueber das EIGENLEUCHTEN geregelt, nicht ueber
+    // Transparenz. Eine halbdurchsichtige Tafel laesst den Korridor
+    // durchscheinen, und ein Screenshot mit Gitterstreben quer darueber
+    // ist nicht mehr zu erkennen - genau das war das Problem. Ab
+    // Ankunftsbeginn steht die Tafel deshalb blickdicht und wird nur noch
+    // heller oder dunkler.
+    const solid = Math.min(1, nearness / 0.45);
+    material.opacity = active * (0.35 + solid * 0.65);
+    material.emissiveIntensity = 0.25 + nearness * 0.75 + arrival * 0.35;
+
+    // Voll angekommen: kein Blending mehr, damit garantiert nichts
+    // durchscheint.
+    const opaque = arrival > 0.35 && active > 0.9;
+    if (material.transparent === opaque) {
+      material.transparent = !opaque;
+      material.depthWrite = opaque;
+      material.needsUpdate = true;
+    }
 
     // Leicht herangefahren und aufgerichtet: die Tafel wendet sich dem
     // Betrachter zu, wenn er ankommt.
@@ -327,19 +385,30 @@ function Panel({
         />
       </mesh>
 
+      {/* Die Tafel ist ein Bildschirm, kein Poster: der Screenshot liegt
+          als Emissive-Map auf, das Objekt leuchtet also aus sich selbst
+          statt vom Studiolicht abzuhaengen. Das ist der Grund, warum das
+          Bild bei Ankunft klar und farbrichtig steht - und nebenbei die
+          inhaltlich passende Metapher fuer ein Deployment. */}
       <mesh ref={meshRef}>
         <planeGeometry args={[w, h]} />
-        <meshBasicMaterial
+        <meshStandardMaterial
           map={texture}
+          emissiveMap={texture}
+          emissive="#ffffff"
+          emissiveIntensity={0.3}
+          color="#0b0d13"
+          metalness={0.1}
+          roughness={0.6}
+          toneMapped={false}
           transparent
           opacity={0}
-          toneMapped={false}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Rahmen in der Akzentfarbe, abwechselnd Cyan und Violett - das
-          Duoton aus der Oberflaeche, hier in 3D fortgesetzt. */}
+      {/* Rahmen als Metallprofil in der Akzentfarbe, abwechselnd Cyan und
+          Violett - das Duoton aus der Oberflaeche, hier in 3D fortgesetzt. */}
       <lineSegments ref={frameRef} geometry={frameGeometry}>
         <lineBasicMaterial
           color={index % 2 === 0 ? "#38bdf8" : "#a855f7"}

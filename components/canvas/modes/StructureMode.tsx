@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { createTubeScratch, setTube } from "@/lib/scene/tube";
 
 /**
  * Zweilagiges Raumfachwerk (Space Frame), allseitig gelagert.
@@ -120,31 +121,23 @@ export function StructureMode() {
   const reducedMotion = usePrefersReducedMotion();
 
   const groupRef = useRef<THREE.Group>(null);
-  const linesRef = useRef<THREE.LineSegments>(null);
+  const membersRef = useRef<THREE.InstancedMesh>(null);
   const nodesRef = useRef<THREE.InstancedMesh>(null);
   const arrowRef = useRef<THREE.Group>(null);
 
   const buffers = useMemo(() => {
-    const { edges, nodeCount } = lattice;
+    const { nodeCount } = lattice;
     return {
       current: new Float32Array(nodeCount),
       target: new Float32Array(nodeCount),
-      linePos: new Float32Array(edges.length * 3),
-      lineCol: new Float32Array(edges.length * 3),
       dummy: new THREE.Object3D(),
       color: new THREE.Color(),
       ndc: new THREE.Vector2(),
       hit: new THREE.Vector3(),
       load: { index: -1, x: 0, z: 0 },
+      tube: createTubeScratch(),
     };
   }, [lattice]);
-
-  const lineGeometry = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(buffers.linePos, 3));
-    g.setAttribute("color", new THREE.BufferAttribute(buffers.lineCol, 3));
-    return g;
-  }, [buffers]);
 
   useFrame((state) => {
     const weight = sceneState.weights.structure;
@@ -161,8 +154,7 @@ export function StructureMode() {
     group.rotation.y = (1 - eased) * 0.35;
 
     const { base, mask, edges, restLengths, nodeCount, topCount } = lattice;
-    const { current, target, linePos, lineCol, dummy, color, ndc, hit, load } =
-      buffers;
+    const { current, target, dummy, color, ndc, hit, load, tube } = buffers;
     const t = state.clock.elapsedTime;
 
     // --- 1. Lastpunkt aus dem Mauszeiger ------------------------------
@@ -202,46 +194,40 @@ export function StructureMode() {
       current[n] += (target[n] - current[n]) * 0.12;
     }
 
-    // --- 3. Staebe aufbauen und nach Dehnung faerben -------------------
-    for (let e = 0; e < restLengths.length; e++) {
-      const ia = edges[e * 2];
-      const ib = edges[e * 2 + 1];
-      const ax = base[ia * 3];
-      const ay = base[ia * 3 + 1] + current[ia];
-      const az = base[ia * 3 + 2];
-      const bx = base[ib * 3];
-      const by = base[ib * 3 + 1] + current[ib];
-      const bz = base[ib * 3 + 2];
+    // --- 3. Staebe als Roehren setzen und nach Dehnung faerben ---------
+    // Jeder Stab ist ein eigener Zylinder statt eines Linienabschnitts:
+    // nur so bekommt das Fachwerk dieselbe Materialitaet wie der
+    // Systemgraph im Hero. Die Farbe traegt weiterhin die Information -
+    // Verkuerzung cyan (Druck), Verlaengerung violett (Zug).
+    const members = membersRef.current;
+    if (members) {
+      for (let e = 0; e < restLengths.length; e++) {
+        const ia = edges[e * 2];
+        const ib = edges[e * 2 + 1];
+        const ax = base[ia * 3];
+        const ay = base[ia * 3 + 1] + current[ia];
+        const az = base[ia * 3 + 2];
+        const bx = base[ib * 3];
+        const by = base[ib * 3 + 1] + current[ib];
+        const bz = base[ib * 3 + 2];
 
-      const o = e * 6;
-      linePos[o] = ax;
-      linePos[o + 1] = ay;
-      linePos[o + 2] = az;
-      linePos[o + 3] = bx;
-      linePos[o + 4] = by;
-      linePos[o + 5] = bz;
+        const len = Math.hypot(bx - ax, by - ay, bz - az);
+        const strain = ((len - restLengths[e]) / restLengths[e]) * 26;
+        const amount = Math.min(1, Math.abs(strain));
 
-      const len = Math.hypot(bx - ax, by - ay, bz - az);
-      const strain = ((len - restLengths[e]) / restLengths[e]) * 26;
-      const amount = Math.min(1, Math.abs(strain));
-      color
-        .copy(COL_NEUTRAL)
-        .lerp(strain > 0 ? COL_TENSION : COL_COMPRESSION, amount);
+        // Stark beanspruchte Staebe werden zusaetzlich etwas dicker -
+        // im Statikbild ist die Linienstaerke traditionell selbst eine
+        // Groesse, nicht nur die Farbe.
+        setTube(members, e, tube, ax, ay, az, bx, by, bz, 1 + amount * 0.7);
 
-      lineCol[o] = color.r;
-      lineCol[o + 1] = color.g;
-      lineCol[o + 2] = color.b;
-      lineCol[o + 3] = color.r;
-      lineCol[o + 4] = color.g;
-      lineCol[o + 5] = color.b;
-    }
-
-    if (linesRef.current) {
-      const geo = linesRef.current.geometry;
-      geo.attributes.position.needsUpdate = true;
-      geo.attributes.color.needsUpdate = true;
-      const mat = linesRef.current.material as THREE.LineBasicMaterial;
-      mat.opacity = eased * 0.9;
+        color
+          .copy(COL_NEUTRAL)
+          .lerp(strain > 0 ? COL_TENSION : COL_COMPRESSION, amount);
+        members.setColorAt(e, color);
+      }
+      members.instanceMatrix.needsUpdate = true;
+      if (members.instanceColor) members.instanceColor.needsUpdate = true;
+      (members.material as THREE.MeshStandardMaterial).opacity = eased * 0.95;
     }
 
     // --- 4. Knoten ----------------------------------------------------
@@ -259,12 +245,12 @@ export function StructureMode() {
         mesh.setMatrixAt(n, dummy.matrix);
         mesh.setColorAt(
           n,
-          color.set(active ? "#38bdf8" : mask[n] < 0.05 ? "#a855f7" : "#3f5170"),
+          color.set(active ? "#7dd3fc" : mask[n] < 0.05 ? "#c084fc" : "#5b7288"),
         );
       }
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-      (mesh.material as THREE.MeshBasicMaterial).opacity = eased;
+      (mesh.material as THREE.MeshStandardMaterial).opacity = eased;
     }
 
     // --- 5. Lastpfeil -------------------------------------------------
@@ -278,28 +264,62 @@ export function StructureMode() {
 
   return (
     <group ref={groupRef}>
-      <lineSegments ref={linesRef} geometry={lineGeometry} frustumCulled={false}>
-        <lineBasicMaterial vertexColors transparent opacity={0.9} />
-      </lineSegments>
+      {/* Staebe als Stahlprofile: gleiche Materialsprache wie der
+          Systemgraph, damit beim Wechsel zwischen den Abschnitten nicht
+          eine Szene gerendert und die andere gezeichnet aussieht. */}
+      <instancedMesh
+        ref={membersRef}
+        args={[undefined, undefined, lattice.edges.length / 2]}
+        frustumCulled={false}
+      >
+        <cylinderGeometry args={[0.014, 0.014, 1, 6, 1, true]} />
+        <meshStandardMaterial
+          metalness={0.85}
+          roughness={0.32}
+          envMapIntensity={1.2}
+          transparent
+        />
+      </instancedMesh>
 
+      {/* Knotenpunkte als glaenzende Kugeln - der Anschlusspunkt ist im
+          Stahlbau das sichtbare Detail, also darf er hier auch eins sein. */}
       <instancedMesh
         ref={nodesRef}
         args={[undefined, undefined, lattice.nodeCount]}
         frustumCulled={false}
       >
-        <octahedronGeometry args={[0.055, 0]} />
-        <meshBasicMaterial toneMapped={false} transparent />
+        <icosahedronGeometry args={[0.06, 1]} />
+        <meshStandardMaterial
+          metalness={0.95}
+          roughness={0.18}
+          envMapIntensity={1.6}
+          transparent
+        />
       </instancedMesh>
 
-      {/* Lastpfeil: Schaft + Spitze, nach unten wie im Statik-Schema */}
+      {/* Lastpfeil: Schaft + Spitze, nach unten wie im Statik-Schema.
+          Emissiv, damit er als Markierung ueber dem Tragwerk liegt und
+          nicht als weiteres Bauteil gelesen wird. */}
       <group ref={arrowRef} visible={false}>
         <mesh position={[0, 0.2, 0]}>
-          <cylinderGeometry args={[0.009, 0.009, 0.4, 6]} />
-          <meshBasicMaterial color="#38bdf8" toneMapped={false} />
+          <cylinderGeometry args={[0.011, 0.011, 0.4, 8]} />
+          <meshStandardMaterial
+            color="#0b3a4d"
+            emissive="#38bdf8"
+            emissiveIntensity={2.2}
+            metalness={0.6}
+            roughness={0.3}
+          />
         </mesh>
         <mesh position={[0, -0.05, 0]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.06, 0.17, 8]} />
-          <meshBasicMaterial color="#38bdf8" toneMapped={false} />
+          <coneGeometry args={[0.06, 0.17, 10]} />
+          <meshStandardMaterial
+            color="#0b3a4d"
+            emissive="#38bdf8"
+            emissiveIntensity={2.2}
+            metalness={0.6}
+            roughness={0.3}
+          />
         </mesh>
       </group>
     </group>

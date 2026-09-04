@@ -155,13 +155,26 @@ export function SignalMode() {
           frustumCulled={false}
         >
           <boxGeometry args={[0.085, 1, 0.085]} />
-          <meshBasicMaterial toneMapped={false} transparent />
+          <meshStandardMaterial
+            metalness={0.75}
+            roughness={0.25}
+            envMapIntensity={1.3}
+            transparent
+          />
         </instancedMesh>
 
         {/* Kern: das Signal selbst, als Icosaeder-Wireframe */}
         <mesh ref={coreRef}>
           <icosahedronGeometry args={[0.62, 1]} />
-          <meshBasicMaterial color="#38bdf8" wireframe toneMapped={false} transparent />
+          <meshStandardMaterial
+            color="#0e3a52"
+            emissive="#38bdf8"
+            emissiveIntensity={1.1}
+            metalness={0.9}
+            roughness={0.15}
+            envMapIntensity={1.8}
+            transparent
+          />
         </mesh>
 
         {/* Ringmarkierungen wie auf einem Analyzer */}

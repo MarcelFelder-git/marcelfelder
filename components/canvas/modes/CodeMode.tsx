@@ -224,7 +224,12 @@ export function CodeMode() {
         frustumCulled={false}
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshBasicMaterial toneMapped={false} transparent />
+        <meshStandardMaterial
+          metalness={0.8}
+          roughness={0.28}
+          envMapIntensity={1.4}
+          transparent
+        />
       </instancedMesh>
 
       {/* Shader-Ebenen hinter jeder Token-Schicht */}
