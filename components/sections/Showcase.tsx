@@ -10,7 +10,7 @@ import { GlitchText } from "@/components/motion/GlitchText";
 import { LivePreview } from "@/components/projects/LivePreview";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { sceneState } from "@/lib/scene/state";
-import { stationNearness } from "@/lib/scene/tunnel";
+import { nearestStation, stationNearness } from "@/lib/scene/tunnel";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -99,13 +99,12 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
     let frame = 0;
     const tick = () => {
       const p = sceneState.tunnelProgress;
-      // Stationen liegen im Korridor bei 12, 29, 46, 63, 80 von 99
-      // Einheiten Fahrt; in Fortschritt umgerechnet ergibt das etwa
-      // gleiche Abstaende mit etwas Vorlauf.
-      const index = Math.min(
-        PROJECTS.length - 1,
-        Math.max(0, Math.floor(p * PROJECTS.length * 1.04)),
-      );
+      // Welche Tafel gerade dran ist, rechnet die Tunnelgeometrie selbst
+      // aus - dieselbe Funktion, die auch das Wanderlicht im Korridor
+      // fuehrt. Vorher stand hier eine aus Fahrtweg und Stationsabstand
+      // abgeleitete Naeherung samt Korrekturfaktor; die stimmte nur fuer
+      // genau eine Projektanzahl.
+      const index = nearestStation(p);
       setStation((prev) => (prev === index ? prev : index));
 
       // Auf Hundertstel gerundet: sonst setzt jeder Frame neuen State und

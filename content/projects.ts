@@ -12,6 +12,16 @@ export interface ProjectMedia {
   /** Standbild, immer vorhanden — trägt die Karte auch ohne Video. */
   image: string;
   /**
+   * Weitere Ansichten desselben Projekts. Im Tunnel wechselt die Tafel
+   * zwischen ihnen durch — aber nur die eine, an der man gerade steht.
+   *
+   * Bewusst optional: ein Projekt mit einem einzigen guten Screenshot
+   * bleibt stehen, statt zwischen einem starken und zwei schwachen Bildern
+   * zu wechseln. Reihenfolge ist die Reihenfolge im Wechsel; `image` ist
+   * immer das erste Bild und muss hier nicht wiederholt werden.
+   */
+  stills?: string[];
+  /**
    * Bestimmt die Darstellung: "landscape" füllt den Rahmen randlos,
    * "portrait" wird eingepasst und zentriert. Ein Handy-Screenshot
    * randlos zu beschneiden zeigt nur einen Streifen aus der Mitte.
@@ -101,8 +111,42 @@ export const PROJECTS: Project[] = [
     aiAssisted: true,
   },
   {
-    id: "nxt-hud",
+    id: "latent",
     index: "03",
+    title: "Latent",
+    tagline:
+      "Eine Dunkelkammer im Browser: Foto rein, Emulsion wählen, entwickeln zusehen.",
+    body: "Filmemulation, die vollständig auf der GPU läuft — Kennlinien pro Farbschicht, wellenlängenabhängige Halation, Korn, das auf die Belichtung reagiert, Scannerprofile. Nichts wird hochgeladen, es gibt kein Backend. Installierbar und offline lauffähig, weil es nichts gibt, wovon man abgeschnitten werden könnte.",
+    detail:
+      "Die Reihenfolge der fünf GPU-Pässe ist der Punkt: das gestreute Licht wird auf die Belichtung addiert und läuft danach durch die Kennlinie — so, wie Licht in Wirklichkeit vor der Entwicklung in der Emulsion streut. Legt man es auf das fertige Bild, liegt es obenauf und liest sich als Effekt.",
+    stack: [
+      "TypeScript",
+      "WebGL2 / GLSL",
+      "React",
+      "Vite",
+      "Web Worker / OffscreenCanvas",
+      "transformers.js (CLIP)",
+      "Service Worker / PWA",
+    ],
+    scope: "Frontend · GPU · Farbwissenschaft",
+    year: "2026",
+    links: {
+      live: "https://latent-mu-nine.vercel.app",
+      repo: "https://github.com/MarcelFelder-git/Latent",
+    },
+    media: {
+      // TODO(Marcel): Platzhalter durch echte Screenshots ersetzen.
+      // Gleiche Dateinamen, dann ist hier nichts zu ändern.
+      image: "/projects/latent-01.jpg",
+      stills: ["/projects/latent-02.jpg", "/projects/latent-03.jpg"],
+      orientation: "landscape",
+      alt: "Latent: entwickeltes Foto mit Kennlinie, Histogramm und Filmauswahl",
+    },
+    aiAssisted: true,
+  },
+  {
+    id: "nxt-hud",
+    index: "04",
     title: "NXT VideoGame HUD",
     tagline:
       "Spiele suchen, filtern, merken — plus ein Minigame, das dein Wissen testet.",
@@ -133,7 +177,7 @@ export const PROJECTS: Project[] = [
   },
   {
     id: "aufmischen",
-    index: "04",
+    index: "05",
     title: "AUFMISCHEN",
     tagline:
       "Portfolio-Engine für einen Musikproduzenten, Inhalte pflegt er selbst.",
@@ -162,7 +206,7 @@ export const PROJECTS: Project[] = [
   },
   {
     id: "art-robbery",
-    index: "05",
+    index: "06",
     title: "Art Robbery",
     tagline:
       "Browsergame: Kunstraub, bei dem jedes Museum eine Fälschung versteckt.",

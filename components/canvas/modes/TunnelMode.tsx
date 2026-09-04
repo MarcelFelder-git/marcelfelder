@@ -12,6 +12,7 @@ import {
   RING_COUNT,
   RING_SPACING,
   TUNNEL_LENGTH,
+  nearestStation,
   stationNearness,
   stationZ,
 } from "@/lib/scene/tunnel";
@@ -24,7 +25,7 @@ import {
  * Tunnel hier nicht wie ein Fremdkoerper wirkt: es ist dieselbe
  * Formsprache, in einer anderen Anordnung.
  *
- * An den Wänden haengen die Projekte als Tafeln. Die Kamera faehrt beim
+ * An den Waenden haengen die Projekte als Tafeln. Die Kamera faehrt beim
  * Scrollen hindurch; die Texte dazu stehen als echtes DOM darueber, nicht
  * im Canvas — sonst waeren sie fuer Screenreader und Suchmaschinen
  * unsichtbar und nicht kopierbar.
@@ -45,6 +46,10 @@ const LENGTH = TUNNEL_LENGTH;
 const COL_CORRIDOR = new THREE.Color("#2f6f9e");
 /** Jeder vierte Ring heller: gibt der Fahrt einen Takt. */
 const COL_MARKER = new THREE.Color("#5cc8f5");
+
+/** Die beiden Akzente der Oberflaeche, hier in 3D fortgesetzt. */
+const ACCENTS = ["#38bdf8", "#a855f7"] as const;
+const accentOf = (index: number) => ACCENTS[index % 2];
 
 /** Radialer Lichtfleck als Textur - kein Asset, vom Canvas erzeugt. */
 function makeGlowTexture() {
@@ -88,7 +93,17 @@ interface Strut {
   bx: number;
   by: number;
   bz: number;
-  marker: boolean;
+  /** 0 = normal, 1 = Taktring, 2 = Ring auf Hoehe einer Projekttafel. */
+  rank: 0 | 1 | 2;
+}
+
+/** Die Ringnummer, die einer Station am naechsten liegt. */
+function stationRings() {
+  const set = new Set<number>();
+  for (let i = 0; i < PROJECTS.length; i++) {
+    set.add(Math.round(-stationZ(i) / RING_SPACING));
+  }
+  return set;
 }
 
 function buildCorridor(): Strut[] {
@@ -101,17 +116,21 @@ function buildCorridor(): Strut[] {
     ] as const;
   };
 
+  const stations = stationRings();
   const struts: Strut[] = [];
 
   for (let ring = 0; ring <= RING_COUNT; ring++) {
-    const marker = ring % 4 === 0;
+    // Auf Hoehe einer Tafel steht ein kraeftigeres Spant. Das gibt der
+    // Roehre eine Gliederung, die zum Inhalt gehoert statt nur zum Takt:
+    // man sieht schon von weitem, dass da vorne etwas kommt.
+    const rank: 0 | 1 | 2 = stations.has(ring) ? 2 : ring % 4 === 0 ? 1 : 0;
     for (let side = 0; side < SIDES; side++) {
       const a = vertex(ring, side);
       const b = vertex(ring, (side + 1) % SIDES);
       struts.push({
         ax: a[0], ay: a[1], az: a[2],
         bx: b[0], by: b[1], bz: b[2],
-        marker,
+        rank,
       });
 
       if (ring < RING_COUNT) {
@@ -119,7 +138,7 @@ function buildCorridor(): Strut[] {
         struts.push({
           ax: a[0], ay: a[1], az: a[2],
           bx: c[0], by: c[1], bz: c[2],
-          marker: false,
+          rank: 0,
         });
       }
     }
@@ -133,6 +152,7 @@ export function TunnelMode() {
   const spinRef = useRef<THREE.Group>(null);
   const strutsRef = useRef<THREE.InstancedMesh>(null);
   const motesRef = useRef<THREE.Points>(null);
+  const lampRef = useRef<THREE.PointLight>(null);
   const reduced = usePrefersReducedMotion();
 
   const corridor = useMemo(buildCorridor, []);
@@ -150,9 +170,12 @@ export function TunnelMode() {
           mesh, i, scratch,
           st.ax, st.ay, st.az,
           st.bx, st.by, st.bz,
-          st.marker ? 1.5 : 1,
+          st.rank === 2 ? 2.2 : st.rank === 1 ? 1.5 : 1,
         );
-        mesh.setColorAt(i, color.copy(st.marker ? COL_MARKER : COL_CORRIDOR));
+        mesh.setColorAt(
+          i,
+          color.copy(st.rank === 0 ? COL_CORRIDOR : COL_MARKER),
+        );
       });
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
@@ -160,7 +183,25 @@ export function TunnelMode() {
     [corridor],
   );
 
-  const textures = useTexture(PROJECTS.map((p) => p.media.image));
+  /**
+   * Alle Standbilder aller Projekte in einer flachen Liste.
+   *
+   * `useTexture` ist ein Hook und darf deshalb nicht pro Tafel mit einer
+   * variablen Liste aufgerufen werden. Also wird hier einmal alles
+   * geladen und jede Tafel bekommt ihren Ausschnitt.
+   */
+  const { urls, ranges } = useMemo(() => {
+    const urls: string[] = [];
+    const ranges: [number, number][] = [];
+    for (const project of PROJECTS) {
+      const start = urls.length;
+      urls.push(project.media.image, ...(project.media.stills ?? []));
+      ranges.push([start, urls.length]);
+    }
+    return { urls, ranges };
+  }, []);
+
+  const textures = useTexture(urls);
 
   // Die Tafeln haengen schraeg zur Fahrbahn - genau der Fall, in dem
   // Standard-Filterung Texturen matschig macht. Anisotrope Filterung
@@ -171,6 +212,7 @@ export function TunnelMode() {
     const max = gl.capabilities.getMaxAnisotropy();
     for (const texture of textures) {
       texture.anisotropy = max;
+      texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
     }
   }, [gl, textures]);
@@ -192,6 +234,8 @@ export function TunnelMode() {
     geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     return { geometry, speed, count: COUNT };
   }, []);
+
+  const lampColor = useMemo(() => new THREE.Color(), []);
 
   useFrame((state, delta) => {
     const group = groupRef.current;
@@ -217,6 +261,34 @@ export function TunnelMode() {
     if (strutsRef.current) {
       (strutsRef.current.material as THREE.MeshStandardMaterial).opacity =
         eased * 0.92;
+    }
+
+    // Eine einzige Lampe wandert zur Tafel, an der man gerade steht, und
+    // nimmt deren Akzentfarbe an.
+    //
+    // Das ist der Unterschied zwischen "die Tafel leuchtet" und "die
+    // Tafel beleuchtet den Raum": ihr Licht faellt jetzt tatsaechlich auf
+    // die Streben ringsum und laeuft mit der Fahrt ueber das Gitter.
+    // Eine Lampe pro Projekt waere physikalisch dasselbe und wuerde die
+    // Lichter-Uniforms jedes Materials in der Szene aufblaehen - eine
+    // wandernde reicht, weil man immer nur an einer Station steht.
+    const lamp = lampRef.current;
+    if (lamp) {
+      const progress = sceneState.tunnelProgress;
+      const index = nearestStation(progress);
+      const nearness = stationNearness(progress, index);
+      const side = index % 2 === 0 ? -1 : 1;
+      // Gegenueber der Tafel und ein Stueck hinter ihr.
+      //
+      // Direkt neben der Tafel stand die Lampe im Spiegelwinkel: ihr
+      // Glanzpunkt lag mitten auf dem Screenshot und wurde vom Bloom zu
+      // einem leuchtenden Fleck aufgeblasen. Von der Gegenseite und aus
+      // dem Ruecken der Tafel faellt ihr Licht auf das Gitter ringsum -
+      // das ist es, was sie soll - und ihre Spiegelung geht am
+      // Betrachter vorbei.
+      lamp.position.set(-side * 2.6, 0.4, stationZ(index) - 3);
+      lamp.color.set(lampColor.set(accentOf(index)));
+      lamp.intensity = eased * Math.pow(nearness, 2) * 22;
     }
 
     // Motes driften dem Betrachter entgegen und setzen am Ende neu an.
@@ -255,6 +327,10 @@ export function TunnelMode() {
         fade
         speed={0.4}
       />
+
+      {/* Wanderlicht, siehe useFrame. Steht ausserhalb der drehenden
+          Gruppe, damit es an seiner Station bleibt. */}
+      <pointLight ref={lampRef} intensity={0} distance={22} decay={2} />
 
       {/* Alles Drehende steckt in dieser Gruppe. Die Tafeln liegen
           bewusst daneben und bleiben dadurch aufrecht. */}
@@ -300,51 +376,98 @@ export function TunnelMode() {
       {PROJECTS.map((project, i) => (
         <Panel
           key={project.id}
-          texture={textures[i]}
+          textures={textures.slice(ranges[i][0], ranges[i][1])}
           z={stationZ(i)}
           side={i % 2 === 0 ? -1 : 1}
           portrait={project.media.orientation === "portrait"}
           index={i}
+          reduced={reduced}
         />
       ))}
     </group>
   );
 }
 
+/* ================================================================== */
+/* Tafel                                                               */
+/* ================================================================== */
+
+/** Wie lange ein Bild steht, bevor das naechste einblendet. */
+const STILL_HOLD = 2.6;
+/** Dauer der Ueberblendung. */
+const STILL_FADE = 0.9;
+
 /**
  * Eine Projekttafel an der Korridorwand, leicht zur Fahrbahn eingedreht.
- * Wird heller, waehrend die Kamera sie passiert.
+ *
+ * Die Tafel ist bewusst ein Koerper und kein Aufkleber: Gehaeuse mit
+ * Tiefe, Metallprofil ringsum, davor eine Scheibe. Vorher war sie eine
+ * Flaeche mit einem 1px-Rahmen aus `lineSegments` - und eine Linie kann
+ * kein Licht reflektieren. Genau daran erkennt man den Unterschied
+ * zwischen einem gerenderten Objekt und einer eingefaerbten Flaeche,
+ * und im Vorbeifahren sieht man jetzt die Kante des Gehaeuses.
  */
 function Panel({
-  texture,
+  textures,
   z,
   side,
   portrait,
   index,
+  reduced,
 }: {
-  texture: THREE.Texture;
+  textures: THREE.Texture[];
   z: number;
   side: 1 | -1;
   portrait: boolean;
   index: number;
+  reduced: boolean;
 }) {
   const holderRef = useRef<THREE.Group>(null);
-  const meshRef = useRef<THREE.Mesh>(null);
-  const frameRef = useRef<THREE.LineSegments>(null);
+  const screenRef = useRef<THREE.Mesh>(null);
+  const fadeRef = useRef<THREE.Mesh>(null);
+  const frameRef = useRef<THREE.InstancedMesh>(null);
+  const glassRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
 
   const [w, h] = portrait ? [3.1, 6.4] : [7.4, 3.6];
+  const accent = accentOf(index);
 
-  const frameGeometry = useMemo(
-    () => new THREE.EdgesGeometry(new THREE.PlaneGeometry(w, h)),
-    [w, h],
-  );
   const glowTexture = useMemo(makeGlowTexture, []);
 
-  useFrame(() => {
-    const mesh = meshRef.current;
+  /**
+   * Der Rahmen als vier Metallprofile statt als Kantenlinie. Er verformt
+   * sich nie, also einmal setzen und nie wieder anfassen.
+   */
+  const placeFrame = useCallback(
+    (mesh: THREE.InstancedMesh | null) => {
+      frameRef.current = mesh;
+      if (!mesh) return;
+      const s = createTubeScratch();
+      const x = w / 2 + 0.06;
+      const y = h / 2 + 0.06;
+      // Waagerechte Profile laufen ueber die Ecken hinaus, damit dort
+      // keine Luecke steht - bei diesem Durchmesser sieht die
+      // Ueberlappung niemand.
+      setTube(mesh, 0, s, -x - 0.05, y, 0, x + 0.05, y, 0);
+      setTube(mesh, 1, s, -x - 0.05, -y, 0, x + 0.05, -y, 0);
+      setTube(mesh, 2, s, -x, -y, 0, -x, y, 0);
+      setTube(mesh, 3, s, x, -y, 0, x, y, 0);
+      mesh.instanceMatrix.needsUpdate = true;
+    },
+    [w, h],
+  );
+
+  /**
+   * Zustand des Bildwechsels. Liegt bewusst in einem Ref und nicht in
+   * React-State: der Wechsel laeuft pro Frame, und State-Updates in
+   * jedem Frame wuerden die gesamte Szene neu rendern.
+   */
+  const cycle = useRef({ current: 0, next: 1 % textures.length, mix: 0, hold: 0 });
+
+  useFrame((_, delta) => {
+    const screen = screenRef.current;
     const holder = holderRef.current;
-    if (!mesh || !holder) return;
+    if (!screen || !holder) return;
 
     const active = sceneState.weights.tunnel;
     const progress = sceneState.tunnelProgress;
@@ -353,10 +476,63 @@ function Panel({
     // Ankunft ist der letzte Teil der Annaeherung. Erst hier steht die
     // Tafel voll da, wird herangeholt und mit Licht hinterlegt - vorher
     // bleibt sie erkennbar, aber zurueckhaltend. Ohne diese Trennung sind
-    // alle fuenf gleich laut und keine ist die, an der man gerade steht.
+    // alle Tafeln gleich laut und keine ist die, an der man gerade steht.
     const arrival = Math.max(0, (nearness - 0.55) / 0.45);
 
-    const material = mesh.material as THREE.MeshStandardMaterial;
+    const material = screen.material as THREE.MeshStandardMaterial;
+
+    const c = cycle.current;
+
+    // --- Bildwechsel ------------------------------------------------
+    //
+    // Bewusst nur an der Tafel, an der man steht. Wuerden alle Tafeln
+    // gleichzeitig durchwechseln, waere der Korridor ein Flackern und
+    // man wuesste nicht mehr, wo man hinschauen soll - die Bewegung
+    // wuerde von dem ablenken, wofuer sie da ist. So ist es das
+    // Gegenteil: der Wechsel passiert genau dort, wo der Blick ohnehin
+    // schon ist, und markiert die aktive Station zusaetzlich.
+    const fade = fadeRef.current;
+    if (fade && textures.length > 1 && !reduced) {
+      const fadeMaterial = fade.material as THREE.MeshStandardMaterial;
+
+      if (c.mix > 0) {
+        c.mix = Math.min(1, c.mix + delta / STILL_FADE);
+        if (c.mix >= 1) {
+          // Uebernehmen und zurueckstellen: ab jetzt zeigt die Haupt-
+          // flaeche das neue Bild und die Blende ist wieder leer.
+          c.current = c.next;
+          c.next = (c.next + 1) % textures.length;
+          c.mix = 0;
+          c.hold = 0;
+          material.map = textures[c.current];
+          material.emissiveMap = textures[c.current];
+          material.needsUpdate = true;
+        }
+      } else if (nearness > 0.55) {
+        // Bewusst an `nearness` und nicht an `arrival` gehaengt.
+        // `arrival` steigt erst, wenn die Tafel fast neben der Kamera
+        // liegt - dann sieht man sie im spitzen Winkel und ein
+        // Bildwechsel waere verschenkt. `nearness > 0.55` ist genau das
+        // Fenster, in dem sie gross und frontal im Bild steht.
+        c.hold += delta;
+        if (c.hold >= STILL_HOLD) {
+          c.mix = 0.0001;
+          fadeMaterial.map = textures[c.next];
+          fadeMaterial.emissiveMap = textures[c.next];
+          fadeMaterial.needsUpdate = true;
+        }
+      } else {
+        // Weg von der Station laeuft die Uhr zurueck, damit der Wechsel
+        // nicht sofort beim Ankommen kommt.
+        c.hold = 0;
+      }
+
+      // Weiche Flanke, sonst ist der Wechsel an seinen Enden sichtbar.
+      const k = c.mix * c.mix * (3 - 2 * c.mix);
+      fade.visible = c.mix > 0;
+      fadeMaterial.opacity = k;
+      fadeMaterial.emissiveIntensity = material.emissiveIntensity;
+    }
 
     // Deckkraft und Helligkeit sind bewusst getrennt:
     //
@@ -386,8 +562,16 @@ function Panel({
     holder.rotation.y = side * (-0.34 + arrival * 0.12);
 
     if (frameRef.current) {
-      (frameRef.current.material as THREE.LineBasicMaterial).opacity =
-        active * (0.3 + nearness * 0.4 + arrival * 0.3);
+      const frameMaterial = frameRef.current
+        .material as THREE.MeshStandardMaterial;
+      frameMaterial.opacity = active * (0.45 + nearness * 0.55);
+      // Das Profil glimmt bei Ankunft leicht auf - genug, um ueber der
+      // Bloom-Schwelle zu liegen und die Kante zu adeln.
+      frameMaterial.emissiveIntensity = 0.12 + arrival * 0.9;
+    }
+    if (glassRef.current) {
+      (glassRef.current.material as THREE.MeshPhysicalMaterial).opacity =
+        active * (0.25 + nearness * 0.75);
     }
     if (glowRef.current) {
       (glowRef.current.material as THREE.MeshBasicMaterial).opacity =
@@ -408,15 +592,33 @@ function Panel({
       {/* Nur wenig groesser als die Tafel. Mit dem urspruenglichen Faktor
           1.9 war die Flaeche direkt neben der Kamera 14 Einheiten breit
           und hat additiv das gesamte Bild ueberstrahlt. */}
-      <mesh ref={glowRef} position={[0, 0, -0.35]} scale={[w * 1.25, h * 1.25, 1]}>
+      <mesh ref={glowRef} position={[0, 0, -0.5]} scale={[w * 1.3, h * 1.3, 1]}>
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial
           map={glowTexture}
-          color={index % 2 === 0 ? "#38bdf8" : "#a855f7"}
+          color={accent}
           transparent
           opacity={0}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Gehaeuse. Gibt der Tafel Tiefe: im Vorbeifahren sieht man die
+          Kante, und das Studiolicht aus BackgroundScene laeuft als
+          Glanzlicht ueber das Profil. Eine Flaeche allein kann das nicht,
+          weil sie von der Seite verschwindet. */}
+      {/* Vorderkante bewusst 0.03 hinter der Bildflaeche: buendig waeren
+          beide koplanar, und zwei Flaechen auf derselben Tiefe kaempfen
+          um den Tiefentest - das gibt flackernde Flecken statt einer
+          Kante. */}
+      <mesh position={[0, 0, -0.13]}>
+        <boxGeometry args={[w + 0.34, h + 0.34, 0.2]} />
+        <meshStandardMaterial
+          color="#0d1017"
+          metalness={0.92}
+          roughness={0.32}
+          envMapIntensity={1.4}
         />
       </mesh>
 
@@ -425,32 +627,93 @@ function Panel({
           statt vom Studiolicht abzuhaengen. Das ist der Grund, warum das
           Bild bei Ankunft klar und farbrichtig steht - und nebenbei die
           inhaltlich passende Metapher fuer ein Deployment. */}
-      <mesh ref={meshRef}>
+      <mesh ref={screenRef} renderOrder={5}>
         <planeGeometry args={[w, h]} />
         <meshStandardMaterial
-          map={texture}
-          emissiveMap={texture}
+          map={textures[0]}
+          emissiveMap={textures[0]}
           emissive="#ffffff"
           emissiveIntensity={0.3}
           color="#0b0d13"
-          metalness={0.1}
-          roughness={0.6}
+          // Matt. Die Spiegelung gehoert auf die Scheibe davor, nicht auf
+          // das Bild selbst - eine glaenzende Bildflaeche faengt jede
+          // Lampe im Korridor als Fleck mitten im Screenshot ein.
+          metalness={0}
+          roughness={0.9}
           toneMapped={false}
           transparent
           opacity={0}
-          side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Rahmen als Metallprofil in der Akzentfarbe, abwechselnd Cyan und
-          Violett - das Duoton aus der Oberflaeche, hier in 3D fortgesetzt. */}
-      <lineSegments ref={frameRef} geometry={frameGeometry}>
-        <lineBasicMaterial
-          color={index % 2 === 0 ? "#38bdf8" : "#a855f7"}
+      {/* Zweite Flaeche fuer die Ueberblendung: sie liegt einen Hauch
+          davor und blendet mit dem naechsten Bild darueber. Zwei Flaechen
+          statt eines Shaders mit zwei Texturen, weil normales Alpha-
+          Blending genau die richtige Rechnung macht - neu * a + alt *
+          (1-a) - und das Material dabei ein gewoehnliches Standard-
+          material bleibt. */}
+      <mesh ref={fadeRef} position={[0, 0, 0.004]} renderOrder={6} visible={false}>
+        <planeGeometry args={[w, h]} />
+        <meshStandardMaterial
+          map={textures[1] ?? textures[0]}
+          emissiveMap={textures[1] ?? textures[0]}
+          emissive="#ffffff"
+          emissiveIntensity={0.3}
+          color="#0b0d13"
+          metalness={0}
+          roughness={0.9}
+          toneMapped={false}
+          transparent
+          opacity={0}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Scheibe davor.
+          Kein `transmission` - das braeuchte einen eigenen Renderdurchgang
+          pro Tafel. Was Glas hier ausmacht, ist ohnehin nicht die
+          Brechung, sondern die Spiegelung: eine fast spiegelglatte
+          Klarlackschicht faengt die Leuchtflaechen der Umgebung ein und
+          ADDIERT sie auf das Bild - genau das tut eine echte Scheibe, und
+          weil sie addiert statt zu deckeln, wird der Screenshot dadurch
+          nicht milchig. Der Glanzstreifen wandert beim Vorbeifahren ueber
+          die Tafel, was der Fahrt ihre Physik gibt. */}
+      <mesh ref={glassRef} position={[0, 0, 0.075]} renderOrder={7}>
+        <planeGeometry args={[w + 0.12, h + 0.12]} />
+        <meshPhysicalMaterial
+          color="#000000"
+          metalness={0}
+          roughness={0.06}
+          clearcoat={1}
+          clearcoatRoughness={0.04}
+          envMapIntensity={2.6}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Rahmenprofil in der Akzentfarbe, abwechselnd Cyan und Violett. */}
+      <instancedMesh
+        ref={placeFrame}
+        args={[undefined, undefined, 4]}
+        frustumCulled={false}
+        renderOrder={6}
+      >
+        <cylinderGeometry args={[0.045, 0.045, 1, 8, 1, true]} />
+        <meshStandardMaterial
+          color="#161a22"
+          emissive={accent}
+          emissiveIntensity={0.12}
+          metalness={0.95}
+          roughness={0.22}
+          envMapIntensity={1.8}
           transparent
           opacity={0}
         />
-      </lineSegments>
+      </instancedMesh>
     </group>
   );
 }
