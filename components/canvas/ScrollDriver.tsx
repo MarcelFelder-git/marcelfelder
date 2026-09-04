@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { sceneState } from "@/lib/scene/state";
+import { SCENE_KEYS, damp, sceneState, type SceneKey } from "@/lib/scene/state";
 import { useViewportMode } from "@/lib/store/useViewportMode";
 import type { ViewportMode } from "@/types";
 
@@ -10,123 +10,128 @@ const CHAPTERS: ViewportMode[] = ["structure", "signal", "code"];
 /**
  * Uebersetzt Scrollposition und Mauszeiger in Szenengewichte.
  *
- * Ein einziger rAF-Loop, ein einziger passiver Scroll-Listener. Die Gewichte
- * ergeben sich daraus, wie nah die Mitte eines Kapitels an der Bildschirmmitte
- * liegt - dadurch sind waehrend eines Uebergangs zwei Modelle gleichzeitig
- * teilweise sichtbar, und der Wechsel liest sich als Umbau statt als Schnitt.
+ * Ein einziger rAF-Loop, ein einziger passiver Zeiger-Listener.
+ *
+ * Der Ablauf ist bewusst dreistufig:
+ *
+ *   1. Rohanspruch messen — wie sehr beansprucht jeder Abschnitt gerade
+ *      den Bildschirm.
+ *   2. Normieren — die Summe ist immer 1, damit sich Szenen gegenseitig
+ *      verdraengen statt sich zu addieren.
+ *   3. Daempfen — die Gewichte laufen zeitabhaengig auf ihr Ziel zu.
+ *
+ * Schritt 3 ist der Grund, warum auch ein Sprung in der Scrollposition
+ * (Anker-Link, Pos1-Taste, schnelles Rad) als Bewegung ankommt und nicht
+ * als Schnitt. Ohne ihn springt das Bild mit dem Scrollwert mit.
  */
 export function ScrollDriver() {
   const setMode = useViewportMode.setState;
 
   useEffect(() => {
     let frame = 0;
+    let last = performance.now();
     let announced: ViewportMode = "structure";
 
-    // Zielwerte, auf die der rAF-Loop zufaehrt.
     const target = { x: 0, y: 0 };
-
     const onPointer = (e: PointerEvent) => {
       target.x = (e.clientX / window.innerWidth) * 2 - 1;
       target.y = -((e.clientY / window.innerHeight) * 2 - 1);
     };
 
-    const tick = () => {
+    /** Wie stark ein Abschnitt den Bildschirm beansprucht, 0..1. */
+    const claim = (el: HTMLElement, vh: number) => {
+      const r = el.getBoundingClientRect();
+      const centre = r.top + r.height / 2;
+      // Dreiecksfenster um die Bildschirmmitte. Fuer sehr hohe
+      // Abschnitte (Tunnel, Kapitel) greift zusaetzlich die
+      // Ueberlappungsregel darunter.
+      const distance = Math.abs(centre - vh / 2) / (vh * 0.7);
+      const window_ = Math.max(0, 1 - distance);
+
+      // Anteil des Bildschirms, den der Abschnitt tatsaechlich bedeckt.
+      // Ein 500vh hoher Tunnel hat seine Mitte fast nie in der
+      // Bildschirmmitte, fuellt den Blick aber die ganze Zeit.
+      const covered =
+        Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / vh;
+
+      return Math.max(window_, covered);
+    };
+
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
       const vh = window.innerHeight;
       const doc = document.documentElement;
-
       const max = doc.scrollHeight - vh;
       sceneState.progress = max > 0 ? window.scrollY / max : 0;
 
-      // --- Systemgraph im Hero --------------------------------------
-      // Der Graph traegt Hero UND Manifest. Beide Abschnitte sind mit
-      // `data-hero` markiert; gemessen wird vom Anfang des ersten bis zum
-      // Ende des letzten.
-      //
-      // Vorher endete er mit dem Hero, und im Manifest sprang der
-      // Hintergrund auf die Code-Matrix - also auf ein Kapitelmotiv,
-      // bevor das erste Kapitel ueberhaupt begonnen hatte. Der Sprung
-      // kam mitten in einem Text, der den Rest der Seite einleitet.
-      const heroEls = document.querySelectorAll<HTMLElement>("[data-hero]");
-      if (heroEls.length > 0) {
-        const first = heroEls[0].getBoundingClientRect();
-        const last = heroEls[heroEls.length - 1].getBoundingClientRect();
-        const span = Math.max(1, last.bottom - first.top);
-        // Ausblenden ueber das letzte Drittel des gemeinsamen Bereichs.
-        const scrolled = -first.top;
-        const gone = Math.min(
-          1,
-          Math.max(0, (scrolled - span * 0.66) / (span * 0.34)),
-        );
-        sceneState.hero.active = 1 - gone;
-      } else {
-        sceneState.hero.active = 0;
-      }
-      const heroActive = sceneState.hero.active > 0.5;
+      const raw: Record<SceneKey, number> = {
+        hero: 0,
+        structure: 0,
+        signal: 0,
+        code: 0,
+        tunnel: 0,
+      };
 
-      // --- Projekttunnel --------------------------------------------
-      // Zuerst, weil er die Kapitel verdraengt: waehrend der Fahrt durch
-      // den Korridor darf kein Kapitelmodell mehr im Bild stehen.
+      // --- Hero (Hero-Sektion und Manifest teilen sich den Graphen) ---
+      for (const el of document.querySelectorAll<HTMLElement>("[data-hero]")) {
+        raw.hero = Math.max(raw.hero, claim(el, vh));
+      }
+
+      // --- Tunnel ------------------------------------------------------
       const tunnelEl = document.querySelector<HTMLElement>("[data-tunnel]");
       if (tunnelEl) {
         const r = tunnelEl.getBoundingClientRect();
         const travel = Math.max(1, r.height - vh);
-        const raw = -r.top / travel;
-        sceneState.tunnel.progress = Math.min(1, Math.max(0, raw));
-
-        // Ein- und Ausblenden ueber je eine Viewporthoehe vor und nach
-        // dem Abschnitt, damit die Uebergabe von der Kapitelfuehrung
-        // nicht springt.
-        const enter = Math.min(1, Math.max(0, 1 - r.top / vh));
-        const exit = Math.min(1, Math.max(0, (r.bottom - vh * 0.1) / vh));
-        sceneState.tunnel.active = Math.min(enter, exit);
-      } else {
-        sceneState.tunnel.active = 0;
+        sceneState.tunnelProgress = Math.min(1, Math.max(0, -r.top / travel));
+        raw.tunnel = claim(tunnelEl, vh);
       }
 
-      const tunnelActive = sceneState.tunnel.active > 0.5;
-
-      // --- Kapitelgewichte ------------------------------------------
+      // --- Kapitel ------------------------------------------------------
       let best: ViewportMode = announced;
-      let bestScore = -1;
-      let sum = 0;
+      let bestScore = -Infinity;
 
       for (const id of CHAPTERS) {
-        // Mehrere Abschnitte koennen dasselbe Modell beanspruchen - der
-        // Hero zeigt bereits das Tragwerk, bevor Kapitel 01 beginnt. Es
-        // zaehlt der naechstgelegene, nicht die Summe.
-        const els = document.querySelectorAll<HTMLElement>(
+        let value = 0;
+        for (const el of document.querySelectorAll<HTMLElement>(
           `[data-chapter="${id}"]`,
-        );
-        // Ungeklemmt mitgefuehrt: oberhalb und unterhalb aller Kapitel sind
-        // alle Gewichte 0, und nur der rohe Wert verraet noch, welches
-        // Kapitel am naechsten liegt.
-        let raw = -Infinity;
-        for (const el of els) {
-          const r = el.getBoundingClientRect();
-          const centre = r.top + r.height / 2;
-          // Dreiecksfenster um die Bildschirmmitte, Breite ~1.4 Viewporthoehen.
-          const distance = Math.abs(centre - vh / 2) / (vh * 0.7);
-          raw = Math.max(raw, 1 - distance);
+        )) {
+          value = Math.max(value, claim(el, vh));
         }
-        // Im Tunnel und im Hero werden alle Kapitel auf null gezogen -
-        // beide ersetzen sie, statt sich mit ihnen zu ueberlagern.
-        const w = tunnelActive || heroActive ? 0 : Math.max(0, raw);
-        sceneState.weights[id] = w;
-        sum += w;
-
-        if (raw > bestScore) {
-          bestScore = raw;
+        raw[id] = value;
+        if (value > bestScore) {
+          bestScore = value;
           best = id;
         }
       }
 
-      // Ausserhalb aller Kapitel (Intro, Outro) haelt das naechstgelegene
-      // Modell die Szene - ein leerer Hintergrund waere ein Loch. Im
-      // Tunnel gilt das nicht, dort ist der Korridor der Inhalt.
-      if (sum < 0.05 && !tunnelActive && !heroActive) {
-        sceneState.weights[best] = 1;
+      // --- Normieren ----------------------------------------------------
+      // Ohne diesen Schritt koennen sich zwei Ansprueche addieren und beide
+      // Szenen stehen gleichzeitig voll da. Mit ihm teilen sie sich den
+      // Bildschirm und der Uebergang ist eine Ueberblendung.
+      let sum = 0;
+      for (const key of SCENE_KEYS) sum += raw[key];
+
+      if (sum > 0.001) {
+        for (const key of SCENE_KEYS) {
+          sceneState.targets[key] = raw[key] / sum;
+        }
+      }
+      // Bei sum ~ 0 (zwischen zwei Abschnitten) bleiben die letzten Ziele
+      // stehen - das haelt die Szene, statt sie kurz leer zu zeigen.
+
+      // --- Daempfen -----------------------------------------------------
+      for (const key of SCENE_KEYS) {
+        sceneState.weights[key] = damp(
+          sceneState.weights[key],
+          sceneState.targets[key],
+          6,
+          dt,
+        );
       }
 
+      // Fortschritt im aktiven Kapitel, fuer Feinheiten in den Szenen.
       const matches = document.querySelectorAll<HTMLElement>(
         `[data-chapter="${best}"]`,
       );
@@ -144,15 +149,15 @@ export function ScrollDriver() {
         setMode({ mode: best });
       }
 
-      // Gegen Ende zurueckfahren: der Kontaktabschnitt ist der einzige
-      // Moment, in dem die Szene nicht mehr erzaehlt, sondern nur noch
-      // stoert. Als CSS-Variable geschrieben, damit kein Re-Render anfaellt.
-      const fade = 1 - Math.min(1, Math.max(0, (sceneState.progress - 0.9) / 0.1)) * 0.8;
-      doc.style.setProperty("--scene-opacity", (0.78 * fade).toFixed(3));
-
       // Zeiger traege nachziehen: harte Werte lassen die Kamera zittern.
-      sceneState.pointer.x += (target.x - sceneState.pointer.x) * 0.06;
-      sceneState.pointer.y += (target.y - sceneState.pointer.y) * 0.06;
+      sceneState.pointer.x = damp(sceneState.pointer.x, target.x, 4, dt);
+      sceneState.pointer.y = damp(sceneState.pointer.y, target.y, 4, dt);
+
+      // Szene gegen Ende zurueckfahren: der Kontaktabschnitt ist der
+      // einzige Moment, in dem sie nicht mehr erzaehlt, sondern stoert.
+      const fade =
+        1 - Math.min(1, Math.max(0, (sceneState.progress - 0.9) / 0.1)) * 0.8;
+      doc.style.setProperty("--scene-opacity", (0.78 * fade).toFixed(3));
 
       frame = requestAnimationFrame(tick);
     };

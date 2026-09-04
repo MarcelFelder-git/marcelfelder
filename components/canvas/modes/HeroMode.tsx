@@ -128,7 +128,7 @@ export function HeroMode() {
     const group = groupRef.current;
     if (!group) return;
 
-    const active = sceneState.hero.active;
+    const active = sceneState.weights.hero;
     group.visible = active > 0.01;
     if (!group.visible) return;
 

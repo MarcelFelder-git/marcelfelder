@@ -98,7 +98,7 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
   useEffect(() => {
     let frame = 0;
     const tick = () => {
-      const p = sceneState.tunnel.progress;
+      const p = sceneState.tunnelProgress;
       // Stationen liegen im Korridor bei 12, 29, 46, 63, 80 von 99
       // Einheiten Fahrt; in Fortschritt umgerechnet ergibt das etwa
       // gleiche Abstaende mit etwas Vorlauf.

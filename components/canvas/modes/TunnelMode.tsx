@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Stars, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
 import { PROJECTS } from "@/content/projects";
@@ -162,6 +162,19 @@ export function TunnelMode() {
 
   const textures = useTexture(PROJECTS.map((p) => p.media.image));
 
+  // Die Tafeln haengen schraeg zur Fahrbahn - genau der Fall, in dem
+  // Standard-Filterung Texturen matschig macht. Anisotrope Filterung
+  // kostet fast nichts und ist hier der Unterschied zwischen lesbarem
+  // und verwaschenem Screenshot.
+  const gl = useThree((s) => s.gl);
+  useMemo(() => {
+    const max = gl.capabilities.getMaxAnisotropy();
+    for (const texture of textures) {
+      texture.anisotropy = max;
+      texture.needsUpdate = true;
+    }
+  }, [gl, textures]);
+
   /** Staubkoerner, die traege durch den Korridor treiben. */
   const motes = useMemo(() => {
     const COUNT = 260;
@@ -184,7 +197,7 @@ export function TunnelMode() {
     const group = groupRef.current;
     if (!group) return;
 
-    const { active } = sceneState.tunnel;
+    const active = sceneState.weights.tunnel;
     group.visible = active > 0.01;
     if (!group.visible) return;
 
@@ -222,6 +235,27 @@ export function TunnelMode() {
 
   return (
     <group ref={groupRef} visible={false}>
+      {/* Sternfeld hinter dem Korridor.
+          Der Korridor ist eine offene Gitterroehre - man sieht zwischen
+          den Streben hindurch. Vorher lag dort nur der Grundton, was den
+          Tunnel wie eine Zeichnung auf Papier wirken liess. Mit Sternen
+          dahinter bekommt er einen Aussenraum, und die Fahrt liest sich
+          als Bewegung durch etwas statt als Muster, das groesser wird.
+
+          Die Sterne sitzen in der Gruppe, damit sie mit ihr ein- und
+          ausblenden; sie stehen aber ausserhalb der drehenden
+          Untergruppe - ein mitrotierender Sternenhimmel waere sofort als
+          Kulisse erkennbar. */}
+      <Stars
+        radius={90}
+        depth={60}
+        count={2200}
+        factor={3.2}
+        saturation={0}
+        fade
+        speed={0.4}
+      />
+
       {/* Alles Drehende steckt in dieser Gruppe. Die Tafeln liegen
           bewusst daneben und bleiben dadurch aufrecht. */}
       <group ref={spinRef}>
@@ -312,7 +346,8 @@ function Panel({
     const holder = holderRef.current;
     if (!mesh || !holder) return;
 
-    const { active, progress } = sceneState.tunnel;
+    const active = sceneState.weights.tunnel;
+    const progress = sceneState.tunnelProgress;
     const nearness = stationNearness(progress, index);
 
     // Ankunft ist der letzte Teil der Annaeherung. Erst hier steht die

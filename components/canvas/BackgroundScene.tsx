@@ -3,7 +3,12 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import {
+  EffectComposer,
+  Bloom,
+  ChromaticAberration,
+  Vignette,
+} from "@react-three/postprocessing";
 import * as THREE from "three";
 import { Rig } from "./Rig";
 import { StructureMode } from "./modes/StructureMode";
@@ -41,6 +46,13 @@ import { HeroMode } from "./modes/HeroMode";
  * ein paar Leuchtflaechen selbst gebaut: drei Lichter, die reflektiert
  * werden koennen, mehr braucht es fuer glaenzende Oberflaechen nicht.
  */
+/**
+ * Farbversatz in Bildschirmanteilen. Zwei Zehntausendstel klingen nach
+ * nichts und sind genau richtig: darueber wird aus dem Linsenfehler ein
+ * Effekt, und der Text im Vordergrund faengt an zu flimmern.
+ */
+const CHROMATIC_OFFSET = new THREE.Vector2(0.0006, 0.0004);
+
 export default function BackgroundScene() {
   return (
     <Canvas
@@ -103,7 +115,12 @@ export default function BackgroundScene() {
         <Rig />
 
         {/* Nur die hellsten Stellen glimmen: die Schwelle liegt bewusst
-            hoch, damit Bloom die Kanten adelt statt alles zu vernebeln. */}
+            hoch, damit Bloom die Kanten adelt statt alles zu vernebeln.
+            Dazu zwei Linsenfehler, die es in jeder echten Optik gibt und
+            deren Fehlen ein Bild "gerechnet" aussehen laesst: ein
+            minimaler Farbversatz zu den Raendern hin und eine Vignette.
+            Beide sind bewusst am unteren Rand der Wahrnehmbarkeit - man
+            soll sie nicht sehen, sondern ihr Fehlen vermissen. */}
         <EffectComposer>
           <Bloom
             intensity={0.85}
@@ -111,6 +128,12 @@ export default function BackgroundScene() {
             luminanceSmoothing={0.35}
             mipmapBlur
           />
+          <ChromaticAberration
+            offset={CHROMATIC_OFFSET}
+            radialModulation
+            modulationOffset={0.4}
+          />
+          <Vignette eskil={false} offset={0.28} darkness={0.72} />
         </EffectComposer>
       </Suspense>
     </Canvas>
