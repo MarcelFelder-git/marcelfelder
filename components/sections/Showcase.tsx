@@ -10,7 +10,7 @@ import { GlitchText } from "@/components/motion/GlitchText";
 import { LivePreview } from "@/components/projects/LivePreview";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { sceneState } from "@/lib/scene/state";
-import { stationNearness } from "@/components/canvas/modes/TunnelMode";
+import { stationNearness } from "@/lib/scene/tunnel";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -130,8 +130,18 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
       style={{ height: `${PROJECTS.length * 100 + 80}vh` }}
       className="relative"
     >
-      <div className="sticky top-0 flex h-screen items-end px-6 pb-[14vh] sm:px-10 lg:px-16">
-        {/* Der Text sitzt links unten und laesst die Roehre frei. */}
+      {/* Der Text steht immer auf der Gegenseite der aktuellen Tafel.
+          Tafeln haengen abwechselnd links und rechts an der Wand; stuende
+          der Text fest auf einer Seite, laege er bei jeder zweiten Station
+          genau ueber dem Screenshot - beides unlesbar. */}
+      <div
+        className={cn(
+          "sticky top-0 flex h-screen items-end px-6 pb-[14vh] transition-[justify-content] duration-500 sm:px-10 lg:px-16",
+          // Rechts zusaetzlicher Abstand: dort steht ab lg die fixierte
+          // Kapitelnavigation, und der Text soll nicht darunter laufen.
+          station % 2 === 0 ? "justify-end lg:pr-44" : "justify-start",
+        )}
+      >
         <div className="relative w-full max-w-lg">
           <div
             aria-hidden
@@ -340,20 +350,11 @@ function ProjectLinks({
           <SquareArrowOutUpRight className="size-4" strokeWidth={2} />
         </button>
       )}
-      {project.links.live && (
-        <a
-          href={project.links.live}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="invert-hover flex items-center gap-2 border border-rule px-4 py-2.5 text-sm text-mute"
-        >
-          Neuer Tab
-          <ArrowUpRight
-            className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            strokeWidth={2}
-          />
-        </a>
-      )}
+      {/* Kein zweiter Knopf fuer dieselbe Adresse: "Neuer Tab" steht in
+          der Leiste der Vorschau, wo man ihn braucht - naemlich dann,
+          wenn einem der Rahmen zu eng wird. Zwei Schaltflaechen
+          nebeneinander, die auf dieselbe URL zeigen, sind eine Entscheidung,
+          die niemand treffen will. */}
       <a
         href={project.links.repo}
         target="_blank"

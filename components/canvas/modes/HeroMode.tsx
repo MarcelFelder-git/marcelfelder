@@ -12,12 +12,22 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
  * Ein Tragwerk war hier das falsche Motiv, sobald Entwicklung die Rolle
  * ist, um die es geht: es erzaehlt Statik, nicht Software. Was hier steht,
  * ist ein Abhaengigkeitsgraph — Knoten, Kanten, und Signale, die
- * hindurchlaufen. Dieselbe Formsprache wie Fachwerk und Tunnel (Punkte
- * und Linien), aber die Aussage ist eine andere: nicht "das haelt", sondern
+ * hindurchlaufen. Dieselbe Formsprache wie Fachwerk und Tunnel (Punkte und
+ * Linien), aber die Aussage ist eine andere: nicht "das haelt", sondern
  * "da fliesst etwas".
  *
- * Die Pulse sind der eigentliche Blickfang. Ein statischer Graph ist ein
- * Diagramm; ein Graph, durch den etwas laeuft, ist ein laufendes System.
+ * ## Warum Roehren und Perlen statt Linien und Punkte
+ *
+ * Die erste Fassung benutzte `lineBasicMaterial` und `pointsMaterial`.
+ * Beide sind unbeleuchtet: eine 1px-Linie hat keine Oberflaeche, die Licht
+ * reflektieren koennte, und ein Point-Sprite ist eine flache Scheibe. Das
+ * Ergebnis sah aus wie ein Diagramm, nicht wie ein gerendertes Objekt -
+ * genau der Eindruck, den "amateurhaft" beschreibt.
+ *
+ * Jetzt sind die Kanten duenne Metallzylinder und die Knoten glaenzende
+ * Koerper mit hoher Metalness. Zusammen mit den Leuchtflaechen aus
+ * `BackgroundScene` bekommen sie Glanzlichter und Kantenreflexe - das ist
+ * der Unterschied zwischen eingefaerbt und beleuchtet.
  */
 
 const NODE_COUNT = 58;
@@ -26,9 +36,8 @@ const NEIGHBOURS = 3;
 const PULSE_COUNT = 18;
 const RADIUS = 3.4;
 
-const COL_NODE = new THREE.Color("#38bdf8");
-const COL_NODE_ALT = new THREE.Color("#a855f7");
-const COL_EDGE = new THREE.Color("#1e4763");
+const COL_NODE = new THREE.Color("#5eb7e8");
+const COL_NODE_MAJOR = new THREE.Color("#c084fc");
 
 interface Edge {
   a: number;
@@ -81,41 +90,30 @@ function buildGraph() {
 export function HeroMode() {
   const groupRef = useRef<THREE.Group>(null);
   const nodesRef = useRef<THREE.InstancedMesh>(null);
-  const linesRef = useRef<THREE.LineSegments>(null);
-  const pulsesRef = useRef<THREE.Points>(null);
+  const tubesRef = useRef<THREE.InstancedMesh>(null);
+  const pulsesRef = useRef<THREE.InstancedMesh>(null);
   const reduced = usePrefersReducedMotion();
 
   const graph = useMemo(buildGraph, []);
 
   const buffers = useMemo(() => {
-    const { edges } = graph;
     return {
       live: new Float32Array(NODE_COUNT * 3),
-      linePos: new Float32Array(edges.length * 6),
-      lineCol: new Float32Array(edges.length * 6),
-      pulsePos: new Float32Array(PULSE_COUNT * 3),
       // Jeder Puls laeuft auf einer Kante von a nach b und setzt danach
       // auf einer neuen Kante neu an.
       pulseEdge: new Int32Array(PULSE_COUNT),
       pulseT: new Float32Array(PULSE_COUNT),
       pulseSpeed: new Float32Array(PULSE_COUNT),
       dummy: new THREE.Object3D(),
+      edgeDummy: new THREE.Object3D(),
       color: new THREE.Color(),
+      from: new THREE.Vector3(),
+      to: new THREE.Vector3(),
+      dir: new THREE.Vector3(),
+      up: new THREE.Vector3(0, 1, 0),
+      quat: new THREE.Quaternion(),
     };
-  }, [graph]);
-
-  const lineGeometry = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(buffers.linePos, 3));
-    g.setAttribute("color", new THREE.BufferAttribute(buffers.lineCol, 3));
-    return g;
-  }, [buffers]);
-
-  const pulseGeometry = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(buffers.pulsePos, 3));
-    return g;
-  }, [buffers]);
+  }, []);
 
   // Pulse initial auf zufaellige Kanten setzen.
   useMemo(() => {
@@ -139,14 +137,17 @@ export function HeroMode() {
     const { base, phase, edges } = graph;
     const {
       live,
-      linePos,
-      lineCol,
-      pulsePos,
       pulseEdge,
       pulseT,
       pulseSpeed,
       dummy,
+      edgeDummy,
       color,
+      from,
+      to,
+      dir,
+      up,
+      quat,
     } = buffers;
 
     if (!reduced) {
@@ -164,51 +165,57 @@ export function HeroMode() {
         base[i * 3 + 2] + Math.sin(t * 0.28 + phase[i] * 0.6) * drift;
     }
 
-    // --- Kanten neu aufspannen -------------------------------------
-    for (let e = 0; e < edges.length; e++) {
-      const { a, b } = edges[e];
-      const o = e * 6;
-      linePos[o] = live[a * 3];
-      linePos[o + 1] = live[a * 3 + 1];
-      linePos[o + 2] = live[a * 3 + 2];
-      linePos[o + 3] = live[b * 3];
-      linePos[o + 4] = live[b * 3 + 1];
-      linePos[o + 5] = live[b * 3 + 2];
+    // --- Kanten als Roehren ausrichten ------------------------------
+    const tubes = tubesRef.current;
+    if (tubes) {
+      for (let e = 0; e < edges.length; e++) {
+        const { a, b } = edges[e];
+        from.set(live[a * 3], live[a * 3 + 1], live[a * 3 + 2]);
+        to.set(live[b * 3], live[b * 3 + 1], live[b * 3 + 2]);
 
-      for (let k = 0; k < 6; k += 3) {
-        lineCol[o + k] = COL_EDGE.r;
-        lineCol[o + k + 1] = COL_EDGE.g;
-        lineCol[o + k + 2] = COL_EDGE.b;
+        dir.subVectors(to, from);
+        const length = dir.length();
+
+        edgeDummy.position.copy(from).addScaledVector(dir, 0.5);
+        // Der Zylinder steht standardmaessig auf der Y-Achse; die
+        // Quaternion dreht ihn auf die Kantenrichtung.
+        quat.setFromUnitVectors(up, dir.normalize());
+        edgeDummy.quaternion.copy(quat);
+        edgeDummy.scale.set(1, length, 1);
+        edgeDummy.updateMatrix();
+        tubes.setMatrixAt(e, edgeDummy.matrix);
       }
-    }
-    if (linesRef.current) {
-      const geo = linesRef.current.geometry;
-      geo.attributes.position.needsUpdate = true;
-      geo.attributes.color.needsUpdate = true;
-      (linesRef.current.material as THREE.LineBasicMaterial).opacity =
-        eased * 0.75;
+      tubes.instanceMatrix.needsUpdate = true;
+      (tubes.material as THREE.MeshStandardMaterial).opacity = eased * 0.8;
     }
 
     // --- Signale laufen ueber die Kanten ---------------------------
-    for (let p = 0; p < PULSE_COUNT; p++) {
-      if (!reduced) pulseT[p] += pulseSpeed[p] * delta;
-      if (pulseT[p] >= 1) {
-        pulseT[p] = 0;
-        // Neue Kante: so wirkt es wie Verkehr im Netz und nicht wie
-        // eine feste Rundstrecke.
-        pulseEdge[p] = Math.floor(Math.random() * edges.length);
+    const pulses = pulsesRef.current;
+    if (pulses) {
+      for (let p = 0; p < PULSE_COUNT; p++) {
+        if (!reduced) pulseT[p] += pulseSpeed[p] * delta;
+        if (pulseT[p] >= 1) {
+          pulseT[p] = 0;
+          // Neue Kante: so wirkt es wie Verkehr im Netz und nicht wie
+          // eine feste Rundstrecke.
+          pulseEdge[p] = Math.floor(Math.random() * edges.length);
+        }
+        const { a, b } = edges[pulseEdge[p]];
+        const k = pulseT[p];
+        dummy.position.set(
+          live[a * 3] + (live[b * 3] - live[a * 3]) * k,
+          live[a * 3 + 1] + (live[b * 3 + 1] - live[a * 3 + 1]) * k,
+          live[a * 3 + 2] + (live[b * 3 + 2] - live[a * 3 + 2]) * k,
+        );
+        // Am Anfang und Ende der Kante kleiner: der Puls taucht auf und
+        // verschwindet, statt hart zu erscheinen.
+        const fade = Math.sin(k * Math.PI);
+        dummy.scale.setScalar(0.4 + fade * 0.8);
+        dummy.updateMatrix();
+        pulses.setMatrixAt(p, dummy.matrix);
       }
-      const { a, b } = edges[pulseEdge[p]];
-      const k = pulseT[p];
-      pulsePos[p * 3] = live[a * 3] + (live[b * 3] - live[a * 3]) * k;
-      pulsePos[p * 3 + 1] =
-        live[a * 3 + 1] + (live[b * 3 + 1] - live[a * 3 + 1]) * k;
-      pulsePos[p * 3 + 2] =
-        live[a * 3 + 2] + (live[b * 3 + 2] - live[a * 3 + 2]) * k;
-    }
-    if (pulsesRef.current) {
-      pulsesRef.current.geometry.attributes.position.needsUpdate = true;
-      (pulsesRef.current.material as THREE.PointsMaterial).opacity = eased;
+      pulses.instanceMatrix.needsUpdate = true;
+      (pulses.material as THREE.MeshBasicMaterial).opacity = eased;
     }
 
     // --- Knoten setzen ---------------------------------------------
@@ -220,42 +227,66 @@ export function HeroMode() {
         // groesser und in der Gegenfarbe. Ohne diese Abstufung liest sich
         // der Graph als gleichfoermige Punktwolke.
         const major = i % 7 === 0;
-        dummy.scale.setScalar(major ? 1.9 : 1);
+        dummy.scale.setScalar(major ? 1.8 : 1);
+        dummy.rotation.set(t * 0.2 + i, t * 0.15 + i, 0);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
-        mesh.setColorAt(i, color.copy(major ? COL_NODE_ALT : COL_NODE));
+        mesh.setColorAt(i, color.copy(major ? COL_NODE_MAJOR : COL_NODE));
       }
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-      (mesh.material as THREE.MeshBasicMaterial).opacity = eased;
+      (mesh.material as THREE.MeshStandardMaterial).opacity = eased;
     }
   });
 
   return (
     <group ref={groupRef} visible={false}>
-      <lineSegments ref={linesRef} geometry={lineGeometry} frustumCulled={false}>
-        <lineBasicMaterial vertexColors transparent opacity={0} />
-      </lineSegments>
+      {/* Kanten als duenne Metallroehren. `openEnded` spart die Deckel -
+          die sieht bei diesem Durchmesser ohnehin niemand. */}
+      <instancedMesh
+        ref={tubesRef}
+        args={[undefined, undefined, graph.edges.length]}
+        frustumCulled={false}
+      >
+        <cylinderGeometry args={[0.011, 0.011, 1, 6, 1, true]} />
+        <meshStandardMaterial
+          color="#2b6a88"
+          metalness={0.9}
+          roughness={0.35}
+          transparent
+          opacity={0}
+        />
+      </instancedMesh>
 
+      {/* Knoten als glaenzende Koerper. Metalness hoch, Roughness niedrig:
+          so faengt jeder Knoten die Leuchtflaechen der Umgebung als
+          Glanzlicht ein - genau das unterscheidet eine gerenderte
+          Oberflaeche von einer eingefaerbten Flaeche. */}
       <instancedMesh
         ref={nodesRef}
         args={[undefined, undefined, NODE_COUNT]}
         frustumCulled={false}
       >
-        <octahedronGeometry args={[0.055, 0]} />
-        <meshBasicMaterial toneMapped={false} transparent />
-      </instancedMesh>
-
-      <points ref={pulsesRef} geometry={pulseGeometry} frustumCulled={false}>
-        <pointsMaterial
-          size={0.13}
-          color="#bae6fd"
+        <icosahedronGeometry args={[0.075, 1]} />
+        <meshStandardMaterial
+          metalness={0.95}
+          roughness={0.16}
+          envMapIntensity={1.6}
           transparent
           opacity={0}
-          sizeAttenuation
-          depthWrite={false}
         />
-      </points>
+      </instancedMesh>
+
+      {/* Signale: kleine, sehr helle Kugeln. Sie liegen ueber der
+          Bloom-Schwelle und bekommen dadurch ihren Schein. */}
+      <instancedMesh
+        ref={pulsesRef}
+        args={[undefined, undefined, PULSE_COUNT]}
+        frustumCulled={false}
+      >
+        <sphereGeometry args={[0.045, 12, 12]} />
+        <meshBasicMaterial color="#e0f2fe" toneMapped={false} transparent />
+      </instancedMesh>
     </group>
   );
 }

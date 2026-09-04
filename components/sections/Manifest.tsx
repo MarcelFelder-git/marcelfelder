@@ -24,6 +24,9 @@ export function Manifest() {
   return (
     <section
       ref={ref}
+      // Teilt sich den Systemgraphen mit dem Hero: hier soll der
+      // Hintergrund weiterlaufen, nicht auf ein Kapitelmotiv springen.
+      data-hero
       className="relative px-6 py-[22vh] sm:px-10 lg:px-16"
       aria-label="Manifest"
     >

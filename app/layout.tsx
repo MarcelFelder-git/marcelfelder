@@ -61,20 +61,26 @@ export default function RootLayout({
           Zum Inhalt springen
         </a>
 
-        {/* Ambient: Raster und audio-reaktiver Lichtkegel, ganz hinten */}
-        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-          <div className="absolute inset-0 column-grid opacity-70" />
+        {/* Die 3D-Szene liegt hinter dem gesamten Inhalt */}
+        <SceneLayer />
+
+        {/* Ambient: Raster und audio-reaktiver Lichtkegel.
+            Liegt jetzt UEBER dem Canvas statt dahinter - seit die Szene
+            einen undurchsichtigen Grund hat (noetig fuer Bloom), waere
+            hinter ihr nichts mehr davon zu sehen. */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[2] mix-blend-screen"
+        >
+          <div className="absolute inset-0 column-grid opacity-40" />
           <div
             className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(58rem 38rem at 50% 0%, rgb(var(--audio-glow, 56 189 248) / calc(0.08 + var(--audio-level, 0) * 0.22)), transparent 70%)",
+                "radial-gradient(58rem 38rem at 50% 0%, rgb(var(--audio-glow, 56 189 248) / calc(0.05 + var(--audio-level, 0) * 0.18)), transparent 70%)",
             }}
           />
         </div>
-
-        {/* Die 3D-Szene liegt hinter dem gesamten Inhalt */}
-        <SceneLayer />
 
         <AmbientGlow />
         <Hud />

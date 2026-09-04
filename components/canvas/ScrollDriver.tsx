@@ -38,12 +38,25 @@ export function ScrollDriver() {
       sceneState.progress = max > 0 ? window.scrollY / max : 0;
 
       // --- Systemgraph im Hero --------------------------------------
-      // Voll da, solange der Hero die Buehne hat; ausgeblendet, sobald er
-      // zur Haelfte hinausgescrollt ist.
-      const heroEl = document.querySelector<HTMLElement>("[data-hero]");
-      if (heroEl) {
-        const r = heroEl.getBoundingClientRect();
-        const gone = Math.min(1, Math.max(0, -r.top / (r.height * 0.55)));
+      // Der Graph traegt Hero UND Manifest. Beide Abschnitte sind mit
+      // `data-hero` markiert; gemessen wird vom Anfang des ersten bis zum
+      // Ende des letzten.
+      //
+      // Vorher endete er mit dem Hero, und im Manifest sprang der
+      // Hintergrund auf die Code-Matrix - also auf ein Kapitelmotiv,
+      // bevor das erste Kapitel ueberhaupt begonnen hatte. Der Sprung
+      // kam mitten in einem Text, der den Rest der Seite einleitet.
+      const heroEls = document.querySelectorAll<HTMLElement>("[data-hero]");
+      if (heroEls.length > 0) {
+        const first = heroEls[0].getBoundingClientRect();
+        const last = heroEls[heroEls.length - 1].getBoundingClientRect();
+        const span = Math.max(1, last.bottom - first.top);
+        // Ausblenden ueber das letzte Drittel des gemeinsamen Bereichs.
+        const scrolled = -first.top;
+        const gone = Math.min(
+          1,
+          Math.max(0, (scrolled - span * 0.66) / (span * 0.34)),
+        );
         sceneState.hero.active = 1 - gone;
       } else {
         sceneState.hero.active = 0;

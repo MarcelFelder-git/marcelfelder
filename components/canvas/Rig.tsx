@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
-import { TUNNEL_LENGTH } from "./modes/TunnelMode";
+import { TUNNEL_LENGTH } from "@/lib/scene/tunnel";
 import type { ViewportMode } from "@/types";
 
 /**

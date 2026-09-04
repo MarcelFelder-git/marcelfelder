@@ -7,6 +7,13 @@ import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
 import { PROJECTS } from "@/content/projects";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import {
+  RING_COUNT,
+  RING_SPACING,
+  TUNNEL_LENGTH,
+  stationNearness,
+  stationZ,
+} from "@/lib/scene/tunnel";
 
 /**
  * Projekttunnel.
@@ -22,18 +29,9 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
  * unsichtbar und nicht kopierbar.
  */
 
-const RING_COUNT = 42;
-const RING_SPACING = 2.5;
 const RADIUS = 5.2;
 const SIDES = 8;
-/** Laenge des Korridors in Weltkoordinaten. Das Rig braucht denselben
- *  Wert fuer die Kamerafahrt - deshalb exportiert statt zweimal getippt. */
-export const TUNNEL_LENGTH = RING_COUNT * RING_SPACING;
 const LENGTH = TUNNEL_LENGTH;
-
-/** Erste Tafel etwas hinter dem Eingang, dann gleichmaessig verteilt. */
-const STATION_START = -12;
-const STATION_GAP = 17;
 
 /**
  * Der Korridor bekommt eine einzige Farbe, keinen eingebackenen
@@ -46,27 +44,6 @@ const STATION_GAP = 17;
 const COL_CORRIDOR = new THREE.Color("#2f6f9e");
 /** Jeder vierte Ring heller: gibt der Fahrt einen Takt. */
 const COL_MARKER = new THREE.Color("#5cc8f5");
-
-export function stationZ(i: number) {
-  return STATION_START - i * STATION_GAP;
-}
-
-/** Kameraposition auf der Fahrt, aus dem Fortschritt gerechnet. */
-export function tunnelCameraZ(progress: number) {
-  return 4 - progress * (RING_COUNT * RING_SPACING - 6);
-}
-
-/**
- * Wie "angekommen" man an einer Station ist, 0..1.
- *
- * Wird an drei Stellen gebraucht - Tafelhelligkeit, Glanz im Korridor und
- * der Zustand der Anzeige im DOM. Deshalb hier einmal definiert statt
- * dreimal mit leicht anderen Schwellen nachgebaut.
- */
-export function stationNearness(progress: number, index: number) {
-  const distance = Math.abs(tunnelCameraZ(progress) - stationZ(index));
-  return Math.max(0, 1 - distance / 22);
-}
 
 /** Radialer Lichtfleck als Textur - kein Asset, vom Canvas erzeugt. */
 function makeGlowTexture() {
@@ -138,6 +115,8 @@ function buildCorridor() {
 
 export function TunnelMode() {
   const groupRef = useRef<THREE.Group>(null);
+  const spinRef = useRef<THREE.Group>(null);
+  const linesRef = useRef<THREE.LineSegments>(null);
   const motesRef = useRef<THREE.Points>(null);
   const reduced = usePrefersReducedMotion();
 
@@ -173,16 +152,20 @@ export function TunnelMode() {
 
     const eased = active * active * (3 - 2 * active);
 
-    // Der ganze Korridor dreht sich extrem langsam um die Fahrtachse. Das
-    // ist der Unterschied zwischen "Standbild mit bewegter Kamera" und
-    // "man faehrt durch etwas".
-    if (!reduced) {
-      group.rotation.z = state.clock.elapsedTime * 0.018;
+    // Nur der Korridor dreht sich, nicht die Tafeln.
+    //
+    // Vorher drehte sich die gesamte Gruppe - und damit auch die
+    // Projektbilder. Ein Screenshot, der auf dem Kopf an einem
+    // vorbeizieht, ist kein Effekt, sondern unlesbar. Die Drehung ist
+    // aber genau das, was der Fahrt ihre Bewegung gibt, also bleibt sie
+    // - beschraenkt auf das, was keine Information traegt.
+    if (!reduced && spinRef.current) {
+      spinRef.current.rotation.z = state.clock.elapsedTime * 0.018;
     }
 
-    const lines = group.children[0] as THREE.LineSegments;
-    if (lines?.material) {
-      (lines.material as THREE.LineBasicMaterial).opacity = eased * 0.9;
+    if (linesRef.current) {
+      (linesRef.current.material as THREE.LineBasicMaterial).opacity =
+        eased * 0.9;
     }
 
     // Motes driften dem Betrachter entgegen und setzen am Ende neu an.
@@ -201,20 +184,45 @@ export function TunnelMode() {
 
   return (
     <group ref={groupRef} visible={false}>
-      <lineSegments geometry={corridor} frustumCulled={false}>
-        <lineBasicMaterial vertexColors transparent opacity={0} />
-      </lineSegments>
+      {/* Alles Drehende steckt in dieser Gruppe. Die Tafeln liegen
+          bewusst daneben und bleiben dadurch aufrecht. */}
+      <group ref={spinRef}>
+        <lineSegments
+          ref={linesRef}
+          geometry={corridor}
+          frustumCulled={false}
+          // Ohne diese beiden Angaben zeichnet der Korridor ueber den
+          // Tafeln: transparente Objekte werden nach dem Abstand ihres
+          // Ursprungs sortiert, und der Ursprung dieser einen grossen
+          // Geometrie liegt am Tunneleingang - also scheinbar ganz vorne.
+          // renderOrder erzwingt die richtige Reihenfolge, depthWrite
+          // verhindert, dass die Linien den Tiefenpuffer blockieren.
+          renderOrder={0}
+        >
+          <lineBasicMaterial
+            vertexColors
+            transparent
+            opacity={0}
+            depthWrite={false}
+          />
+        </lineSegments>
 
-      <points ref={motesRef} geometry={motes.geometry} frustumCulled={false}>
-        <pointsMaterial
-          size={0.055}
-          color="#7dd3fc"
-          transparent
-          opacity={0}
-          sizeAttenuation
-          depthWrite={false}
-        />
-      </points>
+        <points
+          ref={motesRef}
+          geometry={motes.geometry}
+          frustumCulled={false}
+          renderOrder={1}
+        >
+          <pointsMaterial
+            size={0.055}
+            color="#7dd3fc"
+            transparent
+            opacity={0}
+            sizeAttenuation
+            depthWrite={false}
+          />
+        </points>
+      </group>
 
       {PROJECTS.map((project, i) => (
         <Panel
@@ -295,7 +303,12 @@ function Panel({
   });
 
   return (
-    <group ref={holderRef} position={[side * 3.5, portrait ? 0.2 : 0.4, z]}>
+    <group
+      ref={holderRef}
+      position={[side * 3.5, portrait ? 0.2 : 0.4, z]}
+      // Ueber dem Korridor, damit keine Gitterlinie ueber dem Screenshot liegt.
+      renderOrder={5}
+    >
       {/* Lichtfleck hinter der Tafel - erscheint erst bei Ankunft und
           hebt sie aus dem Korridor heraus, ohne dass ein Postprocessing
           noetig waere. */}
