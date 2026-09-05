@@ -37,6 +37,7 @@ export function ScrollDriver() {
     // Wiederverwendet statt pro Frame neu angelegt.
     const ground: [number, number, number] = [8, 9, 14];
     let lastGround = "";
+    let atOutro = false;
     const onPointer = (e: PointerEvent) => {
       target.x = (e.clientX / window.innerWidth) * 2 - 1;
       target.y = -((e.clientY / window.innerHeight) * 2 - 1);
@@ -157,11 +158,34 @@ export function ScrollDriver() {
       sceneState.pointer.x = damp(sceneState.pointer.x, target.x, 4, dt);
       sceneState.pointer.y = damp(sceneState.pointer.y, target.y, 4, dt);
 
-      // Szene gegen Ende zurueckfahren: der Kontaktabschnitt ist der
-      // einzige Moment, in dem sie nicht mehr erzaehlt, sondern stoert.
-      const fade =
-        1 - Math.min(1, Math.max(0, (sceneState.progress - 0.9) / 0.1)) * 0.8;
-      doc.style.setProperty("--scene-opacity", (0.78 * fade).toFixed(3));
+      // Szene zurueckfahren, sobald der helle Abschnitt ins Bild kommt.
+      //
+      // Vorher haing das an einem festen Scrollanteil (ab 90 %). Diese
+      // Zahl stimmte genau so lange, wie sich die Laenge der Seite nicht
+      // aenderte - und sie aendert sich bei jedem Projekt, das dazukommt.
+      // Jetzt wird der Abschnitt gemessen, den es tatsaechlich betrifft.
+      const lightEl = document.querySelector<HTMLElement>('[data-tone="light"]');
+      let arriving = 0;
+      if (lightEl) {
+        const r = lightEl.getBoundingClientRect();
+        arriving = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.7)));
+      }
+      doc.style.setProperty(
+        "--scene-opacity",
+        (0.78 * (1 - arriving * 0.94)).toFixed(3),
+      );
+
+      // Die Instrumente der Szene - Kapitelregister und Fadenkreuz -
+      // gehoeren zur dunklen Fahrt. Auf hellem Grund waeren sie nicht
+      // nur schlecht lesbar, sie haetten auch nichts mehr anzuzeigen.
+      // Als Klasse statt als weitere Custom Property, weil die Elemente
+      // dabei auch aus dem Tastaturfokus verschwinden muessen - eine
+      // unsichtbare, aber anspringbare Schaltflaeche ist eine Falle.
+      const outro = arriving > 0.55;
+      if (outro !== atOutro) {
+        atOutro = outro;
+        doc.classList.toggle("at-outro", outro);
+      }
 
       // Grundton der aktuellen Mischung ans CSS weitergeben. Die
       // Textkaesten legen sich als fast deckende Flaechen ueber die Szene;

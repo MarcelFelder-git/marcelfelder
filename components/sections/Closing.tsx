@@ -24,12 +24,17 @@ export function Vita() {
   return (
     <section
       ref={ref}
-      className="relative px-6 py-[14vh] sm:px-10 lg:px-16"
+      data-tone="light"
+      className="relative px-6 pb-[14vh] pt-[22vh] sm:px-10 lg:px-16"
       aria-labelledby="vita-heading"
     >
+      {/* Der Uebergang ins Helle ist ein Verlauf, keine Kante: oben noch
+          durchsichtig, sodass die Szene sichtbar ausklingt, ab einem
+          Fuenftel der Hoehe deckend. Eine harte Oberkante saehe aus wie
+          ein aufgeklebtes Element. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(65%_60%_at_35%_50%,rgba(var(--ground-rgb),0.94),transparent_80%)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),1)_18vh)]"
       />
 
       <p className="meta">Werdegang</p>
@@ -82,12 +87,13 @@ export function Vita() {
 export function Outro() {
   return (
     <footer
+      data-tone="light"
       className="relative px-6 pb-16 pt-[16vh] sm:px-10 lg:px-16"
       aria-labelledby="outro-heading"
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),0.96)_30%)]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[rgb(var(--ground-rgb))]"
       />
 
       <p className="meta">Kontakt</p>

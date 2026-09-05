@@ -76,6 +76,76 @@
   98% { clip-path: inset(67% 0 15% 0); transform: translate(2px, 0); }
 }
 
+/* ==================================================================== */
+/*  Heller Abschnitt                                                     */
+/*                                                                       */
+/*  Werdegang und Kontakt stehen auf hellem Grund. Das ist der einzige    */
+/*  harte Schnitt der Seite und liegt bewusst genau dort: die 3D-Szene    */
+/*  ist hier ohnehin schon zurueckgefahren, weil sie nichts mehr          */
+/*  erzaehlt. Ein heller Block mitten im Verlauf waere etwas anderes -    */
+/*  dort laege eine Kante quer durch den Raum, den die Szene aufspannt.   */
+/*                                                                       */
+/*  Umgesetzt ueber die Farbtoken selbst, nicht ueber eigene Klassen an   */
+/*  jedem Element: die Tokens werden vererbt, also stimmen Text,          */
+/*  Linien und Akzente im ganzen Teilbaum automatisch.                    */
+/* ==================================================================== */
+/* Die Kopfzeile liegt fest ueber allem und faehrt mit in den hellen
+   Abschnitt hinein. Sie bekommt dort denselben Satz Tokens - dann sind
+   Wortmarke, Tastenkuerzel und Fortschrittsbalken dunkel auf hell, und
+   der dunkle Schleier unter ihr wird von selbst zu einem hellen. Sie
+   auszublenden waere die einfachere Loesung und die schlechtere: der
+   Sprung zurueck nach oben ist genau am Seitenende am wichtigsten. */
+[data-tone="light"],
+.at-outro [data-chrome="topbar"] {
+  --color-paper: #eceef2;
+  --color-surface: #ffffff;
+  --color-raise: #f5f6f9;
+  --color-rule: #b9bfcc;
+  --color-rule-soft: #d7dbe4;
+
+  --color-ink: #0c0e13;
+  --color-mute: #4b5058;
+  --color-faint: #5c626c;
+
+  /* Das helle Cyan der dunklen Seite kommt auf hellem Grund auf 1.9:1 -
+     als Linkfarbe unbrauchbar. Beide Akzente sind deshalb hier
+     abgedunkelt, gemessen in scripts/check-contrast.mjs. */
+  --color-accent: #0369a1;
+  --color-accent-alt: #6d28d9;
+
+  --ground-rgb: 236, 238, 242;
+
+  /* Ohne diese Zeile bleibt der Text weiss.
+     `color` steht auf dem body und wird als FERTIG BERECHNETER Wert
+     vererbt - dass ein Nachfahre --color-ink neu belegt, aendert daran
+     nichts. Nur wer `color` selbst noch einmal setzt, loest das Token
+     an seiner eigenen Stelle auf. */
+  color: var(--color-ink);
+}
+
+/* Instrumente der dunklen Fahrt verschwinden, wenn der helle Abschnitt
+   uebernimmt. `visibility` zusaetzlich zur Deckkraft, damit die
+   Schaltflaechen des Kapitelregisters auch aus dem Tastaturfokus
+   fallen - sonst springt der Fokus auf etwas, das niemand sieht. */
+[data-chrome="scene"] {
+  transition:
+    opacity 0.5s ease,
+    visibility 0.5s;
+}
+
+.at-outro [data-chrome="scene"] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Der Farbversatz ist ein Linsenfehler auf leuchtender Schrift. Dunkle
+   Schrift auf hellem Grund gibt kein Licht ab, das sich aufspalten
+   koennte - dort liest er sich als Druckfehler statt als Signal. */
+[data-tone="light"] .chromatic,
+[data-tone="light"] .chromatic-strong {
+  text-shadow: none;
+}
+
 @layer base {
   html {
     color-scheme: dark;

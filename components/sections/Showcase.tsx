@@ -124,9 +124,16 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
     <div
       ref={ref}
       data-tunnel
-      // Eine Bildschirmhoehe pro Projekt plus Vor- und Nachlauf. Kuerzer
-      // wirkt die Fahrt gehetzt, laenger wird sie zur Geduldsprobe.
-      style={{ height: `${PROJECTS.length * 100 + 80}vh` }}
+      // Knapp drei Viertel einer Bildschirmhoehe pro Projekt plus Vor-
+      // und Nachlauf.
+      //
+      // Vorher war es eine volle Hoehe je Projekt. Mit fuenf Projekten
+      // waren das 580vh, mit sechs 680 - fast sieben Bildschirme allein
+      // fuer die Fahrt, und der Weg zwischen zwei Geraeten wurde zur
+      // Geduldsprobe. Das Tempo der Fahrt selbst bleibt gleich, weil
+      // die Kamera am Fortschritt haengt und nicht an Pixeln: es wird
+      // nur weniger gescrollt fuer dieselbe Strecke.
+      style={{ height: `${PROJECTS.length * 72 + 60}vh` }}
       className="relative"
     >
       {/* Der Text steht immer auf der Gegenseite der aktuellen Tafel.
@@ -142,9 +149,20 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
         )}
       >
         <div className="relative w-full max-w-lg">
+          {/* Zwei Unterlagen statt einer, weil die Aufgabe eine andere ist:
+              Auf dem Telefon fuellt die Karte fast das ganze Bild, und das
+              Geraet im Korridor steht zwangslaeufig dahinter - dort
+              braucht es eine deckende Flaeche mit Kante, sonst laeuft der
+              Screenshot durch den Text. Ab sm steht die Karte seitlich
+              neben dem Geraet, und dann ist ein weicher Verlauf richtig:
+              er begrenzt nichts, er nimmt nur Helligkeit weg. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 bg-[radial-gradient(70%_70%_at_30%_60%,rgba(var(--ground-rgb),0.95),transparent_75%)]"
+            className="pointer-events-none absolute -inset-x-5 -inset-y-5 -z-10 border border-rule-soft bg-[rgba(var(--ground-rgb),0.93)] sm:hidden"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-10 -inset-y-12 -z-10 hidden bg-[radial-gradient(70%_70%_at_30%_60%,rgba(var(--ground-rgb),0.95),transparent_75%)] sm:block"
           />
 
           {/* Ankunftsanzeige: die Linie faerbt sich, waehrend man auf die
@@ -198,7 +216,14 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
             <p className="mt-5 text-pretty text-[17px] leading-snug text-ink">
               {project.tagline}
             </p>
-            <p className="mt-3 text-[14px] leading-relaxed text-mute">
+            {/* Auf dem Telefon nur fuer Screenreader.
+                Der technische Zusatz ist das, was jemanden interessiert,
+                der schon eingestiegen ist - auf einem Handschirm kostet
+                er vier Zeilen, die der Karte genau den Platz nehmen, den
+                das Geraet dahinter braucht. `sr-only` statt `hidden`,
+                damit er trotzdem vorgelesen wird: weniger sehen ist eine
+                Gestaltungsentscheidung, weniger erfahren waere keine. */}
+            <p className="mt-3 text-[14px] leading-relaxed text-mute max-sm:sr-only">
               {project.detail}
             </p>
 

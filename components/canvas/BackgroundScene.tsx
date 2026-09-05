@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import {
@@ -67,6 +67,41 @@ const CHROMATIC_OFFSET = new THREE.Vector2(0.0006, 0.0004);
  * das, was den Koerpern ihre Kante gibt, und genau dort faellt ein
  * Farbwechsel auf, ohne die Materialien umzufaerben.
  */
+/**
+ * Bildwinkel an das Format anpassen.
+ *
+ * Der Bildwinkel einer Perspektivkamera ist SENKRECHT definiert; wie
+ * viel man in der Breite sieht, faellt aus dem Seitenverhaeltnis. Auf
+ * einem Telefon ist das rund 0.43 statt 1.78 — die Szene wird also
+ * seitlich beschnitten, und genau das, was links und rechts steht (die
+ * Geraete im Tunnel, die Aussenknoten des Graphen), faellt heraus.
+ *
+ * Die Breite vollstaendig auszugleichen waere falsch: dafuer braeuchte
+ * es rund 116 Grad senkrecht, und bei so einem Winkel kippen die
+ * Fluchten so stark, dass alles wie durch ein Fischauge aussieht. Der
+ * Exponent 0.55 gleicht deshalb nur gut die Haelfte aus, gedeckelt bei
+ * 70 Grad — genug, damit nichts Wichtiges abgeschnitten wird, wenig
+ * genug, dass die Perspektive glaubwuerdig bleibt.
+ */
+function Framing() {
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
+
+  useEffect(() => {
+    const aspect = size.width / Math.max(1, size.height);
+    const fov =
+      aspect >= 1.2
+        ? 42
+        : Math.min(70, 42 * Math.pow(1.2 / Math.max(0.2, aspect), 0.55));
+    if (Math.abs(camera.fov - fov) > 0.01) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+    }
+  }, [camera, size]);
+
+  return null;
+}
+
 function SceneGrade() {
   const scene = useThree((s) => s.scene);
   const rimRef = useRef<THREE.DirectionalLight>(null);
@@ -172,6 +207,7 @@ export default function BackgroundScene() {
           />
         </Environment>
 
+        <Framing />
         <HeroMode />
         <StructureMode />
         <SignalMode />

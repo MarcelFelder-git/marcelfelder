@@ -52,7 +52,10 @@ export function Hud() {
   return (
     <>
       {/* Fortschrittsbalken, ganz oben — 2px, keine Rundung, ein Ton */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-40 h-0.5 bg-rule">
+      <div
+        data-chrome="topbar"
+        className="pointer-events-none fixed inset-x-0 top-0 z-40 h-0.5 bg-rule"
+      >
         <div
           ref={barRef}
           className="h-full origin-left bg-accent"
@@ -64,9 +67,13 @@ export function Hud() {
           unter ihr durch, und ohne Abdunklung kollidiert die Type. */}
       <div
         aria-hidden
+        data-chrome="topbar"
         className="pointer-events-none fixed inset-x-0 top-0 z-40 h-24 bg-gradient-to-b from-paper via-paper/75 to-transparent"
       />
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-center justify-between px-6 py-5 sm:px-10 lg:px-16">
+      <header
+        data-chrome="topbar"
+        className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-center justify-between px-6 py-5 sm:px-10 lg:px-16"
+      >
         <a
           href="#top"
           className="pointer-events-auto font-mono text-sm font-medium tracking-tight text-ink transition-colors hover:text-accent"
@@ -87,6 +94,7 @@ export function Hud() {
           nicht wie ein Tab-Set. */}
       <nav
         aria-label="Kapitel"
+        data-chrome="scene"
         className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-5 lg:flex"
       >
         {NAV_CHAPTERS.map((c) => {
@@ -175,6 +183,7 @@ export function Reticle() {
     <motion.div
       ref={ref}
       aria-hidden
+      data-chrome="scene"
       initial={{ opacity: 0, scale: 0.6 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, delay: 0.4 }}

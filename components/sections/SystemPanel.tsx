@@ -67,7 +67,11 @@ function ApiCard() {
       </p>
 
       <div className="mt-5 flex items-center gap-2 border border-rule bg-paper px-3 py-2.5">
-        <code className="min-w-0 flex-1 truncate font-mono text-[12px] text-accent">
+        {/* Auf schmalen Schirmen umbrechen statt abschneiden. Ein
+            abgeschnittener Befehl sieht aus wie ein Fehler, und
+            abtippen laesst er sich auch nicht mehr - der Knopf daneben
+            hilft nur, wo die Zwischenablage erreichbar ist. */}
+        <code className="min-w-0 flex-1 break-all font-mono text-[12px] text-accent sm:truncate sm:break-normal">
           {command}
         </code>
         <button

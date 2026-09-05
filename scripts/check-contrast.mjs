@@ -24,9 +24,25 @@ const GROUND = {
 
 /** Textfarben aus app/globals.css mit ihrer jeweiligen Mindestschwelle. */
 const TEXT = {
-  "--color-ink   #ededee": { hex: "#ededee", min: 4.5 },
-  "--color-mute  #8b8b94": { hex: "#8b8b94", min: 4.5 },
-  "--color-faint #808088": { hex: "#808088", min: 4.5 },
+  "--color-ink    #ededee": { hex: "#ededee", min: 4.5 },
+  "--color-mute   #8b8b94": { hex: "#8b8b94", min: 4.5 },
+  "--color-faint  #808088": { hex: "#808088", min: 4.5 },
+  // Cyan traegt Links und aktive Zustaende, ist also Text.
+  "--color-accent #38bdf8": { hex: "#38bdf8", min: 4.5 },
+};
+
+/**
+ * Der helle Abschnitt am Seitenende hat seinen eigenen Satz Tokens. Er
+ * steht auf genau einem Grund, deshalb ist das hier eine einzelne
+ * Paarungsliste statt einer Matrix.
+ */
+const LIGHT_GROUND = [236, 238, 242];
+const LIGHT_TEXT = {
+  "--color-ink        #0c0e13": { hex: "#0c0e13", min: 4.5 },
+  "--color-mute       #4b5058": { hex: "#4b5058", min: 4.5 },
+  "--color-faint      #5c626c": { hex: "#5c626c", min: 4.5 },
+  "--color-accent     #0369a1": { hex: "#0369a1", min: 4.5 },
+  "--color-accent-alt #6d28d9": { hex: "#6d28d9", min: 4.5 },
 };
 
 const channel = (v) => {
@@ -62,6 +78,16 @@ for (const [label, { hex, min }] of Object.entries(TEXT)) {
   }
   console.log(`${label}  (min ${min})`);
   for (const entry of row) console.log(`   ${entry}`);
+}
+
+console.log('\nHeller Abschnitt (data-tone="light")');
+for (const [label, { hex, min }] of Object.entries(LIGHT_TEXT)) {
+  const ratio = contrast(parse(hex), LIGHT_GROUND);
+  const ok = ratio >= min;
+  if (!ok) failed++;
+  console.log(
+    `   ${label}  ${ratio.toFixed(2)}  (min ${min})${ok ? "" : "  ZU WENIG"}`,
+  );
 }
 
 if (failed > 0) {

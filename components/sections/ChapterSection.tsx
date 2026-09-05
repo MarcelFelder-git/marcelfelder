@@ -25,7 +25,7 @@ export function ChapterSection({
   return (
     <section
       data-chapter={chapter.id}
-      className="relative min-h-[190vh] px-6 py-[10vh] sm:px-10 lg:px-16"
+      className="relative min-h-[130vh] px-6 py-[10vh] sm:px-10 lg:px-16"
       aria-labelledby={`chapter-${chapter.id}`}
     >
       <div
