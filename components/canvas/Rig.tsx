@@ -61,8 +61,11 @@ export function Rig() {
     // Die Tunnelstation wandert mit der Fahrt.
     const tunnelZ = tunnelCameraZ(tunnelProgress);
     // Sanftes Schlingern, damit die Fahrt nicht wie eine Schiene wirkt.
-    const swayX = Math.sin(tunnelProgress * 9) * 0.5;
-    const swayY = Math.cos(tunnelProgress * 7) * 0.35;
+    // Bewusst klein: die Innenkanten der Tafeln stehen nur knapp neben
+    // der Fahrbahn, und ein zu weiter Ausschlag traegt die Kamera auf
+    // die falsche Seite einer Tafel.
+    const swayX = Math.sin(tunnelProgress * 9) * 0.3;
+    const swayY = Math.cos(tunnelProgress * 7) * 0.25;
     STATIONS.tunnel.set(swayX, swayY, tunnelZ);
     TARGETS.tunnel.set(swayX * 0.3, swayY * 0.3, tunnelZ - 12);
 

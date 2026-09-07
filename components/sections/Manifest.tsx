@@ -29,7 +29,7 @@ export function Manifest() {
       data-hero
       // Wenig Luft nach oben, viel nach unten: das Manifest ist die
       // Fortsetzung des Heros, nicht der naechste Abschnitt.
-      className="relative px-6 pb-[20vh] pt-[4vh] sm:px-10 lg:px-16"
+      className="relative px-6 pb-[18vh] pt-[10vh] sm:px-10 lg:px-16"
       aria-label="Manifest"
     >
       {/* Gerichtet statt radial: der Text steht links, das Modell soll
@@ -40,15 +40,24 @@ export function Manifest() {
         className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-10 bg-[linear-gradient(100deg,rgba(var(--ground-rgb),0.97)_0%,rgba(var(--ground-rgb),0.93)_48%,rgba(var(--ground-rgb),0.45)_76%,transparent_100%)]"
       />
 
-      {/* Kein Rubrikentitel mehr.
-          "Prinzip" kuendigte einen neuen Abschnitt an, und zusammen mit
-          "Projekte" kurz darauf standen drei Ueberschriftenbloecke in
-          Folge - Hero, Prinzip, Projekte. Das las sich als drei Anfaenge
-          statt als ein Anfang. Der Text bleibt; nur sagt er jetzt nicht
-          mehr vorher an, dass er kommt. Er teilt sich ohnehin den
-          Systemgraphen mit dem Hero und ist damit sichtbar dessen
-          Fortsetzung. */}
-      <div className="max-w-4xl space-y-2">
+      {/* Schwelle statt Rubrikentitel — dieselbe Bauform wie vor den
+          Projekten.
+          "Prinzip" stand hier frueher als eigene Zeile ueber dem Text und
+          kuendigte einen neuen Abschnitt an; zusammen mit "Projekte" kurz
+          darauf las sich der Anfang als drei Anfaenge. Ganz weglassen war
+          aber auch falsch: dann ging der Manifesttext ohne jede Kante aus
+          dem Hero hervor, und zwei Textbloecke ohne Grenze sind kein
+          Uebergang, sondern ein Durcheinander.
+          Eine Haarlinie mit Miniaturbeschriftung ist beides nicht: sie
+          gliedert, ohne eine zweite Ueberschrift zu behaupten. Und weil
+          jeder Abschnittswechsel der Seite jetzt dieselbe Linie benutzt,
+          liest sich das als System statt als Zierde. */}
+      <div className="flex items-baseline gap-4 border-t border-rule pt-5">
+        <p className="meta-accent shrink-0">Prinzip</p>
+        <span aria-hidden className="h-px flex-1 bg-rule-soft" />
+      </div>
+
+      <div className="mt-14 max-w-4xl space-y-2">
         {MANIFEST.map((line, i) => (
           <ManifestLine
             key={line.text}

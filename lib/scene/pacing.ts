@@ -57,7 +57,25 @@ export const TUNNEL_VH_LEAD = 40;
  */
 export const CHAPTER_VH = 105;
 
-/* --- 2. Ueberblendung ---------------------------------------------- */
+/* --- 2. Bildwechsel auf der aktiven Tafel --------------------------- */
+
+/**
+ * Wie lange ein Screenshot steht, bevor der naechste einblendet, in
+ * Sekunden.
+ *
+ * Gilt nur fuer die Tafel, an der man gerade steht - die uebrigen
+ * stehen still. Zu kurz gewaehlt wird der Korridor unruhig; zu lang und
+ * man faehrt vorbei, ohne dass ueberhaupt einmal gewechselt wurde. Bei
+ * 52vh Scrollstrecke je Projekt bleibt man normalerweise drei bis fuenf
+ * Sekunden im Fenster, in dem gewechselt wird - drei Bilder gehen sich
+ * damit aus.
+ */
+export const STILL_HOLD = 1.5;
+
+/** Dauer der Ueberblendung zwischen zwei Screenshots, in Sekunden. */
+export const STILL_FADE = 0.45;
+
+/* --- 3. Ueberblendung der Hintergruende ----------------------------- */
 
 /**
  * Wie schnell die Szenengewichte auf ihr Ziel zulaufen.

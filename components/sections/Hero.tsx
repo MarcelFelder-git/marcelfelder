@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { PROFILE } from "@/content/resume";
@@ -27,12 +27,32 @@ export function Hero() {
   // Der Hero faehrt beim Scrollen langsamer weg als die Seite und blendet
   // aus - dadurch uebernimmt die 3D-Szene die Buehne, statt dass Text und
   // Modell gemeinsam nach oben rutschen.
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 0.14], [0, -90]);
-  const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+  const ref = useRef<HTMLElement>(null);
+
+  /**
+   * Gemessen an der EIGENEN Hoehe, nicht am Dokument.
+   *
+   * Vorher stand hier `useScroll()` ohne Ziel, also der Fortschritt der
+   * ganzen Seite. Das Ausblenden lief damit ueber 10 % der Gesamtlaenge -
+   * bei elf Bildschirmen sind das gut anderthalb. Der Hero hing also noch
+   * halb im Bild, waehrend das Manifest darunter schon anfing: zwei
+   * Textbloecke gleichzeitig, ohne Kante dazwischen. Und die Zahl driftete
+   * bei jeder Aenderung der Seitenlaenge mit.
+   *
+   * Jetzt laeuft der Fortschritt von "Hero steht oben" bis "Hero ist
+   * oben raus". Der Hero ist damit weg, bevor das Manifest da ist —
+   * genau das ist der saubere Schnitt.
+   */
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [0, -110]);
+  const opacity = useTransform(scrollYProgress, [0, 0.72], [1, 0]);
 
   return (
     <section
+      ref={ref}
       data-hero
       className="relative flex min-h-[100svh] flex-col justify-center px-6 pb-28 pt-28 sm:px-10 lg:px-16"
     >

@@ -9,6 +9,7 @@ import { PROJECTS } from "@/content/projects";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { createTubeScratch, setTube } from "@/lib/scene/tube";
 import { roundedPlane, roundedSlab } from "@/lib/scene/device";
+import { STILL_FADE, STILL_HOLD } from "@/lib/scene/pacing";
 import {
   RING_COUNT,
   RING_SPACING,
@@ -32,7 +33,23 @@ import {
  * Suchmaschinen unsichtbar und nicht kopierbar.
  */
 
-const RADIUS = 5.2;
+/**
+ * Radius der Roehre.
+ *
+ * Von 5.2 auf 7.6 vergroessert, und das war keine Geschmacksfrage: eine
+ * flache Tafel von 7.4 Einheiten Breite, an der Wand montiert und leicht
+ * eingedreht, reichte in einer Roehre von 5.2 Radius zwei volle Einheiten
+ * DURCH die Wand hindurch - die Streben liefen also quer ueber die
+ * Screenshots, und zwar voellig zu Recht, weil sie tatsaechlich davor
+ * lagen. Gleichzeitig stiess ihre Innenkante bis auf 0.01 an die
+ * Fahrbahnachse, sodass die Kamera bei ihrem seitlichen Schlingern auf
+ * der falschen Seite der Tafel vorbeikommen konnte.
+ *
+ * Beides ist Geometrie, kein Sortierproblem, und laesst sich nur mit
+ * Zahlen loesen: groessere Roehre, schmalere Tafel, weiter aussen
+ * montiert, weniger eingedreht. Siehe die Rechnung bei MONITOR.
+ */
+const RADIUS = 7.6;
 const SIDES = 8;
 const LENGTH = TUNNEL_LENGTH;
 
@@ -216,9 +233,21 @@ function buildLamps() {
  * liegen. Ein Telefon mit 16:9 sieht auf den ersten Blick falsch aus,
  * ohne dass man sagen koennte warum.
  */
+/**
+ * Masse so gewaehlt, dass die Tafel vollstaendig in die Roehre passt:
+ *
+ *   Halbe Breite 3.2, eingedreht um 0.28 rad  ->  seitlicher Ausschlag
+ *   3.2 * cos(0.28) = 3.08.
+ *   Aussenkante bei |x| = 4.0 + 3.08 = 7.08, mit halber Hoehe 1.55
+ *   ergibt das Radius 7.24 — bleibt unter den 7.6 der Roehre.
+ *   Innenkante bei |x| = 4.0 - 3.08 = 0.92 — bleibt vor dem
+ *   Schlingerband der Kamera (+-0.3).
+ *
+ * Wer hier etwas aendert, muss beide Enden nachrechnen.
+ */
 const MONITOR = {
-  w: 7.4,
-  h: 3.6,
+  w: 6.4,
+  h: 3.1,
   /** Rundum gleich schmal — ein Wandpaneel hat kein Kinn. */
   bezel: 0.1,
   depth: 0.13,
@@ -247,7 +276,7 @@ const GEO = {
    * Bildschirm an der Wand. Der Ausleger ist deshalb das Bauteil, das
    * die Tafel mit dem Korridor verbindet, statt sie davor zu stellen.
    */
-  monitorArm: new THREE.BoxGeometry(0.2, 0.2, 1.15),
+  monitorArm: new THREE.BoxGeometry(0.2, 0.2, 1.6),
   monitorScreen: new THREE.PlaneGeometry(MONITOR.w, MONITOR.h),
   monitorBar: new THREE.BoxGeometry(1.4, 0.028, 0.02),
 
@@ -539,11 +568,6 @@ export function TunnelMode() {
 /* Geraet                                                              */
 /* ================================================================== */
 
-/** Wie lange ein Bild steht, bevor das naechste einblendet. */
-const STILL_HOLD = 2.6;
-/** Dauer der Ueberblendung. */
-const STILL_FADE = 0.9;
-
 /**
  * Ein Projekt auf dem Geraet, fuer das es gebaut wurde.
  *
@@ -593,11 +617,11 @@ function Panel({
    */
   const size = useThree((s) => s.size);
   const narrow = size.width / Math.max(1, size.height) < 0.95;
-  const offsetX = narrow ? 1.4 : 3.5;
+  const offsetX = narrow ? 1.6 : portrait ? 3.4 : 4.0;
   // Hoch genug, dass das Geraet ueber der Karte steht statt hinter ihr.
   const offsetY = narrow ? (portrait ? 2.9 : 3.1) : portrait ? 0.2 : 0.45;
   /** Eingedreht wird nur, wenn das Geraet auch seitlich haengt. */
-  const turn = narrow ? 0.12 : 0.34;
+  const turn = narrow ? 0.12 : 0.28;
   const accent = accentOf(index);
   const screenGeometry = portrait ? GEO.phoneScreen : GEO.monitorScreen;
   /**
@@ -728,21 +752,26 @@ function Panel({
       fadeMaterial.emissiveIntensity = material.emissiveIntensity;
     }
 
-    // Deckkraft und Helligkeit sind bewusst getrennt:
+    // Der Bildschirm ist waehrend der ganzen Fahrt blickdicht.
     //
-    // Sichtbarkeit wird ueber das EIGENLEUCHTEN geregelt, nicht ueber
-    // Transparenz. Ein halbdurchsichtiger Bildschirm laesst den Korridor
-    // durchscheinen, und ein Screenshot mit Gitterstreben quer darueber
-    // ist nicht mehr zu erkennen - genau das war das Problem. Ab
-    // Ankunftsbeginn steht er deshalb blickdicht und wird nur noch
-    // heller oder dunkler.
-    const solid = Math.min(1, nearness / 0.45);
-    material.opacity = active * (0.35 + solid * 0.65);
-    material.emissiveIntensity = 0.25 + nearness * 0.75 + arrival * 0.35;
+    // Vorher haing seine Deckkraft an der Entfernung: eine weit entfernte
+    // Tafel war halbdurchsichtig, und der Korridor schien durch sie
+    // hindurch. Ein Screenshot mit Gitterstreben quer darueber ist nicht
+    // mehr zu erkennen.
+    //
+    // Entfernung regelt jetzt ausschliesslich das EIGENLEUCHTEN: weit weg
+    // dunkel, nah hell. Das sieht genauso aus wie ein Bildschirm, den man
+    // von weitem sieht, und laesst nichts durch. Die Deckkraft haengt nur
+    // noch am Szenengewicht, also am Uebergang von und zu den
+    // Nachbarabschnitten.
+    material.opacity = active;
+    material.emissiveIntensity = 0.34 + nearness * 0.95 + arrival * 0.4;
 
-    // Voll angekommen: kein Blending mehr, damit garantiert nichts
-    // durchscheint.
-    const opaque = arrival > 0.35 && active > 0.9;
+    // Sobald der Tunnel das Bild bestimmt: gar kein Blending mehr,
+    // sondern echte Tiefenschreibung. Erst dadurch verdeckt der
+    // Bildschirm die Streben hinter sich und die Streben davor
+    // verdecken ihn - und zwar beide korrekt.
+    const opaque = active > 0.985;
     if (material.transparent === opaque) {
       material.transparent = !opaque;
       material.depthWrite = opaque;
@@ -853,12 +882,12 @@ function Panel({
           <mesh
             geometry={GEO.monitorArm}
             material={bodyMaterial}
-            position={[-1.5, 0, bodyZ - 0.62]}
+            position={[-1.35, 0, bodyZ - 0.85]}
           />
           <mesh
             geometry={GEO.monitorArm}
             material={bodyMaterial}
-            position={[1.5, 0, bodyZ - 0.62]}
+            position={[1.35, 0, bodyZ - 0.85]}
           />
           {/* Lichtleiste auf der Unterkante. Kein Kinn mehr, an dem eine
               Statusleuchte sitzen koennte - stattdessen liegt der Akzent
