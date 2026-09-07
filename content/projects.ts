@@ -74,7 +74,8 @@ export const PROJECTS: Project[] = [
     year: "2026",
     links: { repo: "https://github.com/MarcelFelder-git/solarsurge" },
     media: {
-      image: "/projects/solarsurge.jpg",
+      image: "/projects/solarsurge-01.jpg",
+      stills: ["/projects/solarsurge-02.jpg"],
       orientation: "landscape",
       alt: "SolarSurge-Dashboard mit Live-Metriken, Regelbedingungen und Verlaufsdiagramm",
     },
@@ -104,7 +105,12 @@ export const PROJECTS: Project[] = [
       repo: "https://github.com/MarcelFelder-git/aurora-app",
     },
     media: {
-      image: "/projects/aurora.jpg",
+      image: "/projects/aurora-01.jpg",
+      stills: [
+        "/projects/aurora-02.jpg",
+        "/projects/aurora-03.jpg",
+        "/projects/aurora-04.jpg",
+      ],
       orientation: "portrait",
       alt: "Aurora-App: Zyklusübersicht mit Symptomerfassung",
     },
@@ -169,7 +175,8 @@ export const PROJECTS: Project[] = [
       repo: "https://github.com/MarcelFelder-git/02_nxt_videogame_hud",
     },
     media: {
-      image: "/projects/hud.jpg",
+      image: "/projects/hud-01.jpg",
+      stills: ["/projects/hud-02.jpg", "/projects/hud-03.jpg"],
       orientation: "landscape",
       video: { mp4: "/projects/hud.mp4", webm: "/projects/hud.webm" },
       alt: "NXT VideoGame HUD: Spielekatalog mit Filtern und Detailansicht",
@@ -227,7 +234,11 @@ export const PROJECTS: Project[] = [
       repo: "https://github.com/MarcelFelder-git/01_art_robbery",
     },
     media: {
-      image: "/projects/art-robbery.jpg",
+      image: "/projects/art-robbery-01.jpg",
+      stills: [
+        "/projects/art-robbery-02.jpg",
+        "/projects/art-robbery-03.jpg",
+      ],
       orientation: "landscape",
       video: {
         mp4: "/projects/art-robbery.mp4",

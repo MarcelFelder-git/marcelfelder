@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Counter, Reveal, SplitHeading } from "@/components/motion/primitives";
 import { EASE_OUT } from "@/lib/motion";
@@ -18,9 +19,12 @@ import type { Chapter } from "@/types";
 export function ChapterSection({
   chapter,
   side,
+  children,
 }: {
   chapter: Chapter;
   side: "left" | "right";
+  /** Werkzeug, das zu genau diesem Kapitel gehoert (z. B. das Mischpult). */
+  children?: ReactNode;
 }) {
   return (
     <section
@@ -134,6 +138,8 @@ export function ChapterSection({
               </Reveal>
             ))}
           </dl>
+
+          {children ? <div className="mt-10">{children}</div> : null}
         </div>
       </div>
     </section>

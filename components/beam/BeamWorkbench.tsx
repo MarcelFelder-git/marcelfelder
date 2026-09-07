@@ -312,9 +312,10 @@ export function BeamWorkbench() {
                   ],
                 }))
               }
+              aria-label="Einzellast hinzufügen"
               className="meta invert-hover border border-rule px-2 py-1"
             >
-              <Plus className="size-3" />
+              <Plus aria-hidden className="size-3" />
             </button>
           }
         >
@@ -360,9 +361,10 @@ export function BeamWorkbench() {
                   ],
                 }))
               }
+              aria-label="Streckenlast hinzufügen"
               className="meta invert-hover border border-rule px-2 py-1"
             >
-              <Plus className="size-3" />
+              <Plus aria-hidden className="size-3" />
             </button>
           }
         >

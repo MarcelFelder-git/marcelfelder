@@ -97,23 +97,30 @@
    Sprung zurueck nach oben ist genau am Seitenende am wichtigsten. */
 [data-tone="light"],
 .at-outro [data-chrome="topbar"] {
-  --color-paper: #eceef2;
-  --color-surface: #ffffff;
-  --color-raise: #f5f6f9;
-  --color-rule: #b9bfcc;
-  --color-rule-soft: #d7dbe4;
+  /* Gedaempftes Hellgrau statt Weiss.
+     Die erste Fassung stand bei #eceef2, also L* 94. Nach zwoelf
+     Bildschirmen auf fast schwarzem Grund ist das keine Trennung mehr,
+     sondern ein Blitz - die Pupille steht auf dunkel und bekommt eine
+     volle Bildschirmflaeche Licht. L* 83 setzt sich vom Grund genauso
+     eindeutig ab (12.6:1 gegen #08090e), tut aber nicht weh.
+     Die dunkleren Toene darunter sind kein Zufall: auf dem
+     abgesenkten Grund fallen die alten Werte unter die AA-Schwelle,
+     Akzent und Faint waeren bei 3.8 gelandet. Gemessen in
+     scripts/check-contrast.mjs. */
+  --color-paper: #c9ced7;
+  --color-surface: #dfe3e9;
+  --color-raise: #d6dae2;
+  --color-rule: #9aa1ad;
+  --color-rule-soft: #b4bac4;
 
-  --color-ink: #0c0e13;
-  --color-mute: #4b5058;
-  --color-faint: #5c626c;
+  --color-ink: #0b0d12;
+  --color-mute: #41464e;
+  --color-faint: #4d525b;
 
-  /* Das helle Cyan der dunklen Seite kommt auf hellem Grund auf 1.9:1 -
-     als Linkfarbe unbrauchbar. Beide Akzente sind deshalb hier
-     abgedunkelt, gemessen in scripts/check-contrast.mjs. */
-  --color-accent: #0369a1;
-  --color-accent-alt: #6d28d9;
+  --color-accent: #075985;
+  --color-accent-alt: #5b21b6;
 
-  --ground-rgb: 236, 238, 242;
+  --ground-rgb: 201, 206, 215;
 
   /* Ohne diese Zeile bleibt der Text weiss.
      `color` steht auf dem body und wird als FERTIG BERECHNETER Wert

@@ -3,9 +3,9 @@ import { Manifest } from "@/components/sections/Manifest";
 import { Showcase } from "@/components/sections/Showcase";
 import { ChapterSection } from "@/components/sections/ChapterSection";
 import { Workshop } from "@/components/sections/Workshop";
-import { Capabilities } from "@/components/sections/Capabilities";
-import { SystemPanel } from "@/components/sections/SystemPanel";
+import { StackBand } from "@/components/sections/StackBand";
 import { Vita, Outro } from "@/components/sections/Closing";
+import { ControlBar } from "@/components/audio/ControlBar";
 import { CHAPTERS } from "@/content/resume";
 
 /**
@@ -32,6 +32,10 @@ export default function Home() {
       <Manifest />
       <Showcase />
 
+      {/* Schwelle zwischen Projekten und Kapiteln: erst die Namen der
+          Werkzeuge, dann drei Abschnitte, die sie erklaeren. */}
+      <StackBand />
+
       {ordered.map((chapter, i) => (
         <ChapterSection
           key={chapter.id}
@@ -39,12 +43,15 @@ export default function Home() {
           // Seitenwechsel je Kapitel: der Blick springt, statt drei Mal
           // dieselbe Spalte herunterzulaufen.
           side={i % 2 === 0 ? "left" : "right"}
-        />
+        >
+          {/* Das Mischpult steht dort, wo man hoert, was es tut - nicht
+              fest ueber der ganzen Seite. Ein Regler, dessen Wirkung man
+              nicht sieht, ist kein Bedienelement, sondern Dekor. */}
+          {chapter.id === "signal" ? <ControlBar /> : null}
+        </ChapterSection>
       ))}
 
       <Workshop />
-      <Capabilities />
-      <SystemPanel />
       <Vita />
       <Outro />
     </main>

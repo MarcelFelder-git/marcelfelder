@@ -12,9 +12,21 @@ import { EASE_OUT } from "@/lib/motion";
 /**
  * Das Mischpult.
  *
+ * ## Warum es nicht mehr fest ueber der Seite liegt
+ *
+ * Vorher klebte diese Leiste unten rechts auf jedem Abschnitt. Damit
+ * stand ein Regler auf dem Schirm, dessen Wirkung man an neun von zehn
+ * Stellen der Seite gar nicht sehen konnte - und was man nicht wirken
+ * sieht, ist kein Bedienelement, sondern Dekor. Es sass ausserdem den
+ * ganzen Weg ueber dem Inhalt.
+ *
+ * Jetzt steht es im Signal-Kapitel, also genau dort, wo das Spektrum
+ * daneben laeuft und man jeden Regler unmittelbar hoert und sieht. Was
+ * fest bleibt, ist nur die Notbremse - siehe `AudioBadge`.
+ *
  * Eingeklappt eine schmale Pille, ausgeklappt der volle Kanalzug-Satz.
- * Der Default ist eingeklappt: ein Portfolio, das ungefragt ein Mischpult
- * ueber den Inhalt legt, ist ein Portfolio, das seinen Inhalt verdeckt.
+ * Der Default bleibt eingeklappt: das Kapitel soll sich nicht selbst
+ * zuschuetten.
  */
 export function ControlBar() {
   const [open, setOpen] = useState(false);
@@ -22,13 +34,11 @@ export function ControlBar() {
   const toggle = useAudioStore((s) => s.toggle);
 
   return (
-    // Nach rechts gedockt, sobald Platz da ist: mittig verdeckt die Leiste
-    // ausgerechnet die Hinweiszeile am unteren Rand des Heros.
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-4 sm:justify-end sm:px-6">
+    <div className="flex justify-start">
       <motion.div
         layout
         transition={{ type: "spring", stiffness: 320, damping: 34 }}
-        className="panel pointer-events-auto"
+        className="panel"
       >
         <AnimatePresence initial={false} mode="popLayout">
           {open && (

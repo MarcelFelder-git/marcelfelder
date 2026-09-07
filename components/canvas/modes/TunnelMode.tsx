@@ -219,17 +219,13 @@ function buildLamps() {
 const MONITOR = {
   w: 7.4,
   h: 3.6,
-  bezel: 0.13,
-  /** Unterer Rand breiter als die anderen drei — so gebaut wie echte. */
-  chin: 0.3,
-  depth: 0.17,
+  /** Rundum gleich schmal — ein Wandpaneel hat kein Kinn. */
+  bezel: 0.1,
+  depth: 0.13,
 };
 const PHONE = { w: 3.0, h: 6.3, bezel: 0.11, depth: 0.13 };
 
-const MONITOR_BODY_H = MONITOR.h + 2 * MONITOR.bezel + MONITOR.chin;
-/** Gehaeuse sitzt tiefer als der Bildschirm, weil das Kinn unten liegt. */
-const MONITOR_BODY_Y = -MONITOR.chin / 2;
-const MONITOR_BOTTOM = MONITOR_BODY_Y - MONITOR_BODY_H / 2;
+const MONITOR_BODY_H = MONITOR.h + 2 * MONITOR.bezel;
 
 /**
  * Geometrien einmal fuer alle Tafeln. Sie sind identisch und starr; sechs
@@ -240,12 +236,20 @@ const GEO = {
     MONITOR.w + 2 * MONITOR.bezel,
     MONITOR_BODY_H,
     MONITOR.depth,
-    0.08,
+    0.05,
   ),
-  monitorNeck: new THREE.BoxGeometry(0.46, 0.66, 0.16),
-  monitorBase: roundedSlab(2.0, 0.9, 0.07, 0.1),
+  /**
+   * Wandausleger statt Standfuss.
+   *
+   * Ein Monitor auf einem Tisch braucht einen Fuss - nur steht hier
+   * kein Tisch, und ein Fuss, der auf nichts steht, macht aus dem
+   * Geraet ein schwebendes Moebelstueck. In einer Roehre haengt ein
+   * Bildschirm an der Wand. Der Ausleger ist deshalb das Bauteil, das
+   * die Tafel mit dem Korridor verbindet, statt sie davor zu stellen.
+   */
+  monitorArm: new THREE.BoxGeometry(0.2, 0.2, 1.15),
   monitorScreen: new THREE.PlaneGeometry(MONITOR.w, MONITOR.h),
-  monitorBar: new THREE.BoxGeometry(1.1, 0.035, 0.02),
+  monitorBar: new THREE.BoxGeometry(1.4, 0.028, 0.02),
 
   phoneBody: roundedSlab(
     PHONE.w + 2 * PHONE.bezel,
@@ -591,7 +595,7 @@ function Panel({
   const narrow = size.width / Math.max(1, size.height) < 0.95;
   const offsetX = narrow ? 1.4 : 3.5;
   // Hoch genug, dass das Geraet ueber der Karte steht statt hinter ihr.
-  const offsetY = narrow ? (portrait ? 2.9 : 3.3) : portrait ? 0.2 : 0.75;
+  const offsetY = narrow ? (portrait ? 2.9 : 3.1) : portrait ? 0.2 : 0.45;
   /** Eingedreht wird nur, wenn das Geraet auch seitlich haengt. */
   const turn = narrow ? 0.12 : 0.34;
   const accent = accentOf(index);
@@ -782,9 +786,8 @@ function Panel({
   return (
     <group
       ref={holderRef}
-      // Der Monitor haengt hoeher als das Telefon: sein Fuss braucht Platz
-      // nach unten, und ein Bildschirm knapp ueber Augenhoehe ist die
-      // Hoehe, in der man einen im Raum erwartet.
+      // Knapp ueber der Fahrbahnachse - die Hoehe, in der ein montierter
+      // Bildschirm im Raum haengt.
       position={[side * offsetX, offsetY, z]}
       renderOrder={5}
     >
@@ -841,25 +844,30 @@ function Panel({
           <mesh
             geometry={GEO.monitorBody}
             material={bodyMaterial}
-            position={[0, MONITOR_BODY_Y, bodyZ]}
+            position={[0, 0, bodyZ]}
           />
-          {/* Hals und Fuss. Ohne sie schwebt der Bildschirm, und alles,
-              was schwebt, liest sich als Grafik statt als Gegenstand. */}
+          {/* Zwei Ausleger nach hinten. Sie zeigen zur Korridorwand und
+              machen aus einer schwebenden Flaeche ein montiertes
+              Bauteil - dieselbe Rolle, die vorher Hals und Fuss hatten,
+              nur an dem Ort, an dem hier tatsaechlich etwas ist. */}
           <mesh
-            geometry={GEO.monitorNeck}
+            geometry={GEO.monitorArm}
             material={bodyMaterial}
-            position={[0, MONITOR_BOTTOM - 0.3, bodyZ - 0.03]}
+            position={[-1.5, 0, bodyZ - 0.62]}
           />
           <mesh
-            geometry={GEO.monitorBase}
+            geometry={GEO.monitorArm}
             material={bodyMaterial}
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, MONITOR_BOTTOM - 0.64, bodyZ + 0.12]}
+            position={[1.5, 0, bodyZ - 0.62]}
           />
+          {/* Lichtleiste auf der Unterkante. Kein Kinn mehr, an dem eine
+              Statusleuchte sitzen koennte - stattdessen liegt der Akzent
+              als schmale Kante unter dem Bild, wie die Beleuchtung unter
+              einem montierten Paneel. */}
           <mesh
             ref={barRef}
             geometry={GEO.monitorBar}
-            position={[0, -(MONITOR.h / 2 + MONITOR.chin * 0.55), 0.015]}
+            position={[0, -(MONITOR.h / 2 + MONITOR.bezel * 0.5), 0.012]}
           >
             <meshBasicMaterial
               color={accent}

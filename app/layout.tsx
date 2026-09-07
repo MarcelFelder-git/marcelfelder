@@ -3,7 +3,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { SceneLayer } from "@/components/canvas/SceneLayer";
 import { CommandPalette } from "@/components/terminal/CommandPalette";
 import { AmbientGlow } from "@/components/audio/AmbientGlow";
-import { ControlBar } from "@/components/audio/ControlBar";
+import { AudioBadge } from "@/components/audio/AudioBadge";
 import { BootSequence } from "@/components/layout/BootSequence";
 import { Hud, Reticle } from "@/components/layout/Hud";
 import "./globals.css";
@@ -93,7 +93,10 @@ export default function RootLayout({
             aus wie ein Entwurf; mit ihr wie ein Bild. */}
         <div aria-hidden className="grain pointer-events-none fixed inset-0 z-[45]" />
 
-        <ControlBar />
+        {/* Das Mischpult selbst steht im Signal-Kapitel. Hier bleibt nur
+            die Notbremse: solange die Engine laeuft, muss man sie von
+            jeder Stelle der Seite aus wieder ausschalten koennen. */}
+        <AudioBadge />
         <CommandPalette />
         <BootSequence />
       </body>

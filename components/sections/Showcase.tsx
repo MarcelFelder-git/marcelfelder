@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Code2, Play, SquareArrowOutUpRight } from "lucide-react";
 import { PROJECTS, type Project } from "@/content/projects";
-import { Reveal, SplitHeading } from "@/components/motion/primitives";
+import { Reveal } from "@/components/motion/primitives";
 import { GlitchText } from "@/components/motion/GlitchText";
 import { LivePreview } from "@/components/projects/LivePreview";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
@@ -39,27 +39,39 @@ export function Showcase() {
       className="relative"
       aria-labelledby="projects-heading"
     >
-      <header className="relative px-6 py-[12vh] sm:px-10 lg:px-16">
+      {/* Schwelle, keine dritte Ueberschrift.
+          Hier stand eine Display-Zeile in derselben Groesse wie die des
+          Heros. Drei solche Bloecke hintereinander - Hero, Manifest,
+          Projekte - lesen sich als drei Anfaenge; der Blick weiss nicht
+          mehr, wo die Seite eigentlich begonnen hat. Die Ueberschrift
+          bleibt als h2 erhalten (die Sektion braucht ihren Namen, und
+          das Register im Dokument auch), nur traegt sie das Gewicht
+          einer Zwischenzeile statt das eines Auftakts. Das eigentliche
+          Ereignis danach ist der Korridor, und der braucht keine
+          Ansage. */}
+      <header className="relative px-6 py-[9vh] sm:px-10 lg:px-16">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),0.95)_30%,rgba(var(--ground-rgb),0.95))]"
         />
-        <div className="flex items-baseline justify-between gap-4">
-          <p className="meta-accent">Projekte</p>
-          <p className="meta">{PROJECTS.length} Stück · alle im Repo einsehbar</p>
+        <div className="flex items-baseline gap-4 border-t border-rule pt-5">
+          <p className="meta-accent shrink-0">Projekte</p>
+          <span aria-hidden className="h-px flex-1 bg-rule-soft" />
+          <p className="meta shrink-0">
+            {String(PROJECTS.length).padStart(2, "0")} Stück · alle im Repo
+          </p>
         </div>
-        <SplitHeading
-          as="h2"
+        <h2
           id="projects-heading"
-          text="Gebaut, deployt, nachlesbar."
-          className="mt-4 max-w-3xl text-balance text-[clamp(2rem,4.6vw,3.8rem)] font-semibold leading-[1.04] tracking-[-0.03em]"
-          highlight={["nachlesbar."]}
-        />
-        <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-mute">
-          {reduced
-            ? "Jede Karte verlinkt Live-Deployment und Quellcode. Die Screenshots kommen aus den Repositories, nicht aus einem Mockup-Generator."
-            : "Scrollen fährt durch den Korridor. Jede Tafel an der Wand ist ein Projekt — Live-Deployment und Quellcode jeweils darunter verlinkt."}
-        </p>
+          className="mt-6 max-w-xl text-balance text-[clamp(1.25rem,2.2vw,1.7rem)] font-medium leading-snug tracking-[-0.02em] text-ink"
+        >
+          Gebaut, deployt, <span className="text-accent">nachlesbar</span>.{" "}
+          <span className="text-mute">
+            {reduced
+              ? "Jede Karte verlinkt Live-Deployment und Quellcode."
+              : "Scrollen fährt durch den Korridor — jedes Gerät an der Wand ist ein Projekt."}
+          </span>
+        </h2>
       </header>
 
       {reduced ? (

@@ -27,7 +27,9 @@ export function Manifest() {
       // Teilt sich den Systemgraphen mit dem Hero: hier soll der
       // Hintergrund weiterlaufen, nicht auf ein Kapitelmotiv springen.
       data-hero
-      className="relative px-6 py-[22vh] sm:px-10 lg:px-16"
+      // Wenig Luft nach oben, viel nach unten: das Manifest ist die
+      // Fortsetzung des Heros, nicht der naechste Abschnitt.
+      className="relative px-6 pb-[20vh] pt-[4vh] sm:px-10 lg:px-16"
       aria-label="Manifest"
     >
       {/* Gerichtet statt radial: der Text steht links, das Modell soll
@@ -38,8 +40,14 @@ export function Manifest() {
         className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-10 bg-[linear-gradient(100deg,rgba(var(--ground-rgb),0.97)_0%,rgba(var(--ground-rgb),0.93)_48%,rgba(var(--ground-rgb),0.45)_76%,transparent_100%)]"
       />
 
-      <p className="meta mb-10">Prinzip</p>
-
+      {/* Kein Rubrikentitel mehr.
+          "Prinzip" kuendigte einen neuen Abschnitt an, und zusammen mit
+          "Projekte" kurz darauf standen drei Ueberschriftenbloecke in
+          Folge - Hero, Prinzip, Projekte. Das las sich als drei Anfaenge
+          statt als ein Anfang. Der Text bleibt; nur sagt er jetzt nicht
+          mehr vorher an, dass er kommt. Er teilt sich ohnehin den
+          Systemgraphen mit dem Hero und ist damit sichtbar dessen
+          Fortsetzung. */}
       <div className="max-w-4xl space-y-2">
         {MANIFEST.map((line, i) => (
           <ManifestLine

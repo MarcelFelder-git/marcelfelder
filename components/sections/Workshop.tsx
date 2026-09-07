@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SplitHeading, Reveal } from "@/components/motion/primitives";
 import { BeamWorkbench } from "@/components/beam/BeamWorkbench";
 import { AgentConsole } from "@/components/agent/AgentConsole";
@@ -17,11 +17,40 @@ type Tool = "beam" | "agent";
  * rechnet mit demselben Solver), das soll man auch bedienen können, ohne
  * die Seite zweimal aufzubauen.
  */
+const TOOLS: { id: Tool; index: string; label: string }[] = [
+  { id: "agent", index: "01", label: "Agent" },
+  { id: "beam", index: "02", label: "Träger-Solver" },
+];
+
 export function Workshop() {
   const [tool, setTool] = useState<Tool>("agent");
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+
+  /**
+   * Pfeiltasten im Reiterband.
+   *
+   * Ein `role="tablist"` ist ein Versprechen: wer es vergibt, sagt
+   * Screenreader und Tastatur zu, dass sich die Reiter mit den
+   * Pfeiltasten durchgehen lassen und nur der aktive im Tabstopp liegt.
+   * Vorher stand hier nur die Rolle - also das Versprechen ohne die
+   * Umsetzung, und das ist schlechter als gar keine Rolle: die
+   * Ansage stimmt dann nicht mehr mit dem Verhalten ueberein.
+   */
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const at = TOOLS.findIndex((t) => t.id === tool);
+    let next = at;
+    if (e.key === "ArrowRight") next = (at + 1) % TOOLS.length;
+    else if (e.key === "ArrowLeft") next = (at - 1 + TOOLS.length) % TOOLS.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = TOOLS.length - 1;
+    else return;
+    e.preventDefault();
+    setTool(TOOLS[next].id);
+    tabsRef.current[next]?.focus();
+  };
 
   return (
-    <section className="relative py-[14vh]" aria-labelledby="workshop-heading">
+    <section className="relative py-[10vh]" aria-labelledby="workshop-heading">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),0.95)_14%,rgba(var(--ground-rgb),0.95)_86%,transparent)]"
@@ -37,46 +66,52 @@ export function Workshop() {
         />
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-mute">
           Der Agent rechnet mit demselben Solver, der hier auch direkt
-          bedienbar ist — kein LLM im Hintergrund, ein lokaler Planner, der
-          echte Werkzeuge aufruft. Anfragen an ein Sprachmodell zu leiten ist
-          derselbe Umbau: die Werkzeuge bleiben, nur der Planer wechselt.
+          bedienbar ist — kein LLM im Hintergrund, ein lokaler Planner mit
+          echten Werkzeugen.
         </p>
 
         <div
           role="tablist"
           aria-label="Werkzeug wählen"
-          className="mt-8 flex border border-rule"
+          onKeyDown={onKeyDown}
+          className="mt-6 flex border border-rule"
         >
-          <TabButton
-            active={tool === "agent"}
-            onClick={() => setTool("agent")}
-            index="01"
-          >
-            Agent
-          </TabButton>
-          <TabButton
-            active={tool === "beam"}
-            onClick={() => setTool("beam")}
-            index="02"
-          >
-            Träger-Solver
-          </TabButton>
+          {TOOLS.map((t, i) => (
+            <TabButton
+              key={t.id}
+              ref={(el) => {
+                tabsRef.current[i] = el;
+              }}
+              tool={t.id}
+              active={tool === t.id}
+              onClick={() => setTool(t.id)}
+              index={t.index}
+            >
+              {t.label}
+            </TabButton>
+          ))}
         </div>
       </div>
 
       <Reveal delay={0.06} className="mt-px">
-        <div
-          role="tabpanel"
-          className="border-y border-rule"
-          // Beide Werkzeuge bleiben gemountet - ein Tab-Wechsel darf keinen
-          // laufenden Agent-Vorgang abbrechen oder Trägerlasten zurücksetzen.
-        >
-          <div className={cn(tool === "agent" ? "block" : "hidden")}>
-            <AgentConsole />
-          </div>
-          <div className={cn(tool === "beam" ? "block" : "hidden")}>
-            <BeamWorkbench />
-          </div>
+        {/* Ein Panel je Reiter statt eines gemeinsamen: `aria-controls`
+            zeigt sonst auf denselben Kasten, und ein Screenreader liest
+            beim Umschalten dieselbe Region noch einmal vor. Beide
+            Werkzeuge bleiben gemountet - ein Reiterwechsel darf keinen
+            laufenden Agent-Vorgang abbrechen oder Traegerlasten
+            zuruecksetzen -, das inaktive ist nur `hidden`. */}
+        <div className="border-y border-rule">
+          {TOOLS.map((t) => (
+            <div
+              key={t.id}
+              id={`panel-${t.id}`}
+              role="tabpanel"
+              aria-labelledby={`tab-${t.id}`}
+              hidden={tool !== t.id}
+            >
+              {t.id === "agent" ? <AgentConsole /> : <BeamWorkbench />}
+            </div>
+          ))}
         </div>
       </Reveal>
     </section>
@@ -84,11 +119,15 @@ export function Workshop() {
 }
 
 function TabButton({
+  ref,
+  tool,
   active,
   onClick,
   index,
   children,
 }: {
+  ref?: React.Ref<HTMLButtonElement>;
+  tool: Tool;
   active: boolean;
   onClick: () => void;
   index: string;
@@ -96,8 +135,15 @@ function TabButton({
 }) {
   return (
     <button
+      ref={ref}
       role="tab"
+      id={`tab-${tool}`}
       aria-selected={active}
+      aria-controls={`panel-${tool}`}
+      // Nur der aktive Reiter liegt im Tabstopp; zwischen den Reitern
+      // fuehren die Pfeiltasten. So verlangt es das Muster, und so
+      // erwartet es jeder, der die Seite mit der Tastatur bedient.
+      tabIndex={active ? 0 : -1}
       onClick={onClick}
       className={cn(
         "flex-1 border-r border-rule px-5 py-3 text-left font-mono text-sm transition-colors last:border-r-0",
