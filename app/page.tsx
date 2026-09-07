@@ -2,7 +2,6 @@ import { Hero } from "@/components/sections/Hero";
 import { Manifest } from "@/components/sections/Manifest";
 import { Showcase } from "@/components/sections/Showcase";
 import { ChapterSection } from "@/components/sections/ChapterSection";
-import { Workshop } from "@/components/sections/Workshop";
 import { StackBand } from "@/components/sections/StackBand";
 import { Vita, Outro } from "@/components/sections/Closing";
 import { ControlBar } from "@/components/audio/ControlBar";
@@ -51,7 +50,11 @@ export default function Home() {
         </ChapterSection>
       ))}
 
-      <Workshop />
+      {/* Die Werkstatt (Agent + Traeger-Solver) ist bewusst nicht mehr
+          eingehaengt. Die Komponenten liegen weiterhin unter
+          components/sections/Workshop.tsx und sind mit einem Import und
+          einer Zeile hier wieder da; ohne den Import landen sie in
+          keinem Bundle und kosten nichts. */}
       <Vita />
       <Outro />
     </main>

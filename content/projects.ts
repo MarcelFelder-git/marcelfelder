@@ -141,8 +141,6 @@ export const PROJECTS: Project[] = [
       repo: "https://github.com/MarcelFelder-git/Latent",
     },
     media: {
-      // TODO(Marcel): Platzhalter durch echte Screenshots ersetzen.
-      // Gleiche Dateinamen, dann ist hier nichts zu ändern.
       image: "/projects/latent-01.jpg",
       stills: ["/projects/latent-02.jpg", "/projects/latent-03.jpg"],
       orientation: "landscape",
@@ -150,9 +148,45 @@ export const PROJECTS: Project[] = [
     },
     aiAssisted: true,
   },
+
+  {
+    id: "aufmischen",
+    index: "04",
+    title: "AUFMISCHEN",
+    tagline:
+      "Portfolio-Engine für einen Musikproduzenten, Inhalte pflegt er selbst.",
+    body: "Auftragsarbeit für einen Produzenten aus Frankfurt/Berlin. Headless-Architektur: die Inhalte — Musik, Audioreferenzen, Tourdaten, Biografie — liegen in einem CMS, das Frontend liefert sie schnell aus.",
+    detail:
+      "Sanity als Headless CMS trennt Redaktion und Darstellung: er ändert Tourdaten, ohne dass ein Deploy nötig ist.",
+    stack: [
+      "Next.js",
+      "Sanity CMS",
+      "Framer Motion",
+      "React Hook Form + Zod",
+      "CSS Modules",
+      "Vercel",
+    ],
+    scope: "Auftragsarbeit · Headless CMS",
+    year: "2026",
+    links: {
+      live: "https://next-aufmischen-portfolio-v03.vercel.app",
+      repo: "https://github.com/MarcelFelder-git/next-aufmischen_portfolio_v02",
+    },
+    media: {
+      image: "/projects/aufmischen-01.jpg",
+      stills: [
+        "/projects/aufmischen-02.jpg",
+        "/projects/aufmischen-03.jpg",
+        "/projects/aufmischen-04.jpg",
+        "/projects/aufmischen-05.jpg",
+      ],
+      orientation: "landscape",
+      alt: "AUFMISCHEN Artist-Portfolio, Startansicht",
+    },
+  },
   {
     id: "nxt-hud",
-    index: "04",
+    index: "05",
     title: "NXT VideoGame HUD",
     tagline:
       "Spiele suchen, filtern, merken — plus ein Minigame, das dein Wissen testet.",
@@ -183,35 +217,6 @@ export const PROJECTS: Project[] = [
     },
   },
   {
-    id: "aufmischen",
-    index: "05",
-    title: "AUFMISCHEN",
-    tagline:
-      "Portfolio-Engine für einen Musikproduzenten, Inhalte pflegt er selbst.",
-    body: "Auftragsarbeit für einen Produzenten aus Frankfurt/Berlin. Headless-Architektur: die Inhalte — Musik, Audioreferenzen, Tourdaten, Biografie — liegen in einem CMS, das Frontend liefert sie schnell aus.",
-    detail:
-      "Sanity als Headless CMS trennt Redaktion und Darstellung: er ändert Tourdaten, ohne dass ein Deploy nötig ist.",
-    stack: [
-      "Next.js",
-      "Sanity CMS",
-      "Framer Motion",
-      "React Hook Form + Zod",
-      "CSS Modules",
-      "Vercel",
-    ],
-    scope: "Auftragsarbeit · Headless CMS",
-    year: "2026",
-    links: {
-      live: "https://next-aufmischen-portfolio-v03.vercel.app",
-      repo: "https://github.com/MarcelFelder-git/next-aufmischen_portfolio_v02",
-    },
-    media: {
-      image: "/projects/aufmischen.jpg",
-      orientation: "landscape",
-      alt: "AUFMISCHEN Artist-Portfolio, Startansicht",
-    },
-  },
-  {
     id: "art-robbery",
     index: "06",
     title: "Art Robbery",
@@ -220,13 +225,7 @@ export const PROJECTS: Project[] = [
     body: "Du bist Meisterdieb und hast es auf die berühmtesten Gemälde der Welt abgesehen. In jedem Museum hängt neben dem Original eine Fälschung — richtig wählen, der Security ausweichen, rauskommen.",
     detail:
       "Spielzustand über useContext statt über eine State-Library: bei dieser Größe ist eine zusätzliche Abhängigkeit nur Ballast.",
-    stack: [
-      "React",
-      "JavaScript",
-      "Express",
-      "TanStack Query",
-      "CSS Modules",
-    ],
+    stack: ["React", "JavaScript", "Express", "TanStack Query", "CSS Modules"],
     scope: "Frontend · Spiellogik",
     year: "2025",
     links: {
@@ -235,10 +234,7 @@ export const PROJECTS: Project[] = [
     },
     media: {
       image: "/projects/art-robbery-01.jpg",
-      stills: [
-        "/projects/art-robbery-02.jpg",
-        "/projects/art-robbery-03.jpg",
-      ],
+      stills: ["/projects/art-robbery-02.jpg", "/projects/art-robbery-03.jpg"],
       orientation: "landscape",
       video: {
         mp4: "/projects/art-robbery.mp4",

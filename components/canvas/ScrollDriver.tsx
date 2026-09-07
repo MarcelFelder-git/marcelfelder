@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { SCENE_KEYS, damp, sceneState, type SceneKey } from "@/lib/scene/state";
 import { GROUND, blend } from "@/lib/scene/palette";
+import { SCENE_BLEND, SCENE_WINDOW } from "@/lib/scene/pacing";
 import { useViewportMode } from "@/lib/store/useViewportMode";
 import type { ViewportMode } from "@/types";
 
@@ -50,7 +51,7 @@ export function ScrollDriver() {
       // Dreiecksfenster um die Bildschirmmitte. Fuer sehr hohe
       // Abschnitte (Tunnel, Kapitel) greift zusaetzlich die
       // Ueberlappungsregel darunter.
-      const distance = Math.abs(centre - vh / 2) / (vh * 0.7);
+      const distance = Math.abs(centre - vh / 2) / (vh * SCENE_WINDOW);
       const window_ = Math.max(0, 1 - distance);
 
       // Anteil des Bildschirms, den der Abschnitt tatsaechlich bedeckt.
@@ -131,7 +132,7 @@ export function ScrollDriver() {
         sceneState.weights[key] = damp(
           sceneState.weights[key],
           sceneState.targets[key],
-          6,
+          SCENE_BLEND,
           dt,
         );
       }

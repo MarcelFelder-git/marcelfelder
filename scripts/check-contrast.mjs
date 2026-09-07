@@ -36,13 +36,13 @@ const TEXT = {
  * steht auf genau einem Grund, deshalb ist das hier eine einzelne
  * Paarungsliste statt einer Matrix.
  */
-const LIGHT_GROUND = [201, 206, 215];
+const LIGHT_GROUND = [170, 177, 189];
 const LIGHT_TEXT = {
-  "--color-ink        #0b0d12": { hex: "#0b0d12", min: 4.5 },
-  "--color-mute       #41464e": { hex: "#41464e", min: 4.5 },
-  "--color-faint      #4d525b": { hex: "#4d525b", min: 4.5 },
-  "--color-accent     #075985": { hex: "#075985", min: 4.5 },
-  "--color-accent-alt #5b21b6": { hex: "#5b21b6", min: 4.5 },
+  "--color-ink        #080a0e": { hex: "#080a0e", min: 4.5 },
+  "--color-mute       #33383f": { hex: "#33383f", min: 4.5 },
+  "--color-faint      #3c414a": { hex: "#3c414a", min: 4.5 },
+  "--color-accent     #03476b": { hex: "#03476b", min: 4.5 },
+  "--color-accent-alt #4c1d95": { hex: "#4c1d95", min: 4.5 },
 };
 
 const channel = (v) => {

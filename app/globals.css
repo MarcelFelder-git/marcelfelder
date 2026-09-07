@@ -97,30 +97,32 @@
    Sprung zurueck nach oben ist genau am Seitenende am wichtigsten. */
 [data-tone="light"],
 .at-outro [data-chrome="topbar"] {
-  /* Gedaempftes Hellgrau statt Weiss.
-     Die erste Fassung stand bei #eceef2, also L* 94. Nach zwoelf
+  /* Schiefergrau statt Weiss.
+     Die erste Fassung stand bei #eceef2, also L* 94. Nach einem Dutzend
      Bildschirmen auf fast schwarzem Grund ist das keine Trennung mehr,
-     sondern ein Blitz - die Pupille steht auf dunkel und bekommt eine
-     volle Bildschirmflaeche Licht. L* 83 setzt sich vom Grund genauso
-     eindeutig ab (12.6:1 gegen #08090e), tut aber nicht weh.
-     Die dunkleren Toene darunter sind kein Zufall: auf dem
-     abgesenkten Grund fallen die alten Werte unter die AA-Schwelle,
-     Akzent und Faint waeren bei 3.8 gelandet. Gemessen in
-     scripts/check-contrast.mjs. */
-  --color-paper: #c9ced7;
-  --color-surface: #dfe3e9;
-  --color-raise: #d6dae2;
-  --color-rule: #9aa1ad;
-  --color-rule-soft: #b4bac4;
+     sondern ein Blitz: die Pupille steht auf dunkel und bekommt eine
+     volle Bildschirmflaeche Licht. Ueber L* 83 sind wir bei L* 72
+     gelandet - das ist immer noch 9.2:1 gegen den Seitengrund, also eine
+     voellig eindeutige Zaesur, aber es liest sich als anderes Material
+     statt als Lichtquelle.
+     Die Vordergruende sind zweimal mitgewandert und kein Zufall: auf dem
+     abgesenkten Grund faellt jeder Wert der dunklen Seite unter die
+     AA-Schwelle. Gemessen in scripts/check-contrast.mjs; schwaechste
+     Paarung 4.60. */
+  --color-paper: #aab1bd;
+  --color-surface: #c2c8d1;
+  --color-raise: #b8bfca;
+  --color-rule: #7c838f;
+  --color-rule-soft: #969dab;
 
-  --color-ink: #0b0d12;
-  --color-mute: #41464e;
-  --color-faint: #4d525b;
+  --color-ink: #080a0e;
+  --color-mute: #33383f;
+  --color-faint: #3c414a;
 
-  --color-accent: #075985;
-  --color-accent-alt: #5b21b6;
+  --color-accent: #03476b;
+  --color-accent-alt: #4c1d95;
 
-  --ground-rgb: 201, 206, 215;
+  --ground-rgb: 170, 177, 189;
 
   /* Ohne diese Zeile bleibt der Text weiss.
      `color` steht auf dem body und wird als FERTIG BERECHNETER Wert

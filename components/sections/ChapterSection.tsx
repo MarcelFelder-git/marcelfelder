@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Counter, Reveal, SplitHeading } from "@/components/motion/primitives";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { CHAPTER_VH } from "@/lib/scene/pacing";
 import type { Chapter } from "@/types";
 
 /**
@@ -29,7 +30,10 @@ export function ChapterSection({
   return (
     <section
       data-chapter={chapter.id}
-      className="relative min-h-[130vh] px-6 py-[10vh] sm:px-10 lg:px-16"
+      // Hoehe aus lib/scene/pacing.ts statt als Tailwind-Klasse: eine
+      // Zahl in einem Klassennamen laesst sich nicht zentral stellen.
+      style={{ minHeight: `${CHAPTER_VH}vh` }}
+      className="relative px-6 py-[10vh] sm:px-10 lg:px-16"
       aria-labelledby={`chapter-${chapter.id}`}
     >
       <div

@@ -11,6 +11,7 @@ import { LivePreview } from "@/components/projects/LivePreview";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { sceneState } from "@/lib/scene/state";
 import { activeStation, stationNearness } from "@/lib/scene/tunnel";
+import { TUNNEL_VH_LEAD, TUNNEL_VH_PER_PROJECT } from "@/lib/scene/pacing";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -136,16 +137,11 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
     <div
       ref={ref}
       data-tunnel
-      // Knapp drei Viertel einer Bildschirmhoehe pro Projekt plus Vor-
-      // und Nachlauf.
-      //
-      // Vorher war es eine volle Hoehe je Projekt. Mit fuenf Projekten
-      // waren das 580vh, mit sechs 680 - fast sieben Bildschirme allein
-      // fuer die Fahrt, und der Weg zwischen zwei Geraeten wurde zur
-      // Geduldsprobe. Das Tempo der Fahrt selbst bleibt gleich, weil
-      // die Kamera am Fortschritt haengt und nicht an Pixeln: es wird
-      // nur weniger gescrollt fuer dieselbe Strecke.
-      style={{ height: `${PROJECTS.length * 72 + 60}vh` }}
+      // Beide Zahlen stehen in lib/scene/pacing.ts - zusammen mit den
+      // uebrigen Stellschrauben fuer das Tempo der Seite.
+      style={{
+        height: `${PROJECTS.length * TUNNEL_VH_PER_PROJECT + TUNNEL_VH_LEAD}vh`,
+      }}
       className="relative"
     >
       {/* Der Text steht immer auf der Gegenseite der aktuellen Tafel.
