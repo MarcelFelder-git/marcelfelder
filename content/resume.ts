@@ -5,7 +5,7 @@ export const PROFILE = {
   title: "Structural · Signal · Software",
   claim: "Ich baue Systeme, die man hören kann.",
   summary:
-    "Bauingenieur, Tontechniker und Fullstack-Entwickler. Drei Disziplinen, ein Prinzip: erst das Modell verstehen, dann das Interface bauen.",
+    "Ich komme aus dem Bauingenieurwesen, habe Tontechnik gelernt und entwickle heute Fullstack. In allen drei Feldern geht es um dieselbe Frage: wie ist das gebaut, und was passiert, wenn es belastet wird.",
 } as const;
 
 /**
@@ -27,9 +27,9 @@ export const CHAPTERS: Chapter[] = [
     label: "Structure",
     caption: "Bauingenieurwesen",
     headline: "Tragwerke denken in Lastpfaden.",
-    body: "Jedes System hat einen Weg, auf dem die Kraft nach unten wandert. Wer ihn kennt, weiß vorher, wo es bricht — im Fachwerk genauso wie in der Architektur einer Anwendung.",
+    body: "Jedes System hat einen Weg, auf dem die Kraft nach unten wandert. Wer ihn kennt, weiß vorher, wo es bricht. Im Fachwerk ist das eine Stütze, in einer Anwendung ein Service, an dem alles hängt.",
     aside:
-      "Das Modell rechts ist ein zweilagiges Raumfachwerk, allseitig gelagert. Der Cursor bringt eine Einzellast auf; die Stäbe färben sich aus ihrer tatsächlichen Längenänderung: cyan unter Druck, violett unter Zug.",
+      "Das Modell im Hintergrund ist ein zweilagiges Raumfachwerk, allseitig gelagert. Der Mauszeiger bringt eine Einzellast auf. Die Stäbe färben sich aus ihrer tatsächlichen Längenänderung: cyan unter Druck, violett unter Zug.",
     skills: [
       "Tragwerksplanung",
       "FEM-Modellierung",
@@ -50,9 +50,9 @@ export const CHAPTERS: Chapter[] = [
     label: "Signal",
     caption: "Tontechnik",
     headline: "Klang ist eine messbare Größe.",
-    body: "Gain-Staging, Filterbänke, FFT-Analyse. Was im Studio nach Gefühl klingt, ist unter der Haube ein Signalgraph mit Knoten und Übertragungsfunktionen — exakt wie der hier.",
+    body: "Gain-Staging, Filterbänke, FFT-Analyse. Was im Studio nach Gefühl klingt, ist unter der Haube ein Signalgraph aus Knoten und Übertragungsfunktionen. So einer läuft hier gerade im Hintergrund.",
     aside:
-      "Der Ton auf dieser Seite ist kein Sample. Drei verstimmte Oszillatoren laufen durch einen Biquad-Tiefpass und einen Delay-Bus; das Ringdiagramm liest direkt die 512-Punkt-FFT desselben Graphen aus. Die Filterfrequenz steuert nebenbei die Farbe der ganzen Seite.",
+      "Der Ton auf dieser Seite ist kein Sample. Drei leicht verstimmte Oszillatoren laufen durch einen Biquad-Tiefpass und einen Delay-Bus. Das Ringdiagramm liest die 512-Punkt-FFT desselben Graphen aus, und die Filterfrequenz färbt nebenbei das Licht der ganzen Seite.",
     skills: [
       "Mixing & Mastering",
       "Web Audio API",
@@ -73,9 +73,9 @@ export const CHAPTERS: Chapter[] = [
     label: "Code",
     caption: "Entwicklung",
     headline: "Interfaces sind gebaute Systeme.",
-    body: "Next.js 15 App Router, React Server Components, Edge-Deployment. Struktur aus dem Ingenieurwesen, Timing aus der Tontechnik, ausgeliefert im Browser.",
+    body: "Next.js 15 App Router, React Server Components, Edge-Deployment. Die Struktur habe ich aus dem Ingenieurwesen mitgebracht, das Gefühl für Timing aus der Tontechnik. Ausgeliefert wird es im Browser.",
     aside:
-      "Diese Seite ist der Beleg. Keine UI-Bibliothek für das Layout, keine Animationsbibliothek für die 3D-Szene, kein fertiges Theme. Der Scrollfortschritt fährt die Kamera, die Kapitelgewichte blenden die Modelle ineinander.",
+      "Diese Seite ist der Beleg. Keine UI-Bibliothek für das Layout, kein fertiges Theme, keine Animationsbibliothek für die 3D-Szene. Der Scrollfortschritt fährt die Kamera, und dieselben Gewichte blenden die Modelle ineinander.",
     skills: [
       "Next.js 15 / React 19",
       "TypeScript",
@@ -150,38 +150,56 @@ export const SYSTEM_SPECS = [
   },
 ] as const;
 
-/**
- * PLATZHALTER — hier gehoert Marcels echte Vita hin.
- * Struktur steht, Inhalte muessen ersetzt werden.
- */
-export const VITA = [
+export interface VitaEntry {
+  period: string;
+  title: string;
+  org: string;
+  body: string;
+  /**
+   * Noch nicht ausgefuellt.
+   *
+   * Solche Eintraege werden nicht angezeigt. Das ist kein Komfort,
+   * sondern Schutz: eine Zeile "Hochschule eintragen" auf einer Seite,
+   * mit der man sich bewirbt, ist schlimmer als gar keine Vita. Sind
+   * alle drei Eintraege Entwuerfe, faellt der ganze Abschnitt weg und
+   * die Seite endet beim Kontakt.
+   *
+   * Zum Freischalten: Werte eintragen und `draft: true` loeschen.
+   */
+  draft?: boolean;
+}
+
+export const VITA: VitaEntry[] = [
   {
-    period: "Jahr — Jahr",
+    period: "Jahr bis Jahr",
     title: "Bauingenieurwesen",
     org: "Hochschule eintragen",
-    body: "Schwerpunkt eintragen. Diese Einträge sind Platzhalter und müssen durch die echte Vita ersetzt werden.",
+    body: "Schwerpunkt eintragen.",
+    draft: true,
   },
   {
-    period: "Jahr — Jahr",
+    period: "Jahr bis Jahr",
     title: "Tontechnik",
-    org: "Ausbildung / Station eintragen",
+    org: "Ausbildung oder Station eintragen",
     body: "Stationen, Projekte, Genres eintragen.",
+    draft: true,
   },
   {
-    period: "Jahr — heute",
+    period: "Jahr bis heute",
     title: "Fullstack-Entwicklung",
     org: "Kontext eintragen",
     body: "Projekte und Schwerpunkte eintragen.",
+    draft: true,
   },
-] as const;
+];
 
 /** Wird vom Terminal-Befehl `cat resume` ausgegeben. */
 export const RESUME_LINES = [
-  "MARCEL FELDER — Structural · Signal · Software",
+  "MARCEL FELDER · Structural · Signal · Software",
   "",
   "BAUINGENIEURWESEN     Tragwerksplanung, FEM, Nachweisführung, CAD",
   "TONTECHNIK            Mixing, DSP, Web Audio API, Signalanalyse",
   "ENTWICKLUNG           Next.js, TypeScript, React Three Fiber, Supabase",
   "",
-  "Prinzip: erst das Modell verstehen, dann das Interface bauen.",
+  "Erst das Modell verstehen, dann die Oberfläche bauen.",
 ];

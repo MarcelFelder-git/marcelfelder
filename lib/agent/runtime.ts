@@ -82,7 +82,7 @@ function plan(raw: string): Step[] {
     const udl = findQuantity(text, ["kn/m", "kn\\/m"]);
 
     steps.push({
-      thought: `Statikfrage erkannt. Stützweite ${span} m, Last ${load} kN — ich rufe den Solver auf.`,
+      thought: `Statikfrage erkannt. Stützweite ${span} m, Last ${load} kN. Ich rufe den Solver auf.`,
       tool: "solve_beam",
       args: udl !== null ? { span, load, udl } : { span, load },
       answer: (result) => {
@@ -91,7 +91,7 @@ function plan(raw: string): Step[] {
           `Einfeldträger, Stützweite ${r.span} m, Einzellast ${r.load} kN bei x = ${r.position} m.`,
           `Auflagerkräfte: A = ${r.reactionA} kN, B = ${r.reactionB} kN.`,
           `Maximales Biegemoment ${r.maxMoment} kNm bei x = ${r.maxMomentAt} m, maximale Querkraft ${r.maxShear} kN.`,
-          `Gerechnet mit demselben Solver wie auf der Trägerseite — statisch bestimmt, keine Näherung bei den Auflagerkräften.`,
+          `Gerechnet mit demselben Solver wie auf der Trägerseite. Statisch bestimmt, keine Näherung bei den Auflagerkräften.`,
         ].join(" ");
       },
     });
@@ -124,7 +124,7 @@ function plan(raw: string): Step[] {
           .map(([k, v]) => `${k} ${v}`)
           .join(" · ");
         return r.running
-          ? `Gesetzt: ${list}. Die Engine läuft — du hörst das Ergebnis sofort, und die Filterfrequenz färbt zusätzlich die Beleuchtung der Seite.`
+          ? `Gesetzt: ${list}. Die Engine läuft, du hörst das Ergebnis sofort. Die Filterfrequenz färbt zusätzlich das Licht der Seite.`
           : `Werte gesetzt (${list}), aber der Audiokontext ist noch blockiert. Ein Klick irgendwo auf der Seite gibt ihn frei.`;
       },
     });
@@ -133,7 +133,7 @@ function plan(raw: string): Step[] {
   // --- Stack --------------------------------------------------------
   if (/stack|technolog|tooling|womit|welche tools/.test(text)) {
     steps.push({
-      thought: "Frage nach dem Stack — direkt aus dem Register beantwortbar.",
+      thought: "Frage nach dem Stack, direkt aus dem Register beantwortbar.",
       tool: "list_stack",
       args: {},
       answer: (result) => {
@@ -151,7 +151,7 @@ function plan(raw: string): Step[] {
     const query = text.replace(/[?!.,]/g, " ").replace(stop, " ").trim().split(/\s+/)[0] ?? text;
 
     steps.push({
-      thought: `Keine Werkzeugabsicht erkennbar — ich durchsuche das Profil nach "${query}".`,
+      thought: `Keine Werkzeugabsicht erkennbar. Ich durchsuche das Profil nach "${query}".`,
       tool: "search_profile",
       args: { query },
       answer: (result) => {

@@ -53,6 +53,7 @@ export function Hero() {
   return (
     <section
       ref={ref}
+      id="start"
       data-hero
       className="relative flex min-h-[100svh] flex-col justify-center px-6 pb-28 pt-28 sm:px-10 lg:px-16"
     >
@@ -77,7 +78,7 @@ export function Hero() {
             className="size-1.5 rounded-full bg-accent"
             style={{ animation: "blink 2.4s ease-in-out infinite" }}
           />
-          Rev. 03 — Code · Signal · Structure
+          Rev. 03 - Code · Signal · Structure
         </motion.div>
 
         <SplitHeading
@@ -101,8 +102,7 @@ export function Hero() {
             className="text-ink"
           />
           <span className="text-faint">
-            /{" "}
-            {String(role + 1).padStart(2, "0")}
+            / {String(role + 1).padStart(2, "0")}
             <span className="text-faint">
               _{String(ROLES.length).padStart(2, "0")}
             </span>
@@ -131,13 +131,10 @@ export function Hero() {
             className="group flex items-center gap-2 bg-accent px-5 py-3 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
           >
             Projekte ansehen
-            <ArrowDown className="size-4 transition-transform group-hover:translate-y-0.5" strokeWidth={2} />
-          </a>
-          <a
-            href="#workshop-heading"
-            className="invert-hover border border-rule px-5 py-3 text-sm text-mute"
-          >
-            Agent ausprobieren
+            <ArrowDown
+              className="size-4 transition-transform group-hover:translate-y-0.5"
+              strokeWidth={2}
+            />
           </a>
         </motion.div>
       </motion.div>
@@ -150,7 +147,10 @@ export function Hero() {
         className="absolute inset-x-6 bottom-24 flex items-end justify-between sm:inset-x-10 sm:bottom-8 lg:inset-x-16"
       >
         <div className="flex items-center gap-3">
-          <ArrowDown className="size-4 animate-bounce text-accent" strokeWidth={2} />
+          <ArrowDown
+            className="size-4 animate-bounce text-accent"
+            strokeWidth={2}
+          />
           <span className="meta">Scrollen bewegt die Kamera</span>
         </div>
 

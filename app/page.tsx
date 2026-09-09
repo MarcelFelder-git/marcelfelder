@@ -2,7 +2,6 @@ import { Hero } from "@/components/sections/Hero";
 import { Manifest } from "@/components/sections/Manifest";
 import { Showcase } from "@/components/sections/Showcase";
 import { ChapterSection } from "@/components/sections/ChapterSection";
-import { StackBand } from "@/components/sections/StackBand";
 import { Vita, Outro } from "@/components/sections/Closing";
 import { ControlBar } from "@/components/audio/ControlBar";
 import { CHAPTERS } from "@/content/resume";
@@ -28,12 +27,13 @@ export default function Home() {
   return (
     <main id="top">
       <Hero />
-      <Manifest />
       <Showcase />
 
-      {/* Schwelle zwischen Projekten und Kapiteln: erst die Namen der
-          Werkzeuge, dann drei Abschnitte, die sie erklaeren. */}
-      <StackBand />
+      {/* Erst die Projekte, dann die These dahinter.
+          Umgekehrt lagen zwischen "wer bin ich" und "was habe ich
+          gebaut" zwei Ueberschriftenbloecke, und genau dazwischen will
+          niemand lesen, der eine Stelle zu besetzen hat. */}
+      <Manifest />
 
       {ordered.map((chapter, i) => (
         <ChapterSection

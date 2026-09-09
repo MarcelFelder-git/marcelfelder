@@ -29,6 +29,7 @@ export function ChapterSection({
 }) {
   return (
     <section
+      id={chapter.id}
       data-chapter={chapter.id}
       // Hoehe aus lib/scene/pacing.ts statt als Tailwind-Klasse: eine
       // Zahl in einem Klassennamen laesst sich nicht zentral stellen.

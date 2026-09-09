@@ -142,7 +142,7 @@ export const TOOLS: Record<string, Tool> = {
           entry.title.toLowerCase().includes(query) ||
           entry.body.toLowerCase().includes(query)
         ) {
-          matches.push({ source: "Werdegang", text: `${entry.title} — ${entry.period}` });
+          matches.push({ source: "Werdegang", text: `${entry.title}, ${entry.period}` });
         }
       }
       for (const item of [...STACK_MARQUEE, ...STACK_MARQUEE_B]) {

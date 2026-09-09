@@ -158,7 +158,7 @@ export function LivePreview({
         </div>
 
         <p className="border-t border-rule px-4 py-2.5 text-center font-mono text-[11px] text-faint sm:px-6">
-          Fremde Seite in einem Rahmen — Escape schließt, &bdquo;Neuer
+          Fremde Seite in einem Rahmen. Escape schließt, &bdquo;Neuer
           Tab&ldquo; öffnet sie richtig.
         </p>
       </motion.div>

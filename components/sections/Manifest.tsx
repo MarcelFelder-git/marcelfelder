@@ -2,15 +2,32 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { MANIFEST } from "@/content/resume";
+import { MANIFEST, STACK_MARQUEE, STACK_MARQUEE_B } from "@/content/resume";
+import { Marquee } from "@/components/motion/primitives";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 
 /**
- * Das Manifest wird nicht eingeblendet, sondern aufgedeckt: der
+ * Das Fundament: die These, die die drei Kapitel zusammenhaelt, und
+ * darunter der Werkzeugkasten als Laufband.
+ *
+ * ## Warum das hier steht und nicht mehr oben
+ *
+ * Der Text stand frueher direkt hinter dem Hero. Damit lagen zwischen
+ * "wer bin ich" und "was habe ich gebaut" zwei Ueberschriftenbloecke,
+ * und wer eine Stelle zu besetzen hat, will genau dazwischen nichts
+ * lesen. Jetzt kommen erst die Projekte, und die These steht da, wo sie
+ * gebraucht wird: als Auftakt zu den drei Disziplinen, die sie erklaert.
+ *
+ * Das Laufband ist aus demselben Grund hier gelandet statt in einer
+ * eigenen Sektion. Erst die These, dann die Namen der Werkzeuge, dann
+ * drei Kapitel, die beides ausfuehren. Das ist ein Abschnitt, nicht
+ * drei.
+ *
+ * Der Text wird nicht eingeblendet, sondern aufgedeckt: der
  * Scrollfortschritt innerhalb der Sektion schiebt eine Helligkeitsgrenze
- * Zeile fuer Zeile nach unten. Der Text ist die ganze Zeit da - nur eben
- * noch nicht gelesen.
+ * Zeile fuer Zeile nach unten. Er ist die ganze Zeit da, nur eben noch
+ * nicht gelesen.
  */
 export function Manifest() {
   const ref = useRef<HTMLElement>(null);
@@ -24,13 +41,12 @@ export function Manifest() {
   return (
     <section
       ref={ref}
-      // Teilt sich den Systemgraphen mit dem Hero: hier soll der
-      // Hintergrund weiterlaufen, nicht auf ein Kapitelmotiv springen.
-      data-hero
-      // Wenig Luft nach oben, viel nach unten: das Manifest ist die
-      // Fortsetzung des Heros, nicht der naechste Abschnitt.
-      className="relative px-6 pb-[18vh] pt-[10vh] sm:px-10 lg:px-16"
-      aria-label="Manifest"
+      id="fundament"
+      // Kein `data-hero` mehr: der Abschnitt liegt jetzt hinter dem
+      // Tunnel. Er beansprucht den Hintergrund gar nicht, dadurch bleibt
+      // die Korridorszene stehen und klingt aus, waehrend man liest.
+      className="relative px-6 pb-[12vh] pt-[10vh] sm:px-10 lg:px-16"
+      aria-label="Fundament"
     >
       {/* Gerichtet statt radial: der Text steht links, das Modell soll
           rechts frei bleiben. Ein zentriertes Radial verdeckt genau das
@@ -53,7 +69,7 @@ export function Manifest() {
           jeder Abschnittswechsel der Seite jetzt dieselbe Linie benutzt,
           liest sich das als System statt als Zierde. */}
       <div className="flex items-baseline gap-4 border-t border-rule pt-5">
-        <p className="meta-accent shrink-0">Prinzip</p>
+        <p className="meta-accent shrink-0">Fundament</p>
         <span aria-hidden className="h-px flex-1 bg-rule-soft" />
       </div>
 
@@ -69,6 +85,17 @@ export function Manifest() {
             reduced={reduced}
           />
         ))}
+      </div>
+
+      {/* Zwei gegenlaeufige Laufbaender mit dem Werkzeugkasten. Sie
+          stehen bewusst unter der These und nicht in einer eigenen
+          Sektion: erst der Satz, dann die Namen, dann die drei Kapitel,
+          die beides ausfuehren. Die negativen Raender heben die
+          Seitenpolsterung auf, damit die Baender ueber die volle Breite
+          laufen. */}
+      <div className="-mx-6 mt-16 space-y-3 border-y border-rule py-5 sm:-mx-10 lg:-mx-16">
+        <Marquee items={STACK_MARQUEE} duration={46} />
+        <Marquee items={STACK_MARQUEE_B} duration={54} reverse />
       </div>
     </section>
   );

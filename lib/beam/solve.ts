@@ -73,7 +73,7 @@ export function solveBeam(input: BeamInput): BeamResult {
   const span = sB - sA;
 
   if (span < 0.05) {
-    warnings.push("Auflager liegen zu dicht beieinander — System ist labil.");
+    warnings.push("Auflager liegen zu dicht beieinander, das System ist labil.");
   }
   if (sA < -EPS || sB > L + EPS) {
     warnings.push("Auflager liegt außerhalb des Trägers.");

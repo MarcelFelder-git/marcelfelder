@@ -26,18 +26,18 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://flagship-portfolio.vercel.app"),
   title: {
-    default: "Marcel Felder — Structural, Signal & Software Engineering",
+    default: "Marcel Felder · Bauingenieur, Tontechniker, Fullstack-Entwickler",
     template: "%s · Marcel Felder",
   },
   description:
-    "Interaktives Engineering-Portfolio an der Schnittstelle von Bauingenieurwesen, Tontechnik und Fullstack-Entwicklung.",
+    "Portfolio von Marcel Felder: sechs gebaute Projekte mit Live-Deployment und Quellcode, dazu die drei Disziplinen dahinter. Next.js, TypeScript, React Three Fiber, Web Audio.",
   openGraph: {
     type: "website",
     locale: "de_DE",
     siteName: "Marcel Felder",
-    title: "Marcel Felder — Structural, Signal & Software Engineering",
+    title: "Marcel Felder · Bauingenieur, Tontechniker, Fullstack-Entwickler",
     description:
-      "Ein scrollgetriebenes 3D- und Audio-Showcase: Tragwerk, Frequenzspektrum und Komponenten-Matrix in einer Szene.",
+      "Sechs gebaute Projekte mit Live-Deployment und Quellcode. Gebaut mit Next.js, TypeScript und React Three Fiber, ohne UI-Bibliothek und ohne fertiges Theme.",
   },
 };
 

@@ -5,8 +5,11 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal, SplitHeading } from "@/components/motion/primitives";
 import { VITA } from "@/content/resume";
-import { CONTACT_EMAIL, SOCIALS } from "@/content/site";
+import { CONTACT_EMAIL, CONTACT_FACTS, SOCIALS } from "@/content/site";
 import { EASE_OUT } from "@/lib/motion";
+
+/** Entwuerfe werden nicht ausgeliefert. Siehe VitaEntry in resume.ts. */
+const ENTRIES = VITA.filter((entry) => !entry.draft);
 
 /**
  * Zeitleiste. Die senkrechte Linie fuellt sich mit dem Scrollfortschritt der
@@ -14,6 +17,20 @@ import { EASE_OUT } from "@/lib/motion";
  * ist, statt eines zusaetzlichen Elements daneben.
  */
 export function Vita() {
+  // Der Abschnitt faellt ganz weg, solange nichts Echtes drinsteht. Eine
+  // Zeitleiste, in der dreimal "eintragen" steht, sagt einem Recruiter
+  // nur eins: hier ist jemand nicht fertig geworden.
+  //
+  // Die Pruefung steht hier und nicht in der Zeitleiste selbst, weil
+  // deren `useScroll` ein Element braucht, an dem es messen kann. Bei
+  // einem `return null` nach dem Hook haengt der Ref an nichts, und
+  // Framer Motion meldet zu Recht "target ref is defined but not
+  // hydrated".
+  if (ENTRIES.length === 0) return null;
+  return <VitaTimeline />;
+}
+
+function VitaTimeline() {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -54,7 +71,7 @@ export function Vita() {
         />
 
         <ol className="space-y-14">
-          {VITA.map((entry, i) => (
+          {ENTRIES.map((entry, i) => (
             <Reveal key={entry.title} delay={i * 0.06}>
               <li className="relative">
                 <span
@@ -87,21 +104,32 @@ export function Vita() {
 export function Outro() {
   return (
     <footer
+      id="kontakt"
       data-tone="light"
-      className="relative px-6 pb-16 pt-[16vh] sm:px-10 lg:px-16"
+      className="relative px-6 pb-16 pt-[24vh] sm:px-10 lg:px-16"
       aria-labelledby="outro-heading"
     >
+      {/* Verlauf statt Kante.
+          Solange der Werdegang darueber stand, hat der seinen Uebergang
+          ins Helle mitgebracht. Faellt er weg, weil er noch nicht
+          ausgefuellt ist, stiess der Kontakt mit einer harten Linie an
+          den dunklen Abschnitt darueber. Der Verlauf gehoert deshalb
+          hierher, wo er in jedem Fall greift. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[rgb(var(--ground-rgb))]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),1)_16vh)]"
       />
 
-      <p className="meta">Kontakt</p>
+      <div className="flex items-baseline gap-4 border-t border-rule pt-5">
+        <p className="meta-accent shrink-0">Kontakt</p>
+        <span aria-hidden className="h-px flex-1 bg-rule-soft" />
+      </div>
+
       <SplitHeading
         as="h2"
         id="outro-heading"
         text="Reden wir über das nächste System."
-        className="chromatic mt-4 max-w-3xl text-balance text-[clamp(2rem,5vw,4.2rem)] font-semibold leading-[1.02] tracking-[-0.03em]"
+        className="chromatic mt-10 max-w-3xl text-balance text-[clamp(2rem,5vw,4.2rem)] font-semibold leading-[1.02] tracking-[-0.03em]"
         highlight={["System."]}
       />
 
@@ -124,24 +152,61 @@ export function Outro() {
         </a>
       </Reveal>
 
-      <div className="mt-20 flex flex-col gap-4 border-t border-rule/70 pt-8 sm:flex-row sm:items-center sm:justify-between">
-        <span className="meta">
-          © {new Date().getFullYear()} — gebaut mit Next.js, Three.js und der
-          Web Audio API
-        </span>
-        <div className="flex items-center gap-6">
-          {SOCIALS.map((s) => (
+      {/* Fakten, die ein Recruiter als erstes sucht. Was nicht gesetzt
+          ist, steht auch nicht da. */}
+      {(CONTACT_FACTS.location || CONTACT_FACTS.availability) && (
+        <Reveal delay={0.14}>
+          <dl className="mt-10 flex flex-col gap-x-12 gap-y-2 sm:flex-row">
+            {CONTACT_FACTS.location && (
+              <div className="flex items-baseline gap-3">
+                <dt className="meta">Standort</dt>
+                <dd className="text-[15px] text-mute">
+                  {CONTACT_FACTS.location}
+                </dd>
+              </div>
+            )}
+            {CONTACT_FACTS.availability && (
+              <div className="flex items-baseline gap-3">
+                <dt className="meta">Verfügbar</dt>
+                <dd className="text-[15px] text-mute">
+                  {CONTACT_FACTS.availability}
+                </dd>
+              </div>
+            )}
+          </dl>
+        </Reveal>
+      )}
+
+      {/* Profile als richtige Schaltflaechen statt als Kleingedrucktes
+          in der Fusszeile. Wer sich das Portfolio ansieht, will danach
+          in den Quellcode, und das soll ein Ziel sein, kein Suchspiel.
+          Eintraege ohne Adresse fallen weg: ein Knopf, der auf "#"
+          zeigt, ist schlechter als kein Knopf. */}
+      <Reveal delay={0.2}>
+        <div className="mt-12 flex flex-wrap gap-3">
+          {SOCIALS.filter((s) => s.href).map((s) => (
             <a
               key={s.label}
               href={s.href}
               target="_blank"
               rel="noreferrer noopener"
-              className="meta transition-colors hover:text-accent"
+              className="invert-hover flex items-center gap-2 border border-rule px-5 py-3 text-sm text-ink"
             >
               {s.label}
+              <ArrowUpRight className="size-4" strokeWidth={1.75} />
             </a>
           ))}
         </div>
+      </Reveal>
+
+      <div className="mt-20 flex flex-col gap-4 border-t border-rule/70 pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <span className="meta">
+          © {new Date().getFullYear()} Marcel Felder. Gebaut mit Next.js,
+          Three.js und der Web Audio API.
+        </span>
+        <a href="#top" className="meta transition-colors hover:text-accent">
+          Zurück nach oben
+        </a>
       </div>
     </footer>
   );

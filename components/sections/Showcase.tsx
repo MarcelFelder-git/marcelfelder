@@ -70,7 +70,7 @@ export function Showcase() {
           <span className="text-mute">
             {reduced
               ? "Jede Karte verlinkt Live-Deployment und Quellcode."
-              : "Scrollen fährt durch den Korridor — jedes Gerät an der Wand ist ein Projekt."}
+              : "Scrollen fährt durch den Korridor. Jedes Gerät an der Wand ist ein Projekt."}
           </span>
         </h2>
       </header>
@@ -327,7 +327,7 @@ function ProjectIndex() {
   return (
     <div className="relative border-y border-rule bg-paper/90">
       <div className="px-6 py-10 sm:px-10 lg:px-16">
-        <h3 className="meta mb-5">Register — alle Projekte</h3>
+        <h3 className="meta mb-5">Register, alle Projekte</h3>
         <ul className="grid gap-px bg-rule sm:grid-cols-2 lg:grid-cols-3">
           {PROJECTS.map((project) => (
             <li key={project.id} className="bg-paper">
@@ -401,7 +401,7 @@ function ProjectLinks({
       )}
       {project.aiAssisted && (
         <span className="meta w-full pt-1">
-          Entstanden im KI-Pair-Programming — Architektur von mir
+          Entstanden im KI-Pair-Programming, Architektur von mir
         </span>
       )}
     </div>

@@ -56,10 +56,10 @@ export const PROJECTS: Project[] = [
     index: "01",
     title: "SolarSurge",
     tagline:
-      "Kühlt eine Wohnung vor, während die Sonne liefert — statt abends im Netzpeak.",
-    body: "Dashboard und Mobile-App für eine Klimasteuerung, die den Solarüberschuss nutzt: Gibt es tagsüber Überschuss und wird es später heiß, kühlt die Wohnung früh mit eigenem Strom vor. Der Abend bleibt angenehm, ohne teuren Netzstrom zur Spitzenlastzeit.",
+      "Kühlt die Wohnung vor, solange die Sonne liefert. Nicht abends, wenn der Strom am teuersten ist.",
+    body: "Dashboard und Mobile-App für eine Klimasteuerung, die den Solarüberschuss nutzt. Gibt es tagsüber Überschuss und wird es später heiß, kühlt die Wohnung schon am Mittag mit eigenem Strom vor. Der Abend bleibt angenehm, ohne teuren Netzstrom zur Spitzenlastzeit.",
     detail:
-      "Der geteilte Reading-Typ aus packages/db läuft über import type bis in die Mobile-App durch. Eine Schemaänderung lässt damit den Compiler meckern, nicht den Browser.",
+      "Der geteilte Reading-Typ aus packages/db läuft über import type bis in die Mobile-App durch. Ändert sich das Schema, meckert der Compiler und nicht der Browser.",
     stack: [
       "TypeScript",
       "Next.js App Router",
@@ -87,7 +87,7 @@ export const PROJECTS: Project[] = [
     title: "Aurora",
     tagline:
       "Zyklus-Tracking für zwei: eine Person trackt, eine Person unterstützt.",
-    body: "PWA rund um Endometriose-Schmerzmanagement und entzündungshemmende Ernährung — kein Kinderwunsch-Kalender. Zwei live synchronisierte Ansichten: eine zum Erfassen von Symptomen, eine für den Partner, die zeigt, was gerade los ist und was tatsächlich hilft.",
+    body: "Eine PWA für Endometriose-Schmerzmanagement und entzündungshemmende Ernährung. Kein Kinderwunsch-Kalender. Zwei Ansichten, live synchronisiert: eine zum Erfassen von Symptomen, eine für den Partner. Die zeigt, was gerade los ist und was bisher geholfen hat.",
     detail:
       "Row Level Security ist die echte Sicherheitsgrenze, nicht das Frontend: jede Tabelle ist über couple_id abgegrenzt und wird per SECURITY DEFINER gegen das eigene Profil geprüft.",
     stack: [
@@ -122,9 +122,9 @@ export const PROJECTS: Project[] = [
     title: "Latent",
     tagline:
       "Eine Dunkelkammer im Browser: Foto rein, Emulsion wählen, entwickeln zusehen.",
-    body: "Filmemulation, die vollständig auf der GPU läuft — Kennlinien pro Farbschicht, wellenlängenabhängige Halation, Korn, das auf die Belichtung reagiert, Scannerprofile. Nichts wird hochgeladen, es gibt kein Backend. Installierbar und offline lauffähig, weil es nichts gibt, wovon man abgeschnitten werden könnte.",
+    body: "Filmemulation, die vollständig auf der GPU läuft: Kennlinien pro Farbschicht, wellenlängenabhängige Halation, Korn, das auf die Belichtung reagiert, Scannerprofile. Nichts wird hochgeladen, es gibt kein Backend. Die App ist installierbar und läuft offline, weil es nichts gibt, wovon man abgeschnitten werden könnte.",
     detail:
-      "Die Reihenfolge der fünf GPU-Pässe ist der Punkt: das gestreute Licht wird auf die Belichtung addiert und läuft danach durch die Kennlinie — so, wie Licht in Wirklichkeit vor der Entwicklung in der Emulsion streut. Legt man es auf das fertige Bild, liegt es obenauf und liest sich als Effekt.",
+      "Auf die Reihenfolge der fünf GPU-Pässe kommt es an. Das gestreute Licht wird auf die Belichtung addiert und läuft erst danach durch die Kennlinie, so wie Licht in Wirklichkeit vor der Entwicklung in der Emulsion streut. Legt man es stattdessen auf das fertige Bild, sieht man sofort, dass es ein Filter ist.",
     stack: [
       "TypeScript",
       "WebGL2 / GLSL",
@@ -154,10 +154,10 @@ export const PROJECTS: Project[] = [
     index: "04",
     title: "AUFMISCHEN",
     tagline:
-      "Portfolio-Engine für einen Musikproduzenten, Inhalte pflegt er selbst.",
-    body: "Auftragsarbeit für einen Produzenten aus Frankfurt/Berlin. Headless-Architektur: die Inhalte — Musik, Audioreferenzen, Tourdaten, Biografie — liegen in einem CMS, das Frontend liefert sie schnell aus.",
+      "Portfolio-Engine für eine Musikproduzentin, Inhalte pflegt sie selbst.",
+    body: "Auftragsarbeit für eine Produzentin aus Frankfurt und Berlin. Headless-Architektur: Musik, Audioreferenzen, Tourdaten und Biografie liegen in einem CMS, das Frontend liefert sie schnell aus.",
     detail:
-      "Sanity als Headless CMS trennt Redaktion und Darstellung: er ändert Tourdaten, ohne dass ein Deploy nötig ist.",
+      "Sanity als Headless CMS trennt Redaktion und Darstellung: sie ändert Tourdaten, ohne dass ein Deploy nötig ist.",
     stack: [
       "Next.js",
       "Sanity CMS",
@@ -189,8 +189,8 @@ export const PROJECTS: Project[] = [
     index: "05",
     title: "NXT VideoGame HUD",
     tagline:
-      "Spiele suchen, filtern, merken — plus ein Minigame, das dein Wissen testet.",
-    body: "Web-App zum Entdecken von Videospielen, die in Echtzeit aus der RAWG-API liest. Suche, Filter, Detailansichten, eine persönliche Watchlist mit Login — und „Guess the Game“ als Dreingabe.",
+      "Spiele suchen, filtern und merken. Dazu ein Minigame, das dein Wissen testet.",
+    body: "Web-App zum Entdecken von Videospielen, die in Echtzeit aus der RAWG-API liest. Suche, Filter, Detailansichten und eine persönliche Watchlist mit Login. „Guess the Game“ ist als Dreingabe dazugekommen.",
     detail:
       "Auth mit NextAuth und Prisma, damit die Watchlist an einem echten Konto hängt statt im LocalStorage zu liegen.",
     stack: [
@@ -222,7 +222,7 @@ export const PROJECTS: Project[] = [
     title: "Art Robbery",
     tagline:
       "Browsergame: Kunstraub, bei dem jedes Museum eine Fälschung versteckt.",
-    body: "Du bist Meisterdieb und hast es auf die berühmtesten Gemälde der Welt abgesehen. In jedem Museum hängt neben dem Original eine Fälschung — richtig wählen, der Security ausweichen, rauskommen.",
+    body: "Du bist Meisterdieb und hast es auf die berühmtesten Gemälde der Welt abgesehen. In jedem Museum hängt neben dem Original eine Fälschung. Richtig wählen, der Security ausweichen, rauskommen.",
     detail:
       "Spielzustand über useContext statt über eine State-Library: bei dieser Größe ist eine zusätzliche Abhängigkeit nur Ballast.",
     stack: ["React", "JavaScript", "Express", "TanStack Query", "CSS Modules"],

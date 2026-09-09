@@ -3,20 +3,88 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { sceneState } from "@/lib/scene/state";
-import { useViewportMode } from "@/lib/store/useViewportMode";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
-import type { ViewportMode } from "@/types";
 import { CHAPTERS as CONTENT_CHAPTERS } from "@/content/resume";
 
-// Aus dem Inhalt abgeleitet statt hier zweitgepflegt: sonst zeigt die
-// Navigation eine andere Reihenfolge als die Seite, sobald sich die
-// Kapitelnummern aendern.
-const NAV_CHAPTERS: { id: ViewportMode; label: string; index: string }[] = [
-  ...CONTENT_CHAPTERS,
-]
-  .sort((a, b) => a.index.localeCompare(b.index))
-  .map((c) => ({ id: c.id, label: c.label, index: c.index }));
+/**
+ * Seitenregister.
+ *
+ * Frueher standen hier nur die drei Kapitel, und der aktive Eintrag kam
+ * aus dem Kapitel-Store. Der kennt aber nur Kapitel: im Hero und in den
+ * Projekten blieb deshalb "Structure" markiert, also ein Abschnitt, der
+ * hunderte Prozent Scrollweg entfernt lag. Ein Register, das auf etwas
+ * zeigt, wo man nicht ist, ist schlimmer als keins.
+ *
+ * Jetzt sind alle Abschnitte drin, und der aktive wird direkt gemessen.
+ * Die Reihenfolge ist die der Seite; die drei Kapitel kommen aus dem
+ * Inhalt, damit das Register nicht auseinanderlaeuft, wenn sich dort
+ * etwas aendert.
+ */
+const NAV_SECTIONS: { id: string; label: string }[] = [
+  { id: "start", label: "Start" },
+  { id: "projects", label: "Projekte" },
+  { id: "fundament", label: "Fundament" },
+  ...[...CONTENT_CHAPTERS]
+    .sort((a, b) => a.index.localeCompare(b.index))
+    .map((c) => ({ id: c.id, label: c.label })),
+  { id: "kontakt", label: "Kontakt" },
+];
+
+/**
+ * Welcher Abschnitt gerade den Bildschirm fuellt.
+ *
+ * Bewertet wird die BEDECKUNG in Pixeln, nicht der Anteil des Abschnitts
+ * selbst. Der Unterschied ist wichtig, weil die Abschnitte sehr
+ * unterschiedlich hoch sind: der Projekttunnel ist gut vier Bildschirme
+ * lang, der Kontakt einen halben. Nach Anteil gerechnet gewinnt immer
+ * der kurze, obwohl der lange den ganzen Blick fuellt.
+ *
+ * Gemessen wird auf `scroll` und `resize`, jeweils auf den naechsten
+ * Frame gebuendelt. Sieben Rechtecke pro Frame kosten nichts, und es
+ * spart einen zweiten Beobachter neben dem, der ohnehin schon laeuft.
+ */
+function useActiveSection() {
+  const [active, setActive] = useState(NAV_SECTIONS[0].id);
+
+  useEffect(() => {
+    let frame = 0;
+
+    const measure = () => {
+      frame = 0;
+      const vh = window.innerHeight;
+      let best = NAV_SECTIONS[0].id;
+      let bestCover = -1;
+
+      for (const section of NAV_SECTIONS) {
+        const el = document.getElementById(section.id);
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        const cover = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+        if (cover > bestCover) {
+          bestCover = cover;
+          best = section.id;
+        }
+      }
+      setActive((prev) => (prev === best ? prev : best));
+    };
+
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+
+    measure();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, []);
+
+  return active;
+}
 
 /**
  * Instrumententafel.
@@ -24,14 +92,13 @@ const NAV_CHAPTERS: { id: ViewportMode; label: string; index: string }[] = [
  * Fortschrittsbalken, Kapitelnavigation und ein Live-Readout. Balken und
  * Readout werden per rAF direkt ins DOM geschrieben - sie aendern sich in
  * jedem Frame, und ein React-Render pro Frame waere hier reine Verschwendung.
- * Nur das aktive Kapitel laeuft ueber State, weil es sich selten aendert.
+ * Nur der aktive Abschnitt laeuft ueber State, weil er sich selten aendert.
  */
 export function Hud() {
   const barRef = useRef<HTMLDivElement>(null);
   const readoutRef = useRef<HTMLSpanElement>(null);
 
-  const mode = useViewportMode((s) => s.mode);
-  const setMode = useViewportMode((s) => s.setMode);
+  const activeSection = useActiveSection();
 
   useEffect(() => {
     let frame = 0;
@@ -92,40 +159,45 @@ export function Hud() {
 
       {/* Kapitelnavigation, rechts mittig — nummeriert wie ein Register,
           nicht wie ein Tab-Set. */}
+      {/* Echte Sprungmarken statt Schaltflaechen mit scrollIntoView:
+          Links lassen sich mit der Tastatur ansteuern, in einem neuen
+          Tab oeffnen und kopieren, und sie funktionieren auch, wenn das
+          JavaScript noch nicht geladen ist. */}
       <nav
-        aria-label="Kapitel"
-        data-chrome="scene"
-        className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-5 lg:flex"
+        aria-label="Seitenregister"
+        // Nicht `scene`, sondern `topbar`: das Register verschwindet im
+        // hellen Abschnitt nicht, es faerbt sich um. Ausgerechnet dort
+        // waere "Kontakt" der aktive Eintrag, und ein Register, das
+        // genau dann weg ist, wenn man am Ziel steht, ist keins.
+        data-chrome="topbar"
+        className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-4 lg:flex"
       >
-        {NAV_CHAPTERS.map((c) => {
-          const active = c.id === mode;
+        {NAV_SECTIONS.map((section) => {
+          const current = section.id === activeSection;
           return (
-            <button
-              key={c.id}
-              onClick={() => setMode(c.id)}
-              aria-current={active ? "true" : undefined}
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              aria-current={current ? "true" : undefined}
               className="group flex items-center gap-3"
             >
               <span
                 className={cn(
                   "font-mono text-[10px] uppercase tracking-[0.2em] transition-colors duration-300",
-                  active ? "text-ink" : "text-faint group-hover:text-mute",
+                  current ? "text-ink" : "text-faint group-hover:text-mute",
                 )}
               >
-                <span className={active ? "text-accent" : undefined}>
-                  {c.index}
-                </span>{" "}
-                {c.label}
+                {section.label}
               </span>
               <span
                 className={cn(
                   "block h-px transition-all duration-500",
-                  active
+                  current
                     ? "w-10 bg-accent"
                     : "w-4 bg-faint group-hover:w-7 group-hover:bg-mute",
                 )}
               />
-            </button>
+            </a>
           );
         })}
       </nav>

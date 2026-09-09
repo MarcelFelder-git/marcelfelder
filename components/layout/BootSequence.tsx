@@ -7,8 +7,8 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 
 const LINES = [
   "init scene graph",
-  "load lattice — 100 nodes / 476 members",
-  "build audio graph — 3 osc → biquad → analyser",
+  "load lattice: 100 nodes / 476 members",
+  "build audio graph: 3 osc, biquad, analyser",
   "compile shaders",
   "ready",
 ];

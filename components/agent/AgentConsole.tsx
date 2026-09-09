@@ -69,7 +69,7 @@ export function AgentConsole() {
         >
           {events.length === 0 && (
             <p className="meta max-w-sm leading-relaxed">
-              Kein Verlauf. Frag etwas — der Agent zeigt jeden Schritt: welches
+              Kein Verlauf. Frag etwas, der Agent zeigt jeden Schritt: welches
               Werkzeug er wählt, mit welchen Argumenten, was zurückkommt.
             </p>
           )}
@@ -108,7 +108,7 @@ export function AgentConsole() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Träger 6 m, 20 kN — oder: mach den Klang dunkler"
+            placeholder="Träger 6 m, 20 kN, oder: mach den Klang dunkler"
             disabled={running}
             className="min-w-0 flex-1 bg-transparent px-2 py-2 font-mono text-sm text-ink outline-none placeholder:text-faint disabled:opacity-50"
           />
