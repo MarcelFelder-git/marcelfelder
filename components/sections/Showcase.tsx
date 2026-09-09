@@ -62,17 +62,23 @@ export function Showcase() {
             {String(PROJECTS.length).padStart(2, "0")} Stück · alle im Repo
           </p>
         </div>
+        {/* Wieder mit Gewicht.
+            Sie war auf Zwischenzeilengroesse heruntergesetzt, als das
+            Manifest noch daneben stand und der Anfang aus drei
+            Ueberschriften bestand. Das Manifest sitzt inzwischen hinter
+            den Projekten, also ist das hier die einzige Ueberschrift
+            nach dem Hero - und die darf man sehen. */}
         <h2
           id="projects-heading"
-          className="mt-6 max-w-xl text-balance text-[clamp(1.25rem,2.2vw,1.7rem)] font-medium leading-snug tracking-[-0.02em] text-ink"
+          className="mt-6 max-w-2xl text-balance text-[clamp(1.9rem,3.4vw,2.9rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-ink"
         >
-          Gebaut, deployt, <span className="text-accent">nachlesbar</span>.{" "}
-          <span className="text-mute">
-            {reduced
-              ? "Jede Karte verlinkt Live-Deployment und Quellcode."
-              : "Scrollen fährt durch den Korridor. Jedes Gerät an der Wand ist ein Projekt."}
-          </span>
+          Gebaut, deployt, <span className="text-accent">nachlesbar</span>.
         </h2>
+        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-mute">
+          {reduced
+            ? "Jede Karte verlinkt Live-Deployment und Quellcode."
+            : "Scrollen fährt durch den Korridor. Jedes Gerät an der Wand ist ein Projekt."}
+        </p>
       </header>
 
       {reduced ? (
@@ -240,15 +246,20 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
             <p className="mt-5 text-pretty text-[17px] leading-snug text-ink">
               {project.tagline}
             </p>
-            {/* Auf dem Telefon nur fuer Screenreader.
-                Der technische Zusatz ist das, was jemanden interessiert,
-                der schon eingestiegen ist - auf einem Handschirm kostet
-                er vier Zeilen, die der Karte genau den Platz nehmen, den
-                das Geraet dahinter braucht. `sr-only` statt `hidden`,
-                damit er trotzdem vorgelesen wird: weniger sehen ist eine
-                Gestaltungsentscheidung, weniger erfahren waere keine. */}
+            {/* Hier stand der technische Zusatz (`detail`) und nicht
+                die Beschreibung (`body`). Damit fehlte auf der Fahrt
+                ausgerechnet der Satz, der erklaert, WAS das Projekt
+                ueberhaupt ist - man las die Pointe, ohne den Witz zu
+                kennen. `detail` steht weiterhin im Register unten und in
+                den READMEs; hier hat der Platz nur fuer eines gereicht,
+                und dann fuer das Wichtigere.
+
+                Auf dem Telefon nur fuer Screenreader: dort kostet der
+                Absatz genau die Zeilen, die der Karte den Platz nehmen,
+                den das Geraet dahinter braucht. `sr-only` statt
+                `hidden`, damit er trotzdem vorgelesen wird. */}
             <p className="mt-3 text-[14px] leading-relaxed text-mute max-sm:sr-only">
-              {project.detail}
+              {project.body}
             </p>
 
             <ul className="mt-5 flex flex-wrap gap-1.5">

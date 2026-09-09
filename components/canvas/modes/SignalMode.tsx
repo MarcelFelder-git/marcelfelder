@@ -51,6 +51,8 @@ const VERTEX = /* glsl */ `
   uniform sampler2D uSpectrum;
   uniform float uTime;
   uniform float uLevel;
+  /** Ordnung des stehenden Musters, vom Zeiger gesteuert. */
+  uniform float uOrder;
 
   varying vec3 vNormalW;
   varying float vHeight;
@@ -71,7 +73,7 @@ const VERTEX = /* glsl */ `
 
     float ang = atan(p.y, p.x);
     float travel = sin(r * 3.4 - uTime * 2.1);
-    float standing = sin(ang * 6.0 + uTime * 0.45) * cos(r * 2.2);
+    float standing = sin(ang * uOrder + uTime * 0.45) * cos(r * 2.2);
 
     float fall = exp(-r * 0.42);
     return (travel * amp * 1.7 + standing * amp * 0.7 + uLevel * 0.5) * fall;
@@ -140,6 +142,7 @@ const FRAGMENT = /* glsl */ `
 export function SignalMode() {
   const groupRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
+  const tiltRef = useRef<THREE.Group>(null);
   const coreRef = useRef<THREE.Mesh>(null);
   const membraneRef = useRef<THREE.Mesh>(null);
   const reducedMotion = usePrefersReducedMotion();
@@ -168,6 +171,7 @@ export function SignalMode() {
         uSpectrum: { value: texture },
         uTime: { value: 0 },
         uLevel: { value: 0.05 },
+        uOrder: { value: 6 },
         uOpacity: { value: 0 },
         uLow: { value: new THREE.Color("#0e7fb8") },
         uHigh: { value: new THREE.Color("#a855f7") },
@@ -239,9 +243,31 @@ export function SignalMode() {
     u.uLevel.value = live ? audioEngine.getLevel() : 0.14;
     u.uOpacity.value = eased;
 
+    // Der Zeiger steuert die Ordnung des stehenden Musters.
+    //
+    // Chladnische Klangfiguren aendern ihre Form mit der Frequenz: bei
+    // 300 Hz liegen vier Knotenlinien auf der Platte, bei 800 Hz zwoelf.
+    // Genau das passiert hier, nur mit der Maus statt mit dem Generator.
+    // Weich nachgezogen, sonst springt das Muster.
+    const order = 4 + (sceneState.pointer.x * 0.5 + 0.5) * 7;
+    u.uOrder.value += (order - u.uOrder.value) * 0.06;
+
 
     if (spinRef.current && !reducedMotion) {
-      spinRef.current.rotation.z = t * 0.045;
+      // Grunddrehung plus Zeiger: die Membran laesst sich anschauen wie
+      // ein Objekt auf einem Drehteller. Ein echtes Ziehen mit der Maus
+      // waere schoener, ginge hier aber nur, wenn der Canvas Klicks
+      // annaehme - und dann liesse sich der Text darueber nicht mehr
+      // markieren.
+      spinRef.current.rotation.z = t * 0.045 + sceneState.pointer.x * 0.5;
+    }
+
+    if (tiltRef.current && !reducedMotion) {
+      // Neigung folgt der Hoehe des Zeigers: von fast aufgesichtig bis
+      // beinahe streifend. Erst dadurch sieht man, dass es eine Flaeche
+      // im Raum ist und keine Grafik.
+      const tilt = -Math.PI / 2.35 + sceneState.pointer.y * 0.28;
+      tiltRef.current.rotation.x += (tilt - tiltRef.current.rotation.x) * 0.06;
     }
 
     if (coreRef.current) {
@@ -262,7 +288,7 @@ export function SignalMode() {
       {/* Die Membran liegt flach und dreht sich langsam um ihre eigene
           Achse. Gedreht wird um Z, weil die Ebene erst danach in die
           Waagerechte gekippt wird. */}
-      <group rotation={[-Math.PI / 2.35, 0, 0]}>
+      <group ref={tiltRef} rotation={[-Math.PI / 2.35, 0, 0]}>
         <group ref={spinRef}>
           <mesh ref={membraneRef} geometry={geometry} frustumCulled={false}>
             <shaderMaterial

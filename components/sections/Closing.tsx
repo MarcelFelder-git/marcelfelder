@@ -144,7 +144,8 @@ export function Outro() {
       <div className="mt-20 flex flex-col gap-4 border-t border-rule/70 pt-8 sm:flex-row sm:items-center sm:justify-between">
         <span className="meta">
           © {new Date().getFullYear()} Marcel Felder. Gebaut mit Next.js,
-          Three.js und der Web Audio API.
+          Three.js und der Web Audio API, im Pair-Programming mit Claude
+          Code.
         </span>
         <a href="#top" className="meta transition-colors hover:text-accent">
           Zurück nach oben

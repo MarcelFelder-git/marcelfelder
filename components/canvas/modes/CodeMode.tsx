@@ -185,9 +185,17 @@ export function CodeMode() {
     const { dummy, color } = scratch;
     const span = LINES * LINE_HEIGHT;
     // Sweep-Hoehe in Weltkoordinaten, synchron zum Shader-Band.
+    // Der Lesebalken folgt dem Zeiger.
+    //
+    // Vorher lief er nur automatisch von unten nach oben. Das sah gut
+    // aus, hatte aber mit dem Betrachter nichts zu tun. Jetzt fuehrt die
+    // Maus ihn ueber den Code, wie ein Finger auf einer Zeile, und die
+    // Eigenbewegung bleibt als Grundton darunter - sonst stuende das
+    // Modell still, sobald niemand die Maus bewegt.
+    const drift = (((t * 0.14) % 1) - 0.5) * span * 1.6;
     const sweepY = reducedMotion
       ? 0
-      : (((t * 0.14) % 1) - 0.5) * span * 1.6;
+      : drift * 0.35 + sceneState.pointer.y * span * 0.55;
 
     for (let i = 0; i < tokens.length; i++) {
       const tok = tokens[i];
@@ -210,7 +218,8 @@ export function CodeMode() {
 
     if (spinRef.current && !reducedMotion) {
       // Minimale Eigenrotation, damit die Staffelung der Ebenen lesbar wird.
-      spinRef.current.rotation.y = Math.sin(t * 0.18) * 0.24;
+      spinRef.current.rotation.y =
+        Math.sin(t * 0.18) * 0.24 + sceneState.pointer.x * 0.26;
     }
     (mesh.material as THREE.MeshBasicMaterial).opacity = eased;
   });

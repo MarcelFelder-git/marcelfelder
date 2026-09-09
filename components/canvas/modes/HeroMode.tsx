@@ -58,12 +58,15 @@ const FIELD_RADIUS = 15;
  * Beziehung. Drei Ebenen ergeben drei, und das ist der Punkt, ab dem das
  * Auge einen Raum liest statt einer Staffelung.
  *
- * Das Nahfeld ist dabei das Wirksamste: etwas, das VOR dem Motiv
- * vorbeizieht, kann gar nicht anders gelesen werden als naeher.
+ * Ein Nahfeld gab es hier auch einmal: grosse, unscharfe Punkte, die
+ * quer vor dem Motiv durchzogen. Als Tiefenmittel ist das eigentlich
+ * das staerkste, was es gibt - aber vor einer aufgeraeumten Szene liest
+ * sich ein weicher Fleck, der durchs Bild wandert, nicht als Staub,
+ * sondern als Fehler. Wieder raus. Drei Ebenen ohne Irritation sind
+ * besser als vier mit.
  */
-const DEEP_COUNT = 260;
+const DEEP_COUNT = 300;
 const DEEP_RADIUS = 38;
-const NEAR_COUNT = 90;
 /** Wie viele nächste Nachbarn jeder Knoten verbindet. */
 const NEIGHBOURS = 3;
 const PULSE_COUNT = 18;
@@ -145,7 +148,6 @@ export function HeroMode() {
   const spinRef = useRef<THREE.Group>(null);
   const fieldRef = useRef<THREE.Points>(null);
   const deepRef = useRef<THREE.Points>(null);
-  const nearRef = useRef<THREE.Points>(null);
   const haloRef = useRef<THREE.Mesh>(null);
   const haloAltRef = useRef<THREE.Mesh>(null);
   const nodesRef = useRef<THREE.InstancedMesh>(null);
@@ -194,24 +196,6 @@ export function HeroMode() {
     return geometry;
   }, []);
 
-  /**
-   * Nahfeld: wenige Punkte zwischen Kamera und Graph, die quer durchs
-   * Bild ziehen. Sie liegen so dicht vor der Linse, dass sie unscharf
-   * gross wirken, und genau das macht den Abstand dahinter lesbar.
-   */
-  const near = useMemo(() => {
-    const pos = new Float32Array(NEAR_COUNT * 3);
-    const drift = new Float32Array(NEAR_COUNT);
-    for (let i = 0; i < NEAR_COUNT; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 14;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 9;
-      pos[i * 3 + 2] = 4.2 + Math.random() * 2.4;
-      drift[i] = 0.1 + Math.random() * 0.28;
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    return { geometry, drift };
-  }, []);
 
   const buffers = useMemo(() => {
     // Wo jeder Knoten herkommt: zufaellig verteilt auf einer weiten
@@ -407,21 +391,7 @@ export function HeroMode() {
     if (deepRef.current) {
       if (!reduced) deepRef.current.rotation.y = t * 0.006;
       (deepRef.current.material as THREE.PointsMaterial).opacity =
-        eased * build * 0.4;
-    }
-    if (nearRef.current) {
-      const attr = nearRef.current.geometry.attributes
-        .position as THREE.BufferAttribute;
-      const arr = attr.array as Float32Array;
-      if (!reduced) {
-        for (let i = 0; i < NEAR_COUNT; i++) {
-          arr[i * 3] += near.drift[i] * delta;
-          if (arr[i * 3] > 7) arr[i * 3] = -7;
-        }
-        attr.needsUpdate = true;
-      }
-      (nearRef.current.material as THREE.PointsMaterial).opacity =
-        eased * build * 0.32;
+        eased * build * 0.55;
     }
     if (haloRef.current) {
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
@@ -489,20 +459,8 @@ export function HeroMode() {
       {/* Ganz hinten, praktisch unbewegt. */}
       <points ref={deepRef} geometry={deep} frustumCulled={false}>
         <pointsMaterial
-          size={0.035}
-          color="#31597a"
-          transparent
-          opacity={0}
-          sizeAttenuation
-          depthWrite={false}
-        />
-      </points>
-
-      {/* Nahfeld, zieht quer vor dem Motiv durch. */}
-      <points ref={nearRef} geometry={near.geometry} frustumCulled={false}>
-        <pointsMaterial
-          size={0.11}
-          color="#7fb4d8"
+          size={0.042}
+          color="#3a6a91"
           transparent
           opacity={0}
           sizeAttenuation

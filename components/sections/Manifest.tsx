@@ -109,7 +109,7 @@ export function Manifest() {
           die beides ausfuehren. Die negativen Raender heben die
           Seitenpolsterung auf, damit die Baender ueber die volle Breite
           laufen. */}
-      <div className="-mx-6 mt-16 space-y-3 border-y border-rule py-5 sm:-mx-10 lg:-mx-16">
+      <div className="-mx-6 mt-28 space-y-3 border-y border-rule py-5 sm:-mx-10 lg:-mx-16">
         <Marquee items={STACK_MARQUEE} duration={46} />
         <Marquee items={STACK_MARQUEE_B} duration={54} reverse />
       </div>
@@ -129,7 +129,7 @@ function Track() {
   if (entries.length === 0) return null;
 
   return (
-    <div className="mt-20">
+    <div className="mt-28">
       <div className="flex items-baseline gap-4 border-t border-rule pt-5">
         <p className="meta-accent shrink-0">Werdegang</p>
         <span aria-hidden className="h-px flex-1 bg-rule-soft" />
@@ -138,7 +138,7 @@ function Track() {
         </p>
       </div>
 
-      <ol className="mt-8 grid gap-px bg-rule sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="mt-12 grid gap-px bg-rule sm:grid-cols-2 lg:grid-cols-4">
         {entries.map((entry, i) => (
           <Reveal key={entry.title} delay={i * 0.06} y={16}>
             <li className="h-full bg-surface/80 p-5">
