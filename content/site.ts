@@ -11,12 +11,12 @@
  * ACHTUNG: Diese Adresse muss existieren und Post empfangen, bevor die
  * Seite live geht. Sie ist der einzige Rueckkanal auf der ganzen Seite.
  */
-export const CONTACT_EMAIL = "mail@marcelfelder.dev";
+export const CONTACT_EMAIL = "marcel.felder.bln@gmail.com";
 
 /** Wird unter der Mailadresse gezeigt. Leere Felder fallen weg. */
 export const CONTACT_FACTS = {
   /** z. B. "Frankfurt am Main, Umzug moeglich" */
-  location: "",
+  location: "Köln",
   /** z. B. "Ab sofort verfuegbar, Vollzeit" */
   availability: "",
 } as const;
@@ -24,5 +24,8 @@ export const CONTACT_FACTS = {
 /** Eintraege ohne `href` werden nicht gerendert. */
 export const SOCIALS = [
   { label: "GitHub", href: "https://github.com/MarcelFelder-git" },
-  { label: "LinkedIn", href: "" },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/marcel-felder-036481384/",
+  },
 ] as const;

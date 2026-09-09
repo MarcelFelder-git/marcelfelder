@@ -9,7 +9,18 @@ import { EASE_OUT } from "@/lib/motion";
 
 // Entwickler zuerst: das ist die Rolle, um die es geht. Die anderen zwei
 // erklaeren, warum er sie anders ausfuellt als andere Bewerber.
-const ROLES = ["FULLSTACK-ENTWICKLER", "TONTECHNIKER", "BAUINGENIEUR"];
+/**
+ * Felder, keine Titel.
+ *
+ * Hier stand "FULLSTACK-ENTWICKLER, TONTECHNIKER, BAUINGENIEUR". Zwei
+ * davon sind Berufsbezeichnungen, die Marcel so nicht fuehrt: der
+ * Lebenslauf sagt "Frontend Developer, auf dem Weg zum Fullstack", und
+ * das Bauingenieurstudium ist ohne Abschluss geblieben. Wer Seite und
+ * Lebenslauf nebeneinanderlegt, darf keinen Widerspruch finden.
+ *
+ * Die Felder stimmen dagegen alle drei, und sie sagen dasselbe aus.
+ */
+const ROLES = ["FRONTEND-ENTWICKLUNG", "TONTECHNIK", "BAUINGENIEURWESEN"];
 
 export function Hero() {
   const [role, setRole] = useState(0);
@@ -84,6 +95,9 @@ export function Hero() {
         <SplitHeading
           as="h1"
           text={PROFILE.claim}
+          // Steht beim Laden immer im Bild und darf deshalb nicht auf
+          // einen Sichtbereichs-Ausloeser warten. Siehe `immediate`.
+          immediate
           delay={0.25}
           highlight={["hören", "kann."]}
           className="chromatic mt-7 text-balance text-[clamp(2.6rem,8vw,7rem)] font-semibold leading-[0.95] tracking-[-0.03em]"

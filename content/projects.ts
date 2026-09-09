@@ -72,7 +72,10 @@ export const PROJECTS: Project[] = [
     ],
     scope: "Fullstack · Cloud · Mobile",
     year: "2026",
-    links: { repo: "https://github.com/MarcelFelder-git/solarsurge" },
+    links: {
+      live: "https://solarsurge-web.vercel.app",
+      repo: "https://github.com/MarcelFelder-git/solarsurge",
+    },
     media: {
       image: "/projects/solarsurge-01.jpg",
       stills: ["/projects/solarsurge-02.jpg"],

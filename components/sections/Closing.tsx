@@ -58,7 +58,7 @@ function VitaTimeline() {
       <SplitHeading
         as="h2"
         id="vita-heading"
-        text="Drei Ausbildungen, die aufeinander zeigen."
+        text="Wie ich hierher gekommen bin."
         className="mt-4 max-w-3xl text-balance text-[clamp(1.8rem,3.6vw,3rem)] font-semibold leading-[1.08] tracking-[-0.025em]"
       />
 

@@ -61,6 +61,7 @@ export function SplitHeading({
   delay = 0,
   highlight,
   id,
+  immediate = false,
 }: {
   text: string;
   as?: ElementType;
@@ -69,6 +70,19 @@ export function SplitHeading({
   /** Woerter, die im Verlauf Cyan→Violett gesetzt werden. */
   highlight?: string[];
   id?: string;
+  /**
+   * Sofort animieren statt auf den Sichtbereich zu warten.
+   *
+   * Fuer alles, was beim Laden ohnehin im Bild steht. Der Ausloeser
+   * ueber den Sichtbereich ist dort nicht nur unnoetig, sondern
+   * riskant: er haengt an einem IntersectionObserver, und wenn der
+   * seinen Ausloeser verpasst - etwa weil der Browser beim Laden eine
+   * alte Scrollposition wiederherstellt und die Seite danach springt -
+   * bleiben die Woerter dauerhaft auf `opacity: 0`. Genau das ist
+   * passiert: die Ueberschrift des Heros war unsichtbar, obwohl sie
+   * mitten im Bild stand.
+   */
+  immediate?: boolean;
 }) {
   // Ohne diese Einschraenkung kennt TypeScript die erlaubten Props des
   // dynamischen Tags nicht und lehnt className/id ab.
@@ -88,8 +102,9 @@ export function SplitHeading({
       <motion.span
         className="inline-block"
         initial="hidden"
-        whileInView="show"
-        viewport={{ once: true }}
+        {...(immediate
+          ? { animate: "show" as const }
+          : { whileInView: "show" as const, viewport: { once: true } })}
         variants={{
           show: {
             transition: {

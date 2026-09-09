@@ -26,18 +26,18 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://flagship-portfolio.vercel.app"),
   title: {
-    default: "Marcel Felder · Fullstack-Entwickler",
+    default: "Marcel Felder · Frontend-Entwickler (React, Next.js, TypeScript)",
     template: "%s · Marcel Felder",
   },
   description:
-    "Fullstack-Entwickler mit Next.js, TypeScript und React Three Fiber. Sechs gebaute Projekte mit Live-Deployment und Quellcode, dazu Bauingenieurwesen und Tontechnik als Fundament.",
+    "Frontend-Entwickler aus Köln, auf dem Weg zum Fullstack. Sechs gebaute Projekte mit Live-Deployment und Quellcode, dazu dreizehn Jahre Tontechnik und sechseinhalb Jahre Bauingenieurwesen als Fundament.",
   openGraph: {
     type: "website",
     locale: "de_DE",
     siteName: "Marcel Felder",
-    title: "Marcel Felder · Fullstack-Entwickler",
+    title: "Marcel Felder · Frontend-Entwickler (React, Next.js, TypeScript)",
     description:
-      "Sechs gebaute Projekte mit Live-Deployment und Quellcode. Gebaut mit Next.js, TypeScript und React Three Fiber, ohne UI-Bibliothek und ohne fertiges Theme.",
+      "Sechs gebaute Projekte mit Live-Deployment und Quellcode. Diese Seite: Next.js 15, TypeScript, React Three Fiber, ohne UI-Bibliothek und ohne fertiges Theme.",
   },
 };
 

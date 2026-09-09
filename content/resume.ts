@@ -5,7 +5,7 @@ export const PROFILE = {
   title: "Structural · Signal · Software",
   claim: "Ich baue Systeme, die man hören kann.",
   summary:
-    "Ich komme aus dem Bauingenieurwesen, habe Tontechnik gelernt und entwickle heute Fullstack. In allen drei Feldern geht es um dieselbe Frage: wie ist das gebaut, und was passiert, wenn es belastet wird.",
+    "Frontend-Entwickler mit React, Next.js und TypeScript, auf dem Weg zum Fullstack. Davor dreizehn Jahre Tontechnik und sechseinhalb Jahre Bauingenieurwesen. In allen drei Feldern geht es um dieselbe Frage: wie ist das gebaut, und was passiert, wenn es belastet wird.",
 } as const;
 
 /**
@@ -31,12 +31,12 @@ export const CHAPTERS: Chapter[] = [
     aside:
       "Das Modell im Hintergrund ist ein zweilagiges Raumfachwerk, allseitig gelagert. Der Mauszeiger bringt eine Einzellast auf. Die Stäbe färben sich aus ihrer tatsächlichen Längenänderung: cyan unter Druck, violett unter Zug.",
     skills: [
+      "Statische Berechnungen",
+      "Konstruktionspläne",
+      "Bauanträge",
       "Tragwerksplanung",
-      "FEM-Modellierung",
-      "Nachweisführung",
-      "CAD / BIM",
-      "Lastannahmen",
-      "Bauablaufplanung",
+      "Projektkoordination",
+      "Kundenberatung",
     ],
     metrics: [
       { label: "Knoten im Modell", value: 100, suffix: "" },
@@ -55,9 +55,9 @@ export const CHAPTERS: Chapter[] = [
       "Der Ton auf dieser Seite ist kein Sample. Drei leicht verstimmte Oszillatoren laufen durch einen Biquad-Tiefpass und einen Delay-Bus. Das Ringdiagramm liest die 512-Punkt-FFT desselben Graphen aus, und die Filterfrequenz färbt nebenbei das Licht der ganzen Seite.",
     skills: [
       "Mixing & Mastering",
+      "Recording",
+      "Live-Tontechnik",
       "Web Audio API",
-      "DSP-Grundlagen",
-      "Filterdesign",
       "Spektralanalyse",
       "Signalfluss & Routing",
     ],
@@ -108,16 +108,22 @@ export const STACK_MARQUEE = [
   "Vercel Edge",
 ] as const;
 
+/**
+ * Das zweite Band: alles, was nicht aus der Entwicklung kommt.
+ *
+ * Die Eintraege decken sich mit dem Lebenslauf. Wer beides
+ * nebeneinanderlegt, soll nichts finden, was nur hier steht.
+ */
 export const STACK_MARQUEE_B = [
-  "FEM",
-  "AutoCAD",
-  "Revit",
-  "Nachweisführung",
+  "Statische Berechnungen",
+  "Konstruktionspläne",
+  "Bauanträge",
+  "Tragwerksplanung",
   "Mixing",
   "Mastering",
-  "DSP",
+  "Recording",
+  "Live-Tontechnik",
   "Signalfluss",
-  "Tragwerksplanung",
   "Akustik",
 ] as const;
 
@@ -173,35 +179,39 @@ export interface VitaEntry {
 
 export const VITA: VitaEntry[] = [
   {
-    period: "Jahr bis Jahr",
+    period: "2008 bis 2011",
+    title: "Audio Engineering",
+    org: "Akademie Deutsche Pop",
+    body: "Recording, Mixing, Mastering, Songwriting. Der erste Beruf, und der Grund, warum ich bis heute in Signalen denke.",
+  },
+  {
+    period: "2010 bis 2023",
+    title: "Musik und Tontechnik, freiberuflich",
+    org: "Studio, Bühne, Tourbetrieb",
+    body: "Produktion, Mixing und Mastering, Gitarre im Studio und live, Tontechnik für Veranstaltungsorte. Dazu Tourplanung, Kundenbetreuung und Abrechnung. Projekte mit vielen Beteiligten, die zu einem festen Termin fertig sein mussten.",
+  },
+  {
+    period: "2014 bis 2022",
     title: "Bauingenieurwesen",
-    org: "Hochschule eintragen",
-    body: "Schwerpunkt eintragen.",
-    draft: true,
+    org: "Berliner Hochschule für Technik, dazu Werkstudent im Ingenieurbüro",
+    body: "Das Studium habe ich nicht abgeschlossen. Sechseinhalb Jahre im Büro schon: statische Berechnungen, Konstruktionspläne, Bauanträge, Kundenberatung und Projektkoordination. Was ich über Tragwerke weiß, kommt aus echten Projekten und nicht aus dem Hörsaal.",
   },
   {
-    period: "Jahr bis Jahr",
-    title: "Tontechnik",
-    org: "Ausbildung oder Station eintragen",
-    body: "Stationen, Projekte, Genres eintragen.",
-    draft: true,
-  },
-  {
-    period: "Jahr bis heute",
-    title: "Fullstack-Entwicklung",
-    org: "Kontext eintragen",
-    body: "Projekte und Schwerpunkte eintragen.",
-    draft: true,
+    period: "2024 bis 2025",
+    title: "Weiterbildung Frontend-Entwicklung",
+    org: "cimData, Berlin",
+    body: "Neun Monate HTML, CSS, JavaScript, React, Next.js, TypeScript, Python-Grundlagen und Barrierefreiheit. Abgeschlossen im August 2025. Seitdem baue ich das, was hier steht.",
   },
 ];
 
 /** Wird vom Terminal-Befehl `cat resume` ausgegeben. */
 export const RESUME_LINES = [
-  "MARCEL FELDER · Structural · Signal · Software",
+  "MARCEL FELDER · Frontend-Entwickler · Köln",
   "",
-  "BAUINGENIEURWESEN     Tragwerksplanung, FEM, Nachweisführung, CAD",
-  "TONTECHNIK            Mixing, DSP, Web Audio API, Signalanalyse",
-  "ENTWICKLUNG           Next.js, TypeScript, React Three Fiber, Supabase",
+  "ENTWICKLUNG    React, Next.js, TypeScript, React Three Fiber",
+  "               Python, PostgreSQL, Prisma, AWS-Grundlagen",
+  "TONTECHNIK     Mixing, Mastering, Recording, Web Audio API",
+  "BAUWESEN       Statik, Konstruktionsplaene, Bauantraege",
   "",
   "Erst das Modell verstehen, dann die Oberfläche bauen.",
 ];
