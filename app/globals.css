@@ -96,7 +96,8 @@
    auszublenden waere die einfachere Loesung und die schlechtere: der
    Sprung zurueck nach oben ist genau am Seitenende am wichtigsten. */
 [data-tone="light"],
-.at-outro [data-chrome="topbar"] {
+.head-light [data-chrome="topbar"],
+.rail-light [data-chrome="rail"] {
   /* Schiefergrau statt Weiss.
      Die erste Fassung stand bei #eceef2, also L* 94. Nach einem Dutzend
      Bildschirmen auf fast schwarzem Grund ist das keine Trennung mehr,
@@ -142,7 +143,7 @@
     visibility 0.5s;
 }
 
-.at-outro [data-chrome="scene"] {
+.rail-light [data-chrome="scene"] {
   opacity: 0;
   visibility: hidden;
 }

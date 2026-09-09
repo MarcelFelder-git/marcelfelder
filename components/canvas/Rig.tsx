@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { SCENE_KEYS, sceneState, type SceneKey } from "@/lib/scene/state";
-import { tunnelCameraZ } from "@/lib/scene/tunnel";
 
 /**
  * Kamerafuehrung.
@@ -58,8 +57,14 @@ export function Rig() {
   useFrame((_, delta) => {
     const { weights, pointer, progress, tunnelProgress } = sceneState;
 
-    // Die Tunnelstation wandert mit der Fahrt.
-    const tunnelZ = tunnelCameraZ(tunnelProgress);
+    // Die Tunnelstation steht fest.
+    //
+    // Die Fahrt macht der Korridor, der auf die Kamera zulaeuft (siehe
+    // tunnelTravel). Dadurch bleibt die Kamera waehrend der ganzen Fahrt
+    // in der Naehe der Kapitelstationen, und der Wechsel vom Tunnel zum
+    // ersten Kapitel ist ein kurzer Weg statt einer Rueckfahrt ueber die
+    // volle Korridorlaenge.
+    const tunnelZ = 4;
     // Sanftes Schlingern, damit die Fahrt nicht wie eine Schiene wirkt.
     // Bewusst klein: die Innenkanten der Tafeln stehen nur knapp neben
     // der Fahrbahn, und ein zu weiter Ausschlag traegt die Kamera auf

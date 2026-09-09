@@ -44,6 +44,38 @@ export function ChapterSection({
         )}
       >
         <div className="relative w-full max-w-xl">
+          {/* Kapitelnummer als Blickfang.
+              Vorher stand sie brav ueber der Rubrik und war damit eine
+              Beschriftung unter vielen. Jetzt liegt sie hinter dem Satz,
+              laeuft ueber den Rand der Spalte hinaus und wird von der
+              Ueberschrift ueberlagert. Das ist die Bauform, die
+              Redaktionen fuer Kapitelmarken benutzen: die Ziffer ist
+              gross genug, um Massstab zu setzen, und dabei nur eine
+              Kontur, also nie in Konkurrenz zum Text.
+
+              `aria-hidden`, weil die Nummer keine Information traegt,
+              die nicht schon im Kapitelnamen steht. Fuer einen
+              Screenreader waere sie eine vorgelesene Ziffer ohne
+              Zusammenhang. */}
+          <motion.span
+            aria-hidden
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1, ease: EASE_OUT }}
+            className={cn(
+              "pointer-events-none absolute -top-[0.22em] z-0 select-none font-mono text-[clamp(7rem,17vw,15rem)] font-bold leading-[0.7] tracking-tighter text-transparent",
+              side === "left" ? "-left-[0.08em]" : "-right-[0.08em]",
+            )}
+            // 1.5px statt 1: eine Haarlinie auf einer 240 px hohen Ziffer
+            // verschwindet beim Skalieren und auf hochaufloesenden
+            // Schirmen fast vollstaendig.
+            style={{ WebkitTextStroke: "1.5px rgba(56,189,248,0.34)" }}
+          >
+            {chapter.index}
+          </motion.span>
+
+          <div className="relative z-10">
           {/* Scrim, damit die Type auf dem Modell lesbar bleibt. Die
               Richtung folgt der Textseite: die dem Modell zugewandte Kante
               laeuft aus, die andere deckt voll ab. */}
@@ -57,20 +89,7 @@ export function ChapterSection({
             )}
           />
 
-          {/* Kapitelnummer als Outline-Type - Massstab, keine Deko */}
-          <motion.span
-            aria-hidden
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.9, ease: EASE_OUT }}
-            className="block font-mono text-[clamp(4rem,10vw,8rem)] font-bold leading-none tracking-tighter text-transparent"
-            style={{ WebkitTextStroke: "1px rgba(56,189,248,0.28)" }}
-          >
-            {chapter.index}
-          </motion.span>
-
-          <Reveal delay={0.05} className="mt-4 flex items-center gap-3">
+          <Reveal delay={0.05} className="flex items-center gap-3 pt-14">
             <span className="h-px w-8 bg-accent/60" />
             <span className="meta text-accent">
               {chapter.caption}
@@ -145,6 +164,7 @@ export function ChapterSection({
           </dl>
 
           {children ? <div className="mt-10">{children}</div> : null}
+          </div>
         </div>
       </div>
     </section>

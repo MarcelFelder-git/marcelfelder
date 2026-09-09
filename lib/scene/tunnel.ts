@@ -54,6 +54,29 @@ export function tunnelCameraZ(progress: number) {
 }
 
 /**
+ * Dieselbe Fahrt, aber als Verschiebung des Korridors statt als Bewegung
+ * der Kamera.
+ *
+ * ## Warum sich der Tunnel bewegt und nicht die Kamera
+ *
+ * Frueher fuhr die Kamera durch die Roehre, von z = 4 bis z = -105.
+ * Innerhalb des Tunnels war das voellig richtig, am Ausgang aber ein
+ * Problem: die drei Kapitelmodelle stehen alle im Ursprung, ihre
+ * Kamerastationen liegen bei z ~ 6. Sobald der Tunnel ausblendete,
+ * musste die Kamera also 111 Einheiten zuruecklegen, und zwar genau
+ * waehrend der Ueberblendung. Man sah den ganzen Korridor an sich
+ * vorbeirauschen. Das war der Ruck beim Sektionswechsel.
+ *
+ * Relativ betrachtet ist es dieselbe Bewegung, wenn stattdessen der
+ * Korridor auf die Kamera zulaeuft. Nur steht die Kamera dann die ganze
+ * Fahrt ueber bei z = 4, also dort, wo auch die Kapitelstationen liegen,
+ * und die Uebergabe ist ein kurzer Weg statt einer Rueckfahrt.
+ */
+export function tunnelTravel(progress: number) {
+  return CAMERA_START - tunnelCameraZ(progress);
+}
+
+/**
  * Wie weit eine Station voraus noch zaehlt, und wie schnell sie hinter
  * einem verfaellt. Bewusst sehr unterschiedlich, siehe unten.
  */

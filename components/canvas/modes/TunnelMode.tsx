@@ -13,10 +13,10 @@ import { STILL_FADE, STILL_HOLD } from "@/lib/scene/pacing";
 import {
   RING_COUNT,
   RING_SPACING,
-  TUNNEL_LENGTH,
   activeStation,
   stationNearness,
   stationZ,
+  tunnelTravel,
 } from "@/lib/scene/tunnel";
 
 /**
@@ -51,7 +51,8 @@ import {
  */
 const RADIUS = 7.6;
 const SIDES = 8;
-const LENGTH = TUNNEL_LENGTH;
+/** Tiefe der Staubwolke vor der Kamera. */
+const MOTE_DEPTH = 55;
 
 /**
  * Der Korridor ist aus Stahl, nicht aus blauer Farbe.
@@ -293,6 +294,8 @@ const GEO = {
 
 export function TunnelMode() {
   const groupRef = useRef<THREE.Group>(null);
+  /** Alles, was mit der Fahrt an der Kamera vorbeizieht. */
+  const travelRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
   const strutsRef = useRef<THREE.InstancedMesh>(null);
   const lampsRef = useRef<THREE.InstancedMesh>(null);
@@ -384,7 +387,7 @@ export function TunnelMode() {
       const r = RADIUS * (0.25 + Math.random() * 0.7);
       pos[i * 3] = Math.cos(angle) * r;
       pos[i * 3 + 1] = Math.sin(angle) * r;
-      pos[i * 3 + 2] = -Math.random() * LENGTH;
+      pos[i * 3 + 2] = -Math.random() * MOTE_DEPTH;
       speed[i] = 0.6 + Math.random() * 1.8;
     }
     const geometry = new THREE.BufferGeometry();
@@ -403,6 +406,15 @@ export function TunnelMode() {
     if (!group.visible) return;
 
     const eased = active * active * (3 - 2 * active);
+
+    // Die Fahrt: der Korridor laeuft auf die Kamera zu, statt dass die
+    // Kamera durch ihn hindurchfaehrt. Relativ ist das dieselbe
+    // Bewegung, aber die Kamera bleibt dabei in der Naehe der
+    // Kapitelstationen, und der Wechsel zum naechsten Abschnitt ist ein
+    // kurzer Weg statt einer Rueckfahrt ueber hundert Einheiten.
+    if (travelRef.current) {
+      travelRef.current.position.z = tunnelTravel(sceneState.tunnelProgress);
+    }
 
     // Nur der Korridor dreht sich, nicht die Geraete.
     //
@@ -456,9 +468,11 @@ export function TunnelMode() {
     if (points && !reduced) {
       const attr = points.geometry.attributes.position as THREE.BufferAttribute;
       const arr = attr.array as Float32Array;
+      // Kurzer Umlauf statt der vollen Korridorlaenge: der Staub haengt
+      // jetzt an der Kamera, und was hinter ihr liegt, sieht niemand.
       for (let i = 0; i < motes.count; i++) {
         arr[i * 3 + 2] += motes.speed[i] * delta;
-        if (arr[i * 3 + 2] > 4) arr[i * 3 + 2] = -LENGTH;
+        if (arr[i * 3 + 2] > 5) arr[i * 3 + 2] = -MOTE_DEPTH;
       }
       attr.needsUpdate = true;
       (points.material as THREE.PointsMaterial).opacity = eased * 0.55;
@@ -488,19 +502,40 @@ export function TunnelMode() {
         speed={0.4}
       />
 
-      {/* Wanderlicht, siehe useFrame. Steht ausserhalb der drehenden
-          Gruppe, damit es an seiner Station bleibt. */}
-      <pointLight ref={lightRef} intensity={0} distance={22} decay={2} />
+      {/* Staub bleibt bei der Kamera stehen, statt mit dem Korridor zu
+          fahren. Er soll den Raum vor der Linse fuellen, nicht ein
+          Bauteil des Tunnels sein. */}
+      <points
+        ref={motesRef}
+        geometry={motes.geometry}
+        frustumCulled={false}
+        renderOrder={1}
+      >
+        <pointsMaterial
+          size={0.055}
+          color="#7dd3fc"
+          transparent
+          opacity={0}
+          sizeAttenuation
+          depthWrite={false}
+        />
+      </points>
 
-      {/* Alles Drehende steckt in dieser Gruppe. Die Geraete liegen
-          bewusst daneben und bleiben dadurch aufrecht. */}
-      <group ref={spinRef}>
+      {/* Alles, was an der Kamera vorbeizieht. Siehe useFrame. */}
+      <group ref={travelRef}>
+        {/* Wanderlicht, siehe useFrame. Steht ausserhalb der drehenden
+            Gruppe, damit es an seiner Station bleibt. */}
+        <pointLight ref={lightRef} intensity={0} distance={22} decay={2} />
+
+        {/* Alles Drehende steckt in dieser Gruppe. Die Geraete liegen
+            bewusst daneben und bleiben dadurch aufrecht. */}
+        <group ref={spinRef}>
         {/* Streben des Korridors. renderOrder haelt sie hinter den
             Geraeten: transparente Objekte werden nach dem Abstand ihres
             Ursprungs sortiert, und der Ursprung dieser einen Instanz-
             Sammlung liegt am Tunneleingang - also scheinbar ganz vorne. */}
-        <instancedMesh
-          ref={placeStruts}
+          <instancedMesh
+            ref={placeStruts}
           args={[undefined, undefined, corridor.length]}
           frustumCulled={false}
           renderOrder={0}
@@ -532,34 +567,20 @@ export function TunnelMode() {
           />
         </instancedMesh>
 
-        <points
-          ref={motesRef}
-          geometry={motes.geometry}
-          frustumCulled={false}
-          renderOrder={1}
-        >
-          <pointsMaterial
-            size={0.055}
-            color="#7dd3fc"
-            transparent
-            opacity={0}
-            sizeAttenuation
-            depthWrite={false}
-          />
-        </points>
-      </group>
+        </group>
 
-      {PROJECTS.map((project, i) => (
-        <Panel
-          key={project.id}
-          textures={textures.slice(ranges[i][0], ranges[i][1])}
-          z={stationZ(i)}
-          side={i % 2 === 0 ? -1 : 1}
-          portrait={project.media.orientation === "portrait"}
-          index={i}
-          reduced={reduced}
-        />
-      ))}
+        {PROJECTS.map((project, i) => (
+          <Panel
+            key={project.id}
+            textures={textures.slice(ranges[i][0], ranges[i][1])}
+            z={stationZ(i)}
+            side={i % 2 === 0 ? -1 : 1}
+            portrait={project.media.orientation === "portrait"}
+            index={i}
+            reduced={reduced}
+          />
+        ))}
+      </group>
     </group>
   );
 }

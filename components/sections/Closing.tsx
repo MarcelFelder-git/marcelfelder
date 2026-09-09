@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal, SplitHeading } from "@/components/motion/primitives";
-import { VITA } from "@/content/resume";
+import { CHAPTERS, VITA } from "@/content/resume";
 import { CONTACT_EMAIL, CONTACT_FACTS, SOCIALS } from "@/content/site";
 import { EASE_OUT } from "@/lib/motion";
 
@@ -176,6 +176,38 @@ export function Outro() {
           </dl>
         </Reveal>
       )}
+
+      {/* Kurzfassung der drei Disziplinen.
+          Der helle Abschnitt war vorher fast leer, und eine grosse
+          leere Flaeche wirkt nicht ruhig, sondern unfertig. Hier steht
+          jetzt in drei Spalten, was oben ueber drei Kapitel verteilt
+          war. Wer bis hierher gescrollt ist, hat es gelesen; wer direkt
+          hierher gesprungen ist, bekommt es in fuenf Sekunden. Die
+          Inhalte kommen aus denselben Kapiteldaten, es gibt also keine
+          zweite Wahrheit, die veralten koennte. */}
+      <Reveal delay={0.17}>
+        <dl className="mt-16 grid gap-px border border-rule bg-rule sm:grid-cols-3">
+          {[...CHAPTERS]
+            .sort((a, b) => a.index.localeCompare(b.index))
+            .map((chapter) => (
+              <div key={chapter.id} className="bg-paper p-6">
+                <dt className="text-sm font-medium text-ink">
+                  {chapter.caption}
+                </dt>
+                <dd className="mt-3 flex flex-wrap gap-1.5">
+                  {chapter.skills.slice(0, 4).map((skill) => (
+                    <span
+                      key={skill}
+                      className="border border-rule-soft px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.08em] text-mute"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            ))}
+        </dl>
+      </Reveal>
 
       {/* Profile als richtige Schaltflaechen statt als Kleingedrucktes
           in der Fusszeile. Wer sich das Portfolio ansieht, will danach

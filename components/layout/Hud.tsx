@@ -21,14 +21,27 @@ import { CHAPTERS as CONTENT_CHAPTERS } from "@/content/resume";
  * Inhalt, damit das Register nicht auseinanderlaeuft, wenn sich dort
  * etwas aendert.
  */
-const NAV_SECTIONS: { id: string; label: string }[] = [
-  { id: "start", label: "Start" },
-  { id: "projects", label: "Projekte" },
-  { id: "fundament", label: "Fundament" },
-  ...[...CONTENT_CHAPTERS]
-    .sort((a, b) => a.index.localeCompare(b.index))
-    .map((c) => ({ id: c.id, label: c.label })),
-  { id: "kontakt", label: "Kontakt" },
+const NAV_SECTIONS: { id: string; label: string; covers: string[] }[] = [
+  { id: "start", label: "Start", covers: ["start"] },
+  { id: "projects", label: "Projekte", covers: ["projects"] },
+  {
+    // Vier Abschnitte, ein Eintrag.
+    //
+    // Mit sieben Punkten war die Leiste selbst das Auffaelligste am
+    // rechten Rand, und die vier Eintraege in der Mitte gehoeren
+    // ohnehin zusammen: die These und die drei Disziplinen, die sie
+    // ausfuehren. Der Sprung geht auf den Anfang dieser Strecke,
+    // markiert wird sie auf ihrer ganzen Laenge.
+    id: "fundament",
+    label: "Profil",
+    covers: [
+      "fundament",
+      ...[...CONTENT_CHAPTERS]
+        .sort((a, b) => a.index.localeCompare(b.index))
+        .map((c) => c.id),
+    ],
+  },
+  { id: "kontakt", label: "Kontakt", covers: ["kontakt"] },
 ];
 
 /**
@@ -57,10 +70,13 @@ function useActiveSection() {
       let bestCover = -1;
 
       for (const section of NAV_SECTIONS) {
-        const el = document.getElementById(section.id);
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        const cover = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+        let cover = 0;
+        for (const id of section.covers) {
+          const el = document.getElementById(id);
+          if (!el) continue;
+          const r = el.getBoundingClientRect();
+          cover += Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+        }
         if (cover > bestCover) {
           bestCover = cover;
           best = section.id;
@@ -165,11 +181,13 @@ export function Hud() {
           JavaScript noch nicht geladen ist. */}
       <nav
         aria-label="Seitenregister"
-        // Nicht `scene`, sondern `topbar`: das Register verschwindet im
-        // hellen Abschnitt nicht, es faerbt sich um. Ausgerechnet dort
-        // waere "Kontakt" der aktive Eintrag, und ein Register, das
-        // genau dann weg ist, wenn man am Ziel steht, ist keins.
-        data-chrome="topbar"
+        // Eigene Kennung, weil das Register auf halber Hoehe klebt und
+        // die Kopfzeile oben: am Seitenende liegt hinter dem einen
+        // laengst Helles, waehrend ueber der anderen noch Dunkles steht.
+        // Ausgeblendet wird es dort nicht, nur umgefaerbt. "Kontakt" ist
+        // genau dann der aktive Eintrag, und ein Register, das am Ziel
+        // verschwindet, ist keins.
+        data-chrome="rail"
         className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-4 lg:flex"
       >
         {NAV_SECTIONS.map((section) => {

@@ -38,7 +38,8 @@ export function ScrollDriver() {
     // Wiederverwendet statt pro Frame neu angelegt.
     const ground: [number, number, number] = [8, 9, 14];
     let lastGround = "";
-    let atOutro = false;
+    let atHead = false;
+    let atRail = false;
     const onPointer = (e: PointerEvent) => {
       target.x = (e.clientX / window.innerWidth) * 2 - 1;
       target.y = -((e.clientY / window.innerHeight) * 2 - 1);
@@ -167,9 +168,34 @@ export function ScrollDriver() {
       // Jetzt wird der Abschnitt gemessen, den es tatsaechlich betrifft.
       const lightEl = document.querySelector<HTMLElement>('[data-tone="light"]');
       let arriving = 0;
+      let headerOverLight = false;
+      let railOverLight = false;
       if (lightEl) {
         const r = lightEl.getBoundingClientRect();
         arriving = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.7)));
+
+        // Die Kopfzeile ist etwas anderes als die Szene.
+        //
+        // Sie klebt oben am Fensterrand, also entscheidet allein, was
+        // DORT liegt. `arriving` misst dagegen, wie weit der helle
+        // Abschnitt von unten ins Bild geschoben ist, und war schon bei
+        // 0.55, wenn erst das untere Drittel hell war. Die Kopfzeile
+        // stand dann noch auf dunklem Grund und wurde trotzdem dunkel
+        // eingefaerbt.
+        //
+        // Der Abschnitt braucht 16vh, bis sein Verlauf voll deckt.
+        // Erst wenn diese Kante ueber den oberen Rand hinaus ist, liegt
+        // hinter der Kopfzeile wirklich Helles.
+        //
+        // Zwei getrennte Fragen, weil zwei Elemente an verschiedenen
+        // Stellen kleben: die Kopfzeile oben am Rand, das Register auf
+        // halber Hoehe. Am Seitenende liegt hinter dem Register laengst
+        // Helles, waehrend ueber der Kopfzeile noch der dunkle Abschnitt
+        // darueber steht. Eine gemeinsame Schwelle kann nur eines von
+        // beiden richtig treffen.
+        const solidTop = r.top + vh * 0.16;
+        headerOverLight = solidTop < 96;
+        railOverLight = solidTop < vh * 0.5;
       }
       doc.style.setProperty(
         "--scene-opacity",
@@ -182,10 +208,13 @@ export function ScrollDriver() {
       // Als Klasse statt als weitere Custom Property, weil die Elemente
       // dabei auch aus dem Tastaturfokus verschwinden muessen - eine
       // unsichtbare, aber anspringbare Schaltflaeche ist eine Falle.
-      const outro = arriving > 0.55;
-      if (outro !== atOutro) {
-        atOutro = outro;
-        doc.classList.toggle("at-outro", outro);
+      if (headerOverLight !== atHead) {
+        atHead = headerOverLight;
+        doc.classList.toggle("head-light", headerOverLight);
+      }
+      if (railOverLight !== atRail) {
+        atRail = railOverLight;
+        doc.classList.toggle("rail-light", railOverLight);
       }
 
       // Grundton der aktuellen Mischung ans CSS weitergeben. Die
