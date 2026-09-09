@@ -1,32 +1,73 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { EASE_OUT } from "@/lib/motion";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useSceneLoad } from "@/lib/store/useSceneLoad";
 
 const LINES = [
   "init scene graph",
   "load lattice: 100 nodes / 476 members",
   "build audio graph: 3 osc, biquad, analyser",
   "compile shaders",
-  "ready",
+  "stream project textures",
 ];
 
 const STEP_MS = 190;
+/**
+ * Spaetestens dann ist Schluss, egal was die Szene meldet.
+ *
+ * Ein Ladebildschirm, der auf ein Ereignis wartet, das nicht kommt, ist
+ * die schlimmste Art von Fehler: die Seite sieht kaputt aus, obwohl der
+ * Inhalt laengst da waere. Sechs Sekunden reichen fuer die knapp
+ * 800 kB Texturen auch auf einer mageren Leitung; danach zaehlt der
+ * Inhalt mehr als die Vollstaendigkeit der Szene.
+ */
+const FAILSAFE_MS = 6000;
 
 /**
- * Kurze Boot-Sequenz.
+ * Boot-Sequenz mit echtem Ladebalken.
  *
- * Zwei Sekunden, nicht mehr - eine Intro-Animation, die den Inhalt laenger
- * aufhaelt, als sie Eindruck macht, ist ein Eigentor. Sie laeuft einmal pro
- * Sitzung; wer zurueckkommt, sieht sofort die Seite. Bei reduzierter
- * Bewegung entfaellt sie ganz.
+ * ## Was sich geaendert hat
+ *
+ * Vorher war der Balken Theater: er lief in festen Schritten von 0 auf
+ * 100 und hatte mit dem tatsaechlichen Zustand der Seite nichts zu tun.
+ * Er war damit genau das, was diese Seite sonst nirgends tut, naemlich
+ * eine Behauptung.
+ *
+ * Jetzt zeigt er den echten Fortschritt ueber die Texturen der Szene,
+ * gemeldet aus dem Canvas (siehe lib/store/useSceneLoad.ts). Die
+ * Protokollzeilen laufen weiter mit, tragen aber nur noch ein Sechstel
+ * zum Balken bei: sie sollen ihn in Bewegung halten, solange der
+ * Ladevorgang noch gar nicht angefangen hat, und ihn nicht faelschen.
+ *
+ * Weggeblendet wird, wenn beides fertig ist. Damit ist die Wartezeit
+ * nicht laenger als noetig - und wenn die Szene laenger braucht, wartet
+ * man auf etwas Echtes statt auf einen Timer.
+ *
+ * Sie laeuft einmal pro Sitzung; wer zurueckkommt, sieht sofort die
+ * Seite. Bei reduzierter Bewegung entfaellt sie ganz.
  */
 export function BootSequence() {
   const reduced = usePrefersReducedMotion();
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
+
+  const sceneProgress = useSceneLoad((s) => s.progress);
+  const sceneDone = useSceneLoad((s) => s.done);
+
+  const close = useCallback(() => {
+    setActive(false);
+    document.body.style.overflow = "";
+    // Signal an die Szene: ab jetzt schaut jemand hin.
+    document.documentElement.classList.remove("booting");
+    try {
+      sessionStorage.setItem("mf-booted", "1");
+    } catch {
+      /* Privater Modus: dann laeuft die Sequenz eben jedes Mal. */
+    }
+  }, []);
 
   useEffect(() => {
     if (reduced) return;
@@ -40,38 +81,38 @@ export function BootSequence() {
 
     setActive(true);
     document.body.style.overflow = "hidden";
+    // Solange diese Klasse steht, ist die Szene verdeckt. Der Hero
+    // haelt daran seinen Auftritt zurueck, statt ihn hinter dem
+    // Ladebildschirm ablaufen zu lassen.
+    document.documentElement.classList.add("booting");
 
     const id = window.setInterval(() => {
-      setStep((s) => {
-        if (s >= LINES.length) {
-          window.clearInterval(id);
-          return s;
-        }
-        return s + 1;
-      });
+      setStep((s) => (s >= LINES.length ? s : s + 1));
     }, STEP_MS);
-
-    const done = window.setTimeout(
-      () => {
-        setActive(false);
-        document.body.style.overflow = "";
-        try {
-          sessionStorage.setItem("mf-booted", "1");
-        } catch {
-          /* ignorieren */
-        }
-      },
-      LINES.length * STEP_MS + 420,
-    );
 
     return () => {
       window.clearInterval(id);
-      window.clearTimeout(done);
       document.body.style.overflow = "";
+      document.documentElement.classList.remove("booting");
     };
   }, [reduced]);
 
-  const progress = Math.min(1, step / LINES.length);
+  // Fertig heisst: alle Zeilen durch UND die Szene geladen.
+  useEffect(() => {
+    if (!active) return;
+    if (!sceneDone || step < LINES.length) return;
+    const id = window.setTimeout(close, 380);
+    return () => window.clearTimeout(id);
+  }, [active, sceneDone, step, close]);
+
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setTimeout(close, FAILSAFE_MS);
+    return () => window.clearTimeout(id);
+  }, [active, close]);
+
+  const lineProgress = step / LINES.length;
+  const progress = Math.min(1, lineProgress / 6 + sceneProgress * (5 / 6));
 
   return (
     <AnimatePresence>

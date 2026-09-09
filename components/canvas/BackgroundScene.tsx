@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer } from "@react-three/drei";
+import { Environment, Lightformer, useProgress } from "@react-three/drei";
 import {
   EffectComposer,
   Bloom,
@@ -19,6 +19,7 @@ import { HeroMode } from "./modes/HeroMode";
 import { sceneState } from "@/lib/scene/state";
 import { GROUND, RIM, blend } from "@/lib/scene/palette";
 import { tunnelExit } from "@/lib/scene/tunnel";
+import { useSceneLoad } from "@/lib/store/useSceneLoad";
 
 /**
  * Die Szene liegt vollflaechig HINTER der Seite, nicht in einer Kachel
@@ -161,8 +162,33 @@ function SceneGrade() {
   );
 }
 
+/**
+ * Meldet den Ladefortschritt an die Oberflaeche.
+ *
+ * Steht als eigene Komponente NEBEN dem Canvas, nicht darin: `useProgress`
+ * loest bei jedem Fortschrittsschritt ein Rerender aus, und das soll die
+ * Szene nicht treffen. Hier rendert nur diese eine Zeile neu.
+ *
+ * `total === 0` heisst "es hat noch nichts angefangen zu laden" - dann
+ * meldet drei bereits 100 %, was ohne diese Unterscheidung zu einem
+ * Ladebalken fuehrt, der voll startet.
+ */
+function LoadReporter() {
+  const { progress, total, loaded } = useProgress();
+  const report = useSceneLoad((s) => s.report);
+
+  useEffect(() => {
+    const started = total > 0;
+    report(started ? progress / 100 : 0, started && loaded >= total);
+  }, [progress, total, loaded, report]);
+
+  return null;
+}
+
 export default function BackgroundScene() {
   return (
+    <>
+    <LoadReporter />
     <Canvas
       // DPR gedeckelt: auf einem 3x-Display waere der Fuellratenbedarf
       // neunmal so hoch, sichtbar besser wird es nicht.
@@ -247,5 +273,6 @@ export default function BackgroundScene() {
         </EffectComposer>
       </Suspense>
     </Canvas>
+    </>
   );
 }

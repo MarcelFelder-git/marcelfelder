@@ -435,7 +435,11 @@ export function TunnelMode() {
     // aber genau das, was der Fahrt ihre Bewegung gibt, also bleibt sie
     // - beschraenkt auf das, was keine Information traegt.
     if (!reduced && spinRef.current) {
-      spinRef.current.rotation.z = state.clock.elapsedTime * 0.018;
+      // Grunddrehung plus ein Rollen mit dem Zeiger. Die Roehre legt
+      // sich leicht in die Richtung, in die man schaut, wie ein
+      // Fahrzeug in die Kurve.
+      spinRef.current.rotation.z =
+        state.clock.elapsedTime * 0.018 - sceneState.pointer.x * 0.09;
     }
 
     if (strutsRef.current) {

@@ -353,30 +353,6 @@ function ProjectIndex() {
                 rel="noreferrer noopener"
                 className="group flex h-full flex-col gap-1 p-5 transition-colors hover:bg-raise"
               >
-                {/* Vorschaubild, das erst beim Ueberfahren Farbe
-                    bekommt. Im Ruhezustand entsaettigt und dunkel, damit
-                    sechs Kacheln nebeneinander nicht zum Flickenteppich
-                    werden; unter dem Zeiger faehrt es heran und wird
-                    farbig. Das ist die einzige Stelle der Seite, an der
-                    die Screenshots ausserhalb des Korridors auftauchen,
-                    und sie macht das Register von einer Liste zu einer
-                    Uebersicht. */}
-                <span className="relative mb-3 block aspect-[16/9] overflow-hidden border border-rule-soft bg-surface">
-                  <Image
-                    src={project.media.image}
-                    alt=""
-                    fill
-                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
-                    className="object-cover opacity-45 grayscale transition-all duration-500 group-hover:scale-[1.04] group-hover:opacity-100 group-hover:grayscale-0"
-                  />
-                  {/* Duoton-Kante unten, wie ueber allen Medien der
-                      Seite. Faehrt beim Ueberfahren von links auf. */}
-                  <span
-                    aria-hidden
-                    className="edge-duotone absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
-                  />
-                </span>
-
                 <span className="flex items-baseline gap-2">
                   <span className="font-mono text-[11px] text-accent">
                     {project.index}

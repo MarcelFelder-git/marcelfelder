@@ -97,7 +97,22 @@ export function HeroMode() {
   const graph = useMemo(buildGraph, []);
 
   const buffers = useMemo(() => {
+    // Wo jeder Knoten herkommt: zufaellig verteilt auf einer weiten
+    // Kugelschale. Beim Auftritt zieht sich der Graph daraus zusammen.
+    const spawn = new Float32Array(NODE_COUNT * 3);
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 16 + Math.random() * 12;
+      spawn[i * 3] = Math.sin(phi) * Math.cos(theta) * r;
+      spawn[i * 3 + 1] = Math.cos(phi) * r;
+      spawn[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * r;
+    }
+
     return {
+      spawn,
+      /** Zeitpunkt des ersten sichtbaren Frames, fuer den Auftritt. */
+      born: 0,
       live: new Float32Array(NODE_COUNT * 3),
       // Jeder Puls laeuft auf einer Kante von a nach b und setzt danach
       // auf einer neuen Kante neu an.
@@ -136,6 +151,7 @@ export function HeroMode() {
     const t = state.clock.elapsedTime;
     const { base, phase, edges } = graph;
     const {
+      spawn,
       live,
       pulseEdge,
       pulseT,
@@ -150,19 +166,53 @@ export function HeroMode() {
       quat,
     } = buffers;
 
+    // --- Auftritt ---------------------------------------------------
+    //
+    // Der Graph blendet nicht ein, er zieht sich zusammen: die Knoten
+    // starten weit verstreut und finden in gut einer Sekunde ihre
+    // Plaetze. Das ist der erste Eindruck der Seite, und ein Objekt,
+    // das sich vor den Augen aufbaut, sagt mehr ueber die Seite als
+    // eines, das einfach da ist.
+    // Der Auftritt beginnt erst, wenn der Ladebildschirm weg ist.
+    // Sonst laeuft er dahinter ab, und der eine Moment, fuer den er
+    // gebaut ist, faellt genau in die Sekunde, in der ihn niemand
+    // sehen kann.
+    if (
+      buffers.born === 0 &&
+      !document.documentElement.classList.contains("booting")
+    ) {
+      buffers.born = t;
+    }
+    const age = reduced ? 99 : buffers.born === 0 ? 0 : t - buffers.born;
+    const raw = Math.min(1, age / 1.3);
+    // Weich am Ende, damit die Knoten einschwingen statt anzuschlagen.
+    const build = 1 - Math.pow(1 - raw, 3);
+
     if (!reduced) {
       group.rotation.y = t * 0.055;
       group.rotation.x = Math.sin(t * 0.19) * 0.12;
+
+      // Der Graph dreht sich zum Zeiger.
+      //
+      // Die Kamera hat schon eine leichte Parallaxe, aber die bewegt die
+      // ganze Szene. Hier dreht sich das Objekt selbst, und das ist der
+      // Unterschied zwischen "das Bild wackelt" und "das Ding reagiert
+      // auf mich". Die Drehung laeuft der Zeigerbewegung entgegen, wie
+      // bei etwas, das man in der Hand dreht.
+      group.rotation.y += sceneState.pointer.x * 0.3;
+      group.rotation.x += -sceneState.pointer.y * 0.22;
     }
 
     // --- Knoten driften leicht um ihre Ruhelage --------------------
     for (let i = 0; i < NODE_COUNT; i++) {
       const drift = reduced ? 0 : 0.16;
-      live[i * 3] = base[i * 3] + Math.sin(t * 0.4 + phase[i]) * drift;
-      live[i * 3 + 1] =
-        base[i * 3 + 1] + Math.cos(t * 0.33 + phase[i] * 1.7) * drift;
-      live[i * 3 + 2] =
-        base[i * 3 + 2] + Math.sin(t * 0.28 + phase[i] * 0.6) * drift;
+      const x = base[i * 3] + Math.sin(t * 0.4 + phase[i]) * drift;
+      const y = base[i * 3 + 1] + Math.cos(t * 0.33 + phase[i] * 1.7) * drift;
+      const z = base[i * 3 + 2] + Math.sin(t * 0.28 + phase[i] * 0.6) * drift;
+
+      live[i * 3] = spawn[i * 3] + (x - spawn[i * 3]) * build;
+      live[i * 3 + 1] = spawn[i * 3 + 1] + (y - spawn[i * 3 + 1]) * build;
+      live[i * 3 + 2] = spawn[i * 3 + 2] + (z - spawn[i * 3 + 2]) * build;
     }
 
     // --- Kanten als Roehren ausrichten ------------------------------
@@ -186,7 +236,8 @@ export function HeroMode() {
         tubes.setMatrixAt(e, edgeDummy.matrix);
       }
       tubes.instanceMatrix.needsUpdate = true;
-      (tubes.material as THREE.MeshStandardMaterial).opacity = eased * 0.8;
+      (tubes.material as THREE.MeshStandardMaterial).opacity =
+        eased * build * 0.8;
     }
 
     // --- Signale laufen ueber die Kanten ---------------------------
@@ -215,7 +266,7 @@ export function HeroMode() {
         pulses.setMatrixAt(p, dummy.matrix);
       }
       pulses.instanceMatrix.needsUpdate = true;
-      (pulses.material as THREE.MeshBasicMaterial).opacity = eased;
+      (pulses.material as THREE.MeshBasicMaterial).opacity = eased * build;
     }
 
     // --- Knoten setzen ---------------------------------------------
@@ -235,7 +286,8 @@ export function HeroMode() {
       }
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-      (mesh.material as THREE.MeshStandardMaterial).opacity = eased;
+      (mesh.material as THREE.MeshStandardMaterial).opacity =
+        eased * (0.25 + build * 0.75);
     }
   });
 
