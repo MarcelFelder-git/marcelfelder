@@ -49,6 +49,21 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 const NODE_COUNT = 58;
 const FIELD_COUNT = 340;
 const FIELD_RADIUS = 15;
+/**
+ * Zwei weitere Ebenen, damit aus zwei Tiefen drei werden.
+ *
+ * Tiefe entsteht nicht durch ein Hintergrundbild, sondern dadurch, dass
+ * sich Dinge in verschiedenen Entfernungen VERSCHIEDEN SCHNELL bewegen.
+ * Mit Graph und Fernfeld gab es zwei Geschwindigkeiten, also genau eine
+ * Beziehung. Drei Ebenen ergeben drei, und das ist der Punkt, ab dem das
+ * Auge einen Raum liest statt einer Staffelung.
+ *
+ * Das Nahfeld ist dabei das Wirksamste: etwas, das VOR dem Motiv
+ * vorbeizieht, kann gar nicht anders gelesen werden als naeher.
+ */
+const DEEP_COUNT = 260;
+const DEEP_RADIUS = 38;
+const NEAR_COUNT = 90;
 /** Wie viele nächste Nachbarn jeder Knoten verbindet. */
 const NEIGHBOURS = 3;
 const PULSE_COUNT = 18;
@@ -129,7 +144,10 @@ export function HeroMode() {
   /** Nur der Graph dreht sich. Fernfeld und Licht liegen daneben. */
   const spinRef = useRef<THREE.Group>(null);
   const fieldRef = useRef<THREE.Points>(null);
+  const deepRef = useRef<THREE.Points>(null);
+  const nearRef = useRef<THREE.Points>(null);
   const haloRef = useRef<THREE.Mesh>(null);
+  const haloAltRef = useRef<THREE.Mesh>(null);
   const nodesRef = useRef<THREE.InstancedMesh>(null);
   const tubesRef = useRef<THREE.InstancedMesh>(null);
   const pulsesRef = useRef<THREE.InstancedMesh>(null);
@@ -158,6 +176,41 @@ export function HeroMode() {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     return geometry;
+  }, []);
+
+  /** Ganz hinten: nur noch Andeutung, praktisch unbewegt. */
+  const deep = useMemo(() => {
+    const pos = new Float32Array(DEEP_COUNT * 3);
+    for (let i = 0; i < DEEP_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = DEEP_RADIUS * (0.6 + Math.random() * 0.8);
+      pos[i * 3] = Math.sin(phi) * Math.cos(theta) * r;
+      pos[i * 3 + 1] = Math.cos(phi) * r * 0.5;
+      pos[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * r;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    return geometry;
+  }, []);
+
+  /**
+   * Nahfeld: wenige Punkte zwischen Kamera und Graph, die quer durchs
+   * Bild ziehen. Sie liegen so dicht vor der Linse, dass sie unscharf
+   * gross wirken, und genau das macht den Abstand dahinter lesbar.
+   */
+  const near = useMemo(() => {
+    const pos = new Float32Array(NEAR_COUNT * 3);
+    const drift = new Float32Array(NEAR_COUNT);
+    for (let i = 0; i < NEAR_COUNT; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 14;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 9;
+      pos[i * 3 + 2] = 4.2 + Math.random() * 2.4;
+      drift[i] = 0.1 + Math.random() * 0.28;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    return { geometry, drift };
   }, []);
 
   const buffers = useMemo(() => {
@@ -351,9 +404,32 @@ export function HeroMode() {
       (fieldRef.current.material as THREE.PointsMaterial).opacity =
         eased * build * 0.5;
     }
+    if (deepRef.current) {
+      if (!reduced) deepRef.current.rotation.y = t * 0.006;
+      (deepRef.current.material as THREE.PointsMaterial).opacity =
+        eased * build * 0.4;
+    }
+    if (nearRef.current) {
+      const attr = nearRef.current.geometry.attributes
+        .position as THREE.BufferAttribute;
+      const arr = attr.array as Float32Array;
+      if (!reduced) {
+        for (let i = 0; i < NEAR_COUNT; i++) {
+          arr[i * 3] += near.drift[i] * delta;
+          if (arr[i * 3] > 7) arr[i * 3] = -7;
+        }
+        attr.needsUpdate = true;
+      }
+      (nearRef.current.material as THREE.PointsMaterial).opacity =
+        eased * build * 0.32;
+    }
     if (haloRef.current) {
       (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
         eased * build * 0.5;
+    }
+    if (haloAltRef.current) {
+      (haloAltRef.current.material as THREE.MeshBasicMaterial).opacity =
+        eased * build * 0.3;
     }
 
     // --- Knoten setzen ---------------------------------------------
@@ -394,6 +470,45 @@ export function HeroMode() {
           blending={THREE.AdditiveBlending}
         />
       </mesh>
+
+      {/* Gegenlicht in der zweiten Akzentfarbe, von der anderen Seite.
+          Eine einzelne Lichtquelle laesst einen Koerper flach wirken;
+          zwei aus verschiedenen Richtungen modellieren ihn. */}
+      <mesh ref={haloAltRef} position={[-7, -2.5, -13]} scale={[22, 16, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={haloTexture}
+          color="#5b2f8a"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Ganz hinten, praktisch unbewegt. */}
+      <points ref={deepRef} geometry={deep} frustumCulled={false}>
+        <pointsMaterial
+          size={0.035}
+          color="#31597a"
+          transparent
+          opacity={0}
+          sizeAttenuation
+          depthWrite={false}
+        />
+      </points>
+
+      {/* Nahfeld, zieht quer vor dem Motiv durch. */}
+      <points ref={nearRef} geometry={near.geometry} frustumCulled={false}>
+        <pointsMaterial
+          size={0.11}
+          color="#7fb4d8"
+          transparent
+          opacity={0}
+          sizeAttenuation
+          depthWrite={false}
+        />
+      </points>
 
       {/* Fernfeld. Steht ausserhalb der drehenden Gruppe, damit es sich
           langsamer bewegen kann als der Graph. */}

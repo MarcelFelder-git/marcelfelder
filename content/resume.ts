@@ -52,7 +52,7 @@ export const CHAPTERS: Chapter[] = [
     headline: "Klang ist eine messbare Größe.",
     body: "Gain-Staging, Filterbänke, FFT-Analyse. Was im Studio nach Gefühl klingt, ist unter der Haube ein Signalgraph aus Knoten und Übertragungsfunktionen. So einer läuft hier gerade im Hintergrund.",
     aside:
-      "Der Ton auf dieser Seite ist kein Sample. Drei leicht verstimmte Oszillatoren laufen durch einen Biquad-Tiefpass und einen Delay-Bus. Das Ringdiagramm liest die 512-Punkt-FFT desselben Graphen aus, und die Filterfrequenz färbt nebenbei das Licht der ganzen Seite.",
+      "Der Ton auf dieser Seite ist kein Sample. Drei leicht verstimmte Oszillatoren laufen durch einen Biquad-Tiefpass und einen Delay-Bus. Die Membran im Hintergrund wird von der 512-Punkt-FFT desselben Graphen ausgelenkt, Punkt für Punkt im Shader gerechnet. Die Filterfrequenz färbt nebenbei das Licht der ganzen Seite.",
     skills: [
       "Mixing & Mastering",
       "Recording",
