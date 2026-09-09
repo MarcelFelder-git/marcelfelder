@@ -70,10 +70,27 @@ const DEEP_RADIUS = 38;
 /** Wie viele nächste Nachbarn jeder Knoten verbindet. */
 const NEIGHBOURS = 3;
 const PULSE_COUNT = 18;
+/**
+ * Glieder je Signal. Das vorderste ist der Puls, die drei dahinter sind
+ * sein Nachzieher.
+ *
+ * Ein einzelner Punkt, der eine Kante entlangfaehrt, ist bei dieser
+ * Geschwindigkeit kaum als Bewegung zu lesen - das Auge sieht ihn mal
+ * hier, mal da. Mit Schleif entsteht eine Richtung, und aus einem
+ * springenden Punkt wird etwas, das fliesst. Kostet drei zusaetzliche
+ * Instanzen pro Signal, also 54 insgesamt, und keinen einzigen weiteren
+ * Draw Call.
+ */
+const TRAIL = 4;
+/** Abstand der Glieder, gemessen im Fortschritt entlang der Kante. */
+const TRAIL_GAP = 0.05;
 const RADIUS = 3.4;
 
 const COL_NODE = new THREE.Color("#5eb7e8");
 const COL_NODE_MAJOR = new THREE.Color("#c084fc");
+/** Knoten, an dem gerade ein Signal ankommt oder der Zeiger steht. */
+const COL_NODE_HOT = new THREE.Color("#e8f6ff");
+const COL_PULSE = new THREE.Color("#dceeff");
 
 interface Edge {
   a: number;
@@ -217,6 +234,17 @@ export function HeroMode() {
       live: new Float32Array(NODE_COUNT * 3),
       // Jeder Puls laeuft auf einer Kante von a nach b und setzt danach
       // auf einer neuen Kante neu an.
+      /**
+       * Wie hell ein Knoten gerade aufblitzt, 0..1.
+       *
+       * Wird auf 1 gesetzt, wenn ein Signal ihn erreicht, und klingt
+       * danach ab. Erst dadurch wird aus der Bewegung ein Vorgang: man
+       * sieht nicht nur, dass etwas laeuft, sondern dass es ankommt.
+       */
+      flash: new Float32Array(NODE_COUNT),
+      /** Naehe zum Zeiger, 0..1, traege nachgezogen. */
+      near: new Float32Array(NODE_COUNT),
+      ndc: new THREE.Vector3(),
       pulseEdge: new Int32Array(PULSE_COUNT),
       pulseT: new Float32Array(PULSE_COUNT),
       pulseSpeed: new Float32Array(PULSE_COUNT),
@@ -254,6 +282,9 @@ export function HeroMode() {
     const {
       spawn,
       live,
+      flash,
+      near,
+      ndc,
       pulseEdge,
       pulseT,
       pulseSpeed,
@@ -289,6 +320,13 @@ export function HeroMode() {
     // Weich am Ende, damit die Knoten einschwingen statt anzuschlagen.
     const build = 1 - Math.pow(1 - raw, 3);
 
+    // Blitze klingen ab. 2.6 pro Sekunde heisst: gut vier Zehntel
+    // sichtbar, lang genug zum Wahrnehmen und kurz genug, dass bei 18
+    // Signalen nicht der halbe Graph dauerhaft leuchtet.
+    for (let i = 0; i < NODE_COUNT; i++) {
+      if (flash[i] > 0) flash[i] = Math.max(0, flash[i] - delta * 2.6);
+    }
+
     const spin = spinRef.current;
     if (!reduced && spin) {
       spin.rotation.y = t * 0.055;
@@ -315,6 +353,48 @@ export function HeroMode() {
       live[i * 3] = spawn[i * 3] + (x - spawn[i * 3]) * build;
       live[i * 3 + 1] = spawn[i * 3 + 1] + (y - spawn[i * 3 + 1]) * build;
       live[i * 3 + 2] = spawn[i * 3 + 2] + (z - spawn[i * 3 + 2]) * build;
+    }
+
+    // --- Naehe zum Zeiger -------------------------------------------
+    //
+    // Jeder Knoten wird auf den Bildschirm projiziert und mit der
+    // Zeigerposition verglichen. 58 Projektionen pro Frame kosten
+    // nichts, und es ist der einzige Weg, der auch dann stimmt, wenn
+    // sich der Graph gerade dreht: im Raum ist "nah am Cursor" keine
+    // definierte Groesse, auf dem Schirm schon.
+    //
+    // Kein Raycasting, weil der Canvas keine Zeigerereignisse annimmt -
+    // sonst liesse sich der Text darueber nicht mehr markieren.
+    if (spin && !reduced) {
+      const px = sceneState.pointer.x;
+      const py = sceneState.pointer.y;
+      for (let i = 0; i < NODE_COUNT; i++) {
+        ndc
+          .set(live[i * 3], live[i * 3 + 1], live[i * 3 + 2])
+          .applyMatrix4(spin.matrixWorld)
+          .project(state.camera);
+        const dx = ndc.x - px;
+        const dy = ndc.y - py;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        const target = Math.max(0, 1 - d / 0.34);
+        // Quadriert: der Uebergang soll eng sein, sonst leuchtet der
+        // halbe Graph, sobald die Maus im Bild ist.
+        near[i] += (target * target - near[i]) * 0.16;
+      }
+    } else {
+      for (let i = 0; i < NODE_COUNT; i++) near[i] *= 0.88;
+    }
+
+    // Nahe Knoten heben sich leicht aus dem Verbund heraus. Die Kanten
+    // folgen von selbst, weil sie aus `live` gebaut werden - genau
+    // deshalb steht das hier VOR der Kantenschleife.
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const lift = near[i];
+      if (lift < 0.002) continue;
+      const f = 1 + lift * 0.15;
+      live[i * 3] *= f;
+      live[i * 3 + 1] *= f;
+      live[i * 3 + 2] *= f;
     }
 
     // --- Kanten als Roehren ausrichten ------------------------------
@@ -348,26 +428,54 @@ export function HeroMode() {
       for (let p = 0; p < PULSE_COUNT; p++) {
         if (!reduced) pulseT[p] += pulseSpeed[p] * delta;
         if (pulseT[p] >= 1) {
+          // Angekommen: der Zielknoten blitzt auf. Das ist der
+          // Unterschied zwischen "da bewegt sich etwas" und "da wird
+          // etwas uebertragen".
+          flash[edges[pulseEdge[p]].b] = 1;
           pulseT[p] = 0;
           // Neue Kante: so wirkt es wie Verkehr im Netz und nicht wie
           // eine feste Rundstrecke.
           pulseEdge[p] = Math.floor(Math.random() * edges.length);
         }
         const { a, b } = edges[pulseEdge[p]];
-        const k = pulseT[p];
-        dummy.position.set(
-          live[a * 3] + (live[b * 3] - live[a * 3]) * k,
-          live[a * 3 + 1] + (live[b * 3 + 1] - live[a * 3 + 1]) * k,
-          live[a * 3 + 2] + (live[b * 3 + 2] - live[a * 3 + 2]) * k,
-        );
-        // Am Anfang und Ende der Kante kleiner: der Puls taucht auf und
-        // verschwindet, statt hart zu erscheinen.
-        const fade = Math.sin(k * Math.PI);
-        dummy.scale.setScalar(0.4 + fade * 0.8);
-        dummy.updateMatrix();
-        pulses.setMatrixAt(p, dummy.matrix);
+
+        for (let s = 0; s < TRAIL; s++) {
+          const k = pulseT[p] - s * TRAIL_GAP;
+          const idx = p * TRAIL + s;
+          const shrink = 1 - s / TRAIL;
+
+          if (k <= 0) {
+            // Noch nicht losgelaufen: Glied unsichtbar schalten, statt
+            // es am Kantenanfang stapeln zu lassen.
+            dummy.scale.setScalar(0);
+            dummy.position.set(0, 0, 0);
+            dummy.updateMatrix();
+            pulses.setMatrixAt(idx, dummy.matrix);
+            pulses.setColorAt(idx, color.setScalar(0));
+            continue;
+          }
+
+          dummy.position.set(
+            live[a * 3] + (live[b * 3] - live[a * 3]) * k,
+            live[a * 3 + 1] + (live[b * 3 + 1] - live[a * 3 + 1]) * k,
+            live[a * 3 + 2] + (live[b * 3 + 2] - live[a * 3 + 2]) * k,
+          );
+          // Am Anfang und Ende der Kante kleiner: der Puls taucht auf und
+          // verschwindet, statt hart zu erscheinen.
+          const fade = Math.sin(k * Math.PI);
+          dummy.scale.setScalar((0.4 + fade * 0.8) * shrink);
+          dummy.updateMatrix();
+          pulses.setMatrixAt(idx, dummy.matrix);
+          // Der Schleif verblasst quadratisch. Linear sieht aus wie eine
+          // Perlenkette, quadratisch wie eine Spur.
+          pulses.setColorAt(
+            idx,
+            color.copy(COL_PULSE).multiplyScalar(shrink * shrink),
+          );
+        }
       }
       pulses.instanceMatrix.needsUpdate = true;
+      if (pulses.instanceColor) pulses.instanceColor.needsUpdate = true;
       (pulses.material as THREE.MeshBasicMaterial).opacity = eased * build;
     }
 
@@ -411,11 +519,18 @@ export function HeroMode() {
         // groesser und in der Gegenfarbe. Ohne diese Abstufung liest sich
         // der Graph als gleichfoermige Punktwolke.
         const major = i % 7 === 0;
-        dummy.scale.setScalar(major ? 1.8 : 1);
+        // Ankunft und Zeigernaehe zaehlen auf denselben Wert ein: beide
+        // heissen "hier passiert gerade etwas", und zwei getrennte
+        // Hervorhebungen waeren eine zu viel.
+        const boost = Math.min(1, flash[i] + near[i]);
+        dummy.scale.setScalar((major ? 1.8 : 1) * (1 + boost * 0.8));
         dummy.rotation.set(t * 0.2 + i, t * 0.15 + i, 0);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
-        mesh.setColorAt(i, color.copy(major ? COL_NODE_MAJOR : COL_NODE));
+        mesh.setColorAt(
+          i,
+          color.copy(major ? COL_NODE_MAJOR : COL_NODE).lerp(COL_NODE_HOT, boost),
+        );
       }
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
@@ -525,11 +640,14 @@ export function HeroMode() {
           Bloom-Schwelle und bekommen dadurch ihren Schein. */}
       <instancedMesh
         ref={pulsesRef}
-        args={[undefined, undefined, PULSE_COUNT]}
+        args={[undefined, undefined, PULSE_COUNT * TRAIL]}
         frustumCulled={false}
       >
         <sphereGeometry args={[0.045, 12, 12]} />
-        <meshBasicMaterial color="#e0f2fe" toneMapped={false} transparent />
+        {/* Weiss als Grundfarbe: die Faerbung und das Verblassen des
+            Schleifs kommen aus der Instanzfarbe und wuerden sich sonst
+            mit dem Materialton multiplizieren. */}
+        <meshBasicMaterial color="#ffffff" toneMapped={false} transparent />
       </instancedMesh>
       </group>
     </group>
