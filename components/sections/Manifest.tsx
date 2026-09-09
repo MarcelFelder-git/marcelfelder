@@ -2,8 +2,13 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { MANIFEST, STACK_MARQUEE, STACK_MARQUEE_B } from "@/content/resume";
-import { Marquee } from "@/components/motion/primitives";
+import {
+  MANIFEST,
+  STACK_MARQUEE,
+  STACK_MARQUEE_B,
+  VITA,
+} from "@/content/resume";
+import { Marquee, Reveal } from "@/components/motion/primitives";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +92,17 @@ export function Manifest() {
         ))}
       </div>
 
+      {/* Werdegang als Band, nicht als Zeitleiste.
+          Am Seitenende stand er als hoher, hellgrundiger Abschnitt mit
+          vier Absaetzen zwischen der Fahrt und dem Kontakt. Das war
+          doppelt falsch: es war zu viel Text an der Stelle, an der man
+          eigentlich schon anrufen will, und es hat den Schluss von einer
+          Seite mit einem Ziel in eine mit zweien verwandelt.
+          Hier gehoert er hin, direkt unter die These, die er belegt: vier
+          Stationen, je vier Zeilen, dieselbe Rasterform wie das
+          Projektregister. Auf dunklem Grund, mitten in der Fahrt. */}
+      <Track />
+
       {/* Zwei gegenlaeufige Laufbaender mit dem Werkzeugkasten. Sie
           stehen bewusst unter der These und nicht in einer eigenen
           Sektion: erst der Satz, dann die Namen, dann die drei Kapitel,
@@ -98,6 +114,49 @@ export function Manifest() {
         <Marquee items={STACK_MARQUEE_B} duration={54} reverse />
       </div>
     </section>
+  );
+}
+
+/**
+ * Vier Stationen nebeneinander statt untereinander.
+ *
+ * Entwuerfe (siehe `VitaEntry.draft`) fallen weg; bleibt nichts uebrig,
+ * faellt das ganze Band weg. Eine Station, in der "eintragen" steht, ist
+ * schlechter als keine.
+ */
+function Track() {
+  const entries = VITA.filter((entry) => !entry.draft);
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="mt-20">
+      <div className="flex items-baseline gap-4 border-t border-rule pt-5">
+        <p className="meta-accent shrink-0">Werdegang</p>
+        <span aria-hidden className="h-px flex-1 bg-rule-soft" />
+        <p className="meta shrink-0">
+          {entries[0].period.split(" ")[0]} bis heute
+        </p>
+      </div>
+
+      <ol className="mt-8 grid gap-px bg-rule sm:grid-cols-2 lg:grid-cols-4">
+        {entries.map((entry, i) => (
+          <Reveal key={entry.title} delay={i * 0.06} y={16}>
+            <li className="h-full bg-surface/80 p-5">
+              <p className="meta">{entry.period}</p>
+              <h3 className="mt-2 text-[15px] font-medium leading-snug text-ink">
+                {entry.title}
+              </h3>
+              <p className="mt-1 font-mono text-[11px] text-accent">
+                {entry.org}
+              </p>
+              <p className="mt-3 text-[12.5px] leading-relaxed text-faint">
+                {entry.body}
+              </p>
+            </li>
+          </Reveal>
+        ))}
+      </ol>
+    </div>
   );
 }
 

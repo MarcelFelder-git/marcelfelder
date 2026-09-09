@@ -30,7 +30,25 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
  * der Unterschied zwischen eingefaerbt und beleuchtet.
  */
 
+/**
+ * Wie der Hero Tiefe bekommt.
+ *
+ * Der Graph stand bisher in schwarzer Leere. Ein Objekt ohne etwas
+ * dahinter hat keinen Massstab: man sieht, dass es da ist, aber nicht,
+ * wie gross oder wie weit weg. Zwei Zutaten aendern das, beide billig:
+ *
+ *   1. Ein Fernfeld aus vielen kleinen, sehr dunklen Punkten. Sie
+ *      gehoeren sichtbar zum selben Netz, liegen aber drei- bis fuenfmal
+ *      so weit hinten. Beim Drehen laufen sie langsamer als der Graph,
+ *      und diese Parallaxe ist es, die aus einer Flaeche einen Raum
+ *      macht.
+ *   2. Eine grosse, sehr weiche Lichtflaeche dahinter. Der Graph steht
+ *      dadurch IN Licht statt vor Nichts, und die glaenzenden Knoten
+ *      haben endlich etwas, das sie spiegeln koennen.
+ */
 const NODE_COUNT = 58;
+const FIELD_COUNT = 340;
+const FIELD_RADIUS = 15;
 /** Wie viele nächste Nachbarn jeder Knoten verbindet. */
 const NEIGHBOURS = 3;
 const PULSE_COUNT = 18;
@@ -87,14 +105,60 @@ function buildGraph() {
   return { base, phase, edges };
 }
 
+/** Radialer Lichtfleck als Textur, vom Canvas erzeugt statt geladen. */
+function makeHaloTexture() {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const g = ctx.createRadialGradient(
+    size / 2, size / 2, 0,
+    size / 2, size / 2, size / 2,
+  );
+  g.addColorStop(0, "rgba(255,255,255,0.55)");
+  g.addColorStop(0.35, "rgba(255,255,255,0.16)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
+}
+
 export function HeroMode() {
   const groupRef = useRef<THREE.Group>(null);
+  /** Nur der Graph dreht sich. Fernfeld und Licht liegen daneben. */
+  const spinRef = useRef<THREE.Group>(null);
+  const fieldRef = useRef<THREE.Points>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
   const nodesRef = useRef<THREE.InstancedMesh>(null);
   const tubesRef = useRef<THREE.InstancedMesh>(null);
   const pulsesRef = useRef<THREE.InstancedMesh>(null);
   const reduced = usePrefersReducedMotion();
 
   const graph = useMemo(buildGraph, []);
+  const haloTexture = useMemo(makeHaloTexture, []);
+
+  /**
+   * Fernfeld: dieselbe Fibonacci-Verteilung wie der Graph, nur weiter
+   * draussen und mit zufaelliger Tiefe. Dadurch gehoert es sichtbar
+   * dazu, ohne den Graphen zu wiederholen.
+   */
+  const field = useMemo(() => {
+    const pos = new Float32Array(FIELD_COUNT * 3);
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < FIELD_COUNT; i++) {
+      const y = 1 - (i / (FIELD_COUNT - 1)) * 2;
+      const r = Math.sqrt(Math.max(0, 1 - y * y));
+      const theta = golden * i;
+      const scale = FIELD_RADIUS * (0.55 + Math.random() * 0.75);
+      pos[i * 3] = Math.cos(theta) * r * scale;
+      pos[i * 3 + 1] = y * scale * 0.7;
+      pos[i * 3 + 2] = Math.sin(theta) * r * scale;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    return geometry;
+  }, []);
 
   const buffers = useMemo(() => {
     // Wo jeder Knoten herkommt: zufaellig verteilt auf einer weiten
@@ -188,9 +252,10 @@ export function HeroMode() {
     // Weich am Ende, damit die Knoten einschwingen statt anzuschlagen.
     const build = 1 - Math.pow(1 - raw, 3);
 
-    if (!reduced) {
-      group.rotation.y = t * 0.055;
-      group.rotation.x = Math.sin(t * 0.19) * 0.12;
+    const spin = spinRef.current;
+    if (!reduced && spin) {
+      spin.rotation.y = t * 0.055;
+      spin.rotation.x = Math.sin(t * 0.19) * 0.12;
 
       // Der Graph dreht sich zum Zeiger.
       //
@@ -199,8 +264,8 @@ export function HeroMode() {
       // Unterschied zwischen "das Bild wackelt" und "das Ding reagiert
       // auf mich". Die Drehung laeuft der Zeigerbewegung entgegen, wie
       // bei etwas, das man in der Hand dreht.
-      group.rotation.y += sceneState.pointer.x * 0.3;
-      group.rotation.x += -sceneState.pointer.y * 0.22;
+      spin.rotation.y += sceneState.pointer.x * 0.3;
+      spin.rotation.x += -sceneState.pointer.y * 0.22;
     }
 
     // --- Knoten driften leicht um ihre Ruhelage --------------------
@@ -269,6 +334,28 @@ export function HeroMode() {
       (pulses.material as THREE.MeshBasicMaterial).opacity = eased * build;
     }
 
+    // --- Fernfeld und Licht ----------------------------------------
+    //
+    // Das Fernfeld dreht sich langsamer als der Graph. Genau darin liegt
+    // seine Wirkung: gleich schnell waere es Teil desselben Koerpers,
+    // gar nicht waere es eine Tapete. Ein Drittel der Geschwindigkeit
+    // liest sich als "weiter weg".
+    if (fieldRef.current) {
+      if (!reduced) {
+        // Ein Drittel der Graphengeschwindigkeit. Gleich schnell waere
+        // es Teil desselben Koerpers, gar nicht waere es eine Tapete.
+        fieldRef.current.rotation.y = t * 0.018;
+        fieldRef.current.rotation.x = Math.sin(t * 0.07) * 0.05;
+        fieldRef.current.rotation.y += sceneState.pointer.x * 0.1;
+      }
+      (fieldRef.current.material as THREE.PointsMaterial).opacity =
+        eased * build * 0.5;
+    }
+    if (haloRef.current) {
+      (haloRef.current.material as THREE.MeshBasicMaterial).opacity =
+        eased * build * 0.5;
+    }
+
     // --- Knoten setzen ---------------------------------------------
     const mesh = nodesRef.current;
     if (mesh) {
@@ -293,6 +380,38 @@ export function HeroMode() {
 
   return (
     <group ref={groupRef} visible={false}>
+      {/* Weiche Lichtflaeche hinter allem. Additiv, damit sie nur
+          aufhellt und nichts verdeckt, und weit genug hinten, dass sie
+          als Raum und nicht als Scheibe gelesen wird. */}
+      <mesh ref={haloRef} position={[0.6, 0.2, -9]} scale={[26, 20, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={haloTexture}
+          color="#2a6f9e"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Fernfeld. Steht ausserhalb der drehenden Gruppe, damit es sich
+          langsamer bewegen kann als der Graph. */}
+      <points ref={fieldRef} geometry={field} frustumCulled={false}>
+        <pointsMaterial
+          size={0.05}
+          color="#4a7fa8"
+          transparent
+          opacity={0}
+          sizeAttenuation
+          depthWrite={false}
+        />
+      </points>
+
+      {/* Alles, was sich dreht. Fernfeld und Licht stehen bewusst
+          daneben: nur so koennen sie sich langsamer bewegen und die
+          Parallaxe erzeugen, die dem Bild seine Tiefe gibt. */}
+      <group ref={spinRef}>
       {/* Kanten als duenne Metallroehren. `openEnded` spart die Deckel -
           die sieht bei diesem Durchmesser ohnehin niemand. */}
       <instancedMesh
@@ -339,6 +458,7 @@ export function HeroMode() {
         <sphereGeometry args={[0.045, 12, 12]} />
         <meshBasicMaterial color="#e0f2fe" toneMapped={false} transparent />
       </instancedMesh>
+      </group>
     </group>
   );
 }

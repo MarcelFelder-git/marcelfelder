@@ -1,101 +1,11 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal, SplitHeading } from "@/components/motion/primitives";
-import { CHAPTERS, VITA } from "@/content/resume";
+import { CHAPTERS } from "@/content/resume";
 import { CONTACT_EMAIL, CONTACT_FACTS, SOCIALS } from "@/content/site";
 import { EASE_OUT } from "@/lib/motion";
-
-/** Entwuerfe werden nicht ausgeliefert. Siehe VitaEntry in resume.ts. */
-const ENTRIES = VITA.filter((entry) => !entry.draft);
-
-/**
- * Zeitleiste. Die senkrechte Linie fuellt sich mit dem Scrollfortschritt der
- * Sektion - ein Fortschrittsbalken, der zugleich die Achse der Darstellung
- * ist, statt eines zusaetzlichen Elements daneben.
- */
-export function Vita() {
-  // Der Abschnitt faellt ganz weg, solange nichts Echtes drinsteht. Eine
-  // Zeitleiste, in der dreimal "eintragen" steht, sagt einem Recruiter
-  // nur eins: hier ist jemand nicht fertig geworden.
-  //
-  // Die Pruefung steht hier und nicht in der Zeitleiste selbst, weil
-  // deren `useScroll` ein Element braucht, an dem es messen kann. Bei
-  // einem `return null` nach dem Hook haengt der Ref an nichts, und
-  // Framer Motion meldet zu Recht "target ref is defined but not
-  // hydrated".
-  if (ENTRIES.length === 0) return null;
-  return <VitaTimeline />;
-}
-
-function VitaTimeline() {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start 0.8", "end 0.6"],
-  });
-  const height = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
-
-  return (
-    <section
-      ref={ref}
-      data-tone="light"
-      className="relative px-6 pb-[14vh] pt-[22vh] sm:px-10 lg:px-16"
-      aria-labelledby="vita-heading"
-    >
-      {/* Der Uebergang ins Helle ist ein Verlauf, keine Kante: oben noch
-          durchsichtig, sodass die Szene sichtbar ausklingt, ab einem
-          Fuenftel der Hoehe deckend. Eine harte Oberkante saehe aus wie
-          ein aufgeklebtes Element. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),1)_18vh)]"
-      />
-
-      <p className="meta">Werdegang</p>
-      <SplitHeading
-        as="h2"
-        id="vita-heading"
-        text="Wie ich hierher gekommen bin."
-        className="mt-4 max-w-3xl text-balance text-[clamp(1.8rem,3.6vw,3rem)] font-semibold leading-[1.08] tracking-[-0.025em]"
-      />
-
-      <div className="relative mt-16 pl-8 sm:pl-12">
-        {/* Achse: unbelegt dunkel, belegt im Verlauf */}
-        <div className="absolute left-0 top-2 h-[calc(100%-1rem)] w-px bg-rule" />
-        <motion.div
-          style={{ height }}
-          className="absolute left-0 top-2 w-px bg-accent"
-        />
-
-        <ol className="space-y-14">
-          {ENTRIES.map((entry, i) => (
-            <Reveal key={entry.title} delay={i * 0.06}>
-              <li className="relative">
-                <span
-                  aria-hidden
-                  className="absolute -left-8 top-2 size-2 -translate-x-1/2 bg-accent ring-4 ring-paper sm:-left-12"
-                />
-                <p className="meta">{entry.period}</p>
-                <h3 className="mt-2 text-2xl font-medium tracking-tight">
-                  {entry.title}
-                </h3>
-                <p className="mt-1 font-mono text-[12px] text-accent">
-                  {entry.org}
-                </p>
-                <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-mute">
-                  {entry.body}
-                </p>
-              </li>
-            </Reveal>
-          ))}
-        </ol>
-      </div>
-    </section>
-  );
-}
 
 /**
  * Abbinder. Die Mailadresse ist das groesste Element der Seite - wer bis

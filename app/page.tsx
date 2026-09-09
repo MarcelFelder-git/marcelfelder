@@ -2,7 +2,7 @@ import { Hero } from "@/components/sections/Hero";
 import { Manifest } from "@/components/sections/Manifest";
 import { Showcase } from "@/components/sections/Showcase";
 import { ChapterSection } from "@/components/sections/ChapterSection";
-import { Vita, Outro } from "@/components/sections/Closing";
+import { Outro } from "@/components/sections/Closing";
 import { ControlBar } from "@/components/audio/ControlBar";
 import { CHAPTERS } from "@/content/resume";
 
@@ -55,7 +55,11 @@ export default function Home() {
           components/sections/Workshop.tsx und sind mit einem Import und
           einer Zeile hier wieder da; ohne den Import landen sie in
           keinem Bundle und kosten nichts. */}
-      <Vita />
+      {/* Der Werdegang steht im Fundament, nicht hier.
+          Als eigener Abschnitt am Ende war er eine hohe Zeitleiste
+          zwischen der Fahrt und dem Kontakt, und er hat den Schluss von
+          einer Seite mit einem klaren Ziel in eine mit zwei verwandelt.
+          Jetzt endet die Seite dort, wo sie enden soll. */}
       <Outro />
     </main>
   );
