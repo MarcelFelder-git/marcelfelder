@@ -77,6 +77,23 @@ export function tunnelTravel(progress: number) {
 }
 
 /**
+ * Wie weit die Ausfahrt fortgeschritten ist, 0..1.
+ *
+ * Auf dem letzten Stueck loest sich der Korridor auf und gibt den Blick
+ * ins Sternfeld frei. Der Tunnel hoert damit nicht einfach auf, sondern
+ * endet: man faehrt hinaus.
+ *
+ * Der Wert steuert drei Dinge an drei verschiedenen Stellen - die
+ * Deckkraft der Streben im Tunnel, die Sichtweite des Nebels in der
+ * Szene und den Ruecklauf der Kamera im Rig. Deshalb steht er hier und
+ * nicht dreimal nachgebaut.
+ */
+export function tunnelExit(progress: number) {
+  const t = Math.min(1, Math.max(0, (progress - 0.84) / 0.16));
+  return t * t * (3 - 2 * t);
+}
+
+/**
  * Wie weit eine Station voraus noch zaehlt, und wie schnell sie hinter
  * einem verfaellt. Bewusst sehr unterschiedlich, siehe unten.
  */

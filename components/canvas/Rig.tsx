@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { SCENE_KEYS, sceneState, type SceneKey } from "@/lib/scene/state";
+import { tunnelExit } from "@/lib/scene/tunnel";
 
 /**
  * Kamerafuehrung.
@@ -64,7 +65,11 @@ export function Rig() {
     // in der Naehe der Kapitelstationen, und der Wechsel vom Tunnel zum
     // ersten Kapitel ist ein kurzer Weg statt einer Rueckfahrt ueber die
     // volle Korridorlaenge.
-    const tunnelZ = 4;
+    // Auf der Ausfahrt zieht sich die Kamera ein Stueck zurueck und
+    // schaut weiter in die Ferne: der Korridor bleibt hinter einem, das
+    // Sternfeld oeffnet sich.
+    const exit = tunnelExit(tunnelProgress);
+    const tunnelZ = 4 + exit * 7;
     // Sanftes Schlingern, damit die Fahrt nicht wie eine Schiene wirkt.
     // Bewusst klein: die Innenkanten der Tafeln stehen nur knapp neben
     // der Fahrbahn, und ein zu weiter Ausschlag traegt die Kamera auf
@@ -72,7 +77,7 @@ export function Rig() {
     const swayX = Math.sin(tunnelProgress * 9) * 0.3;
     const swayY = Math.cos(tunnelProgress * 7) * 0.25;
     STATIONS.tunnel.set(swayX, swayY, tunnelZ);
-    TARGETS.tunnel.set(swayX * 0.3, swayY * 0.3, tunnelZ - 12);
+    TARGETS.tunnel.set(swayX * 0.3, swayY * 0.3, tunnelZ - 12 - exit * 26);
 
     let sum = 0;
     v.station.set(0, 0, 0);

@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
+import { applyEntry } from "@/lib/scene/entry";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 
 /**
@@ -174,9 +175,8 @@ export function CodeMode() {
     group.visible = weight > 0.01;
     if (!group.visible) return;
 
-    const eased = weight * weight * (3 - 2 * weight);
-    group.scale.setScalar(0.76 + eased * 0.24);
-    group.position.y = (1 - eased) * -0.5;
+    // Siehe lib/scene/entry.ts.
+    const eased = applyEntry(group, "code", weight);
     shader.uniforms.uOpacity.value = eased;
 
     const t = state.clock.elapsedTime;

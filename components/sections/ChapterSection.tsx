@@ -1,12 +1,49 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Counter, Reveal, SplitHeading } from "@/components/motion/primitives";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { CHAPTER_VH } from "@/lib/scene/pacing";
 import type { Chapter } from "@/types";
+
+/**
+ * Gemessene Bildrate der laufenden Szene.
+ *
+ * Geschrieben wird direkt ins DOM, nicht ueber State: der Wert aendert
+ * sich staendig, und ein React-Render pro Sekunde fuer eine Ziffer waere
+ * Verschwendung. Gemittelt ueber eine Sekunde, sonst zappelt die Zahl
+ * und man liest sie nicht mehr.
+ *
+ * Bis die erste Messung da ist, steht der Wert aus dem Inhalt. Eine
+ * leere Kachel waehrend der ersten Sekunde saehe aus wie ein Fehler.
+ */
+function LiveFps({ fallback }: { fallback: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    let frame = 0;
+    let frames = 0;
+    let since = performance.now();
+
+    const tick = (now: number) => {
+      frames++;
+      if (now - since >= 1000) {
+        const fps = Math.round((frames * 1000) / (now - since));
+        if (ref.current) ref.current.textContent = String(fps);
+        frames = 0;
+        since = now;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return <span ref={ref}>{fallback}</span>;
+}
 
 /**
  * Ein Kapitel ist absichtlich ueberhoch (rund zwei Bildschirme). Der
@@ -156,7 +193,11 @@ export function ChapterSection({
               >
                 <dt className="meta leading-relaxed">{m.label}</dt>
                 <dd className="mt-2 font-mono text-xl text-ink">
-                  <Counter to={m.value} />
+                  {m.live === "fps" ? (
+                    <LiveFps fallback={m.value} />
+                  ) : (
+                    <Counter to={m.value} />
+                  )}
                   <span className="text-accent">{m.suffix}</span>
                 </dd>
               </Reveal>

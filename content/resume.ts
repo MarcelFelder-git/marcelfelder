@@ -85,8 +85,10 @@ export const CHAPTERS: Chapter[] = [
       "Edge Deployment",
     ],
     metrics: [
-      { label: "Modelle im Speicher", value: 3, suffix: "" },
-      { label: "Ziel-Framerate", value: 60, suffix: " fps" },
+      { label: "Modelle im Speicher", value: 4, suffix: "" },
+      // Gemessen, nicht behauptet: die Bildrate der Szene, die gerade
+      // hinter diesem Text laeuft.
+      { label: "Bildrate, gemessen", value: 60, suffix: " fps", live: "fps" },
       { label: "Draw Calls je Modell", value: 4, suffix: "" },
     ],
   },

@@ -16,6 +16,7 @@ import {
   activeStation,
   stationNearness,
   stationZ,
+  tunnelExit,
   tunnelTravel,
 } from "@/lib/scene/tunnel";
 
@@ -412,8 +413,18 @@ export function TunnelMode() {
     // Bewegung, aber die Kamera bleibt dabei in der Naehe der
     // Kapitelstationen, und der Wechsel zum naechsten Abschnitt ist ein
     // kurzer Weg statt einer Rueckfahrt ueber hundert Einheiten.
+    const progress = sceneState.tunnelProgress;
+    const exit = tunnelExit(progress);
+    // Wie sichtbar der Korridor als Bauwerk ist: beim Hereinfahren
+    // waechst er heran, auf dem letzten Stueck loest er sich auf.
+    const corridor = eased * (1 - exit);
+
     if (travelRef.current) {
-      travelRef.current.position.z = tunnelTravel(sceneState.tunnelProgress);
+      // Der Zuschlag beim Einblenden ist der Auftritt: solange der
+      // Tunnel noch halb durchsichtig ist, steht er weit hinten und
+      // kommt auf die Kamera zu. Ohne ihn erschiene er einfach an Ort
+      // und Stelle, und "erscheinen" ist keine Fahrt.
+      travelRef.current.position.z = tunnelTravel(progress) - (1 - eased) * 34;
     }
 
     // Nur der Korridor dreht sich, nicht die Geraete.
@@ -429,11 +440,11 @@ export function TunnelMode() {
 
     if (strutsRef.current) {
       (strutsRef.current.material as THREE.MeshStandardMaterial).opacity =
-        eased * 0.92;
+        corridor * 0.92;
     }
     if (lampsRef.current) {
       (lampsRef.current.material as THREE.MeshBasicMaterial).opacity =
-        eased * 0.6;
+        corridor * 0.6;
     }
 
     // Eine einzige Lampe wandert zu der Station, an der man gerade steht,
@@ -447,7 +458,6 @@ export function TunnelMode() {
     // wandernde reicht, weil man immer nur an einer Station steht.
     const light = lightRef.current;
     if (light) {
-      const progress = sceneState.tunnelProgress;
       const index = activeStation(progress);
       const nearness = stationNearness(progress, index);
       const side = index % 2 === 0 ? -1 : 1;
@@ -460,7 +470,7 @@ export function TunnelMode() {
       // was sie soll - und ihre Spiegelung geht am Betrachter vorbei.
       light.position.set(-side * 2.6, 0.4, stationZ(index) - 3);
       light.color.set(scratchColor.set(accentOf(index)));
-      light.intensity = eased * Math.pow(nearness, 2) * 22;
+      light.intensity = corridor * Math.pow(nearness, 2) * 22;
     }
 
     // Motes driften dem Betrachter entgegen und setzen am Ende neu an.
@@ -475,7 +485,7 @@ export function TunnelMode() {
         if (arr[i * 3 + 2] > 5) arr[i * 3 + 2] = -MOTE_DEPTH;
       }
       attr.needsUpdate = true;
-      (points.material as THREE.PointsMaterial).opacity = eased * 0.55;
+      (points.material as THREE.PointsMaterial).opacity = corridor * 0.55;
     }
   });
 

@@ -150,10 +150,26 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
           genau ueber dem Screenshot - beides unlesbar. */}
       <div
         className={cn(
-          "sticky top-0 flex h-screen items-end px-6 pb-[14vh] transition-[justify-content] duration-500 sm:px-10 lg:px-16",
-          // Rechts zusaetzlicher Abstand: dort steht ab lg die fixierte
-          // Kapitelnavigation, und der Text soll nicht darunter laufen.
-          station % 2 === 0 ? "justify-end lg:pr-44" : "justify-start",
+          "sticky top-0 flex h-screen items-end px-6 pb-[13vh] transition-[justify-content] duration-500 sm:px-10 lg:px-16",
+          // Die Karte wechselt von Station zu Station die Seite UND die
+          // Hoehe.
+          //
+          // Nur die Seite zu tauschen reichte nicht: dieselbe Kante,
+          // dieselbe Grundlinie, sechsmal hintereinander. Mit dem
+          // Hoehensprung bekommt jede Station ein eigenes Bild, und weil
+          // die Karte beim Stationswechsel ohnehin neu eingeblendet
+          // wird, liest sich der Sprung als Schnitt und nicht als
+          // Verrutschen.
+          //
+          // Der Hoehenwechsel gilt erst ab sm. Auf dem Telefon steht das
+          // Geraet im Korridor oben und die Karte unten; wechselten sie
+          // die Plaetze, laege die Karte auf dem Screenshot.
+          //
+          // Rechts zusaetzlicher Abstand: dort steht ab lg das fixierte
+          // Seitenregister, und der Text soll nicht darunter laufen.
+          station % 2 === 0
+            ? "justify-end lg:pr-44"
+            : "justify-start sm:items-start sm:pb-0 sm:pt-[15vh]",
         )}
       >
         <div className="relative w-full max-w-lg">
@@ -337,6 +353,30 @@ function ProjectIndex() {
                 rel="noreferrer noopener"
                 className="group flex h-full flex-col gap-1 p-5 transition-colors hover:bg-raise"
               >
+                {/* Vorschaubild, das erst beim Ueberfahren Farbe
+                    bekommt. Im Ruhezustand entsaettigt und dunkel, damit
+                    sechs Kacheln nebeneinander nicht zum Flickenteppich
+                    werden; unter dem Zeiger faehrt es heran und wird
+                    farbig. Das ist die einzige Stelle der Seite, an der
+                    die Screenshots ausserhalb des Korridors auftauchen,
+                    und sie macht das Register von einer Liste zu einer
+                    Uebersicht. */}
+                <span className="relative mb-3 block aspect-[16/9] overflow-hidden border border-rule-soft bg-surface">
+                  <Image
+                    src={project.media.image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
+                    className="object-cover opacity-45 grayscale transition-all duration-500 group-hover:scale-[1.04] group-hover:opacity-100 group-hover:grayscale-0"
+                  />
+                  {/* Duoton-Kante unten, wie ueber allen Medien der
+                      Seite. Faehrt beim Ueberfahren von links auf. */}
+                  <span
+                    aria-hidden
+                    className="edge-duotone absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
+                  />
+                </span>
+
                 <span className="flex items-baseline gap-2">
                   <span className="font-mono text-[11px] text-accent">
                     {project.index}

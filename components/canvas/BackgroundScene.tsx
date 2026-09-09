@@ -18,6 +18,7 @@ import { TunnelMode } from "./modes/TunnelMode";
 import { HeroMode } from "./modes/HeroMode";
 import { sceneState } from "@/lib/scene/state";
 import { GROUND, RIM, blend } from "@/lib/scene/palette";
+import { tunnelExit } from "@/lib/scene/tunnel";
 
 /**
  * Die Szene liegt vollflaechig HINTER der Seite, nicht in einer Kachel
@@ -128,7 +129,15 @@ function SceneGrade() {
         v.ground[2] / 255,
         THREE.SRGBColorSpace,
       );
-      if (scene.fog) scene.fog.color.copy(background);
+      if (scene.fog) {
+        scene.fog.color.copy(background);
+        // Auf der Ausfahrt aus dem Tunnel weicht der Nebel zurueck.
+        // Sichtweite ist das einzige Mittel, mit dem sich ein Raum
+        // oeffnen laesst, ohne etwas hinzuzufuegen: die Sterne stehen
+        // die ganze Zeit da, sie waren nur verdeckt.
+        const open = tunnelExit(sceneState.tunnelProgress) * weights.tunnel;
+        (scene.fog as THREE.Fog).far = 62 + open * 110;
+      }
     }
 
     blend(RIM, weights, v.rim);

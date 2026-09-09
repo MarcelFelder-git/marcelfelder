@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { audioEngine } from "@/lib/audio/engine";
 import { sceneState } from "@/lib/scene/state";
+import { applyEntry } from "@/lib/scene/entry";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 
 /**
@@ -78,9 +79,8 @@ export function SignalMode() {
     group.visible = weight > 0.01;
     if (!group.visible) return;
 
-    const eased = weight * weight * (3 - 2 * weight);
-    group.scale.setScalar(0.72 + eased * 0.28);
-    group.position.y = (1 - eased) * -0.6;
+    // Siehe lib/scene/entry.ts.
+    const eased = applyEntry(group, "signal", weight);
 
     const { dummy, color, heights, angles, radii, binIndex, scratch } = layout;
     const t = state.clock.elapsedTime;

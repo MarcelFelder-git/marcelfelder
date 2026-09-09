@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
+import { applyEntry } from "@/lib/scene/entry";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { createTubeScratch, setTube } from "@/lib/scene/tube";
 
@@ -148,9 +149,10 @@ export function StructureMode() {
     group.visible = weight > 0.01;
     if (!group.visible) return;
 
-    const eased = weight * weight * (3 - 2 * weight);
-    group.scale.setScalar(0.78 + eased * 0.22);
-    group.position.y = (1 - eased) * -0.7;
+    // Auftritt und Abgang liegen zentral in lib/scene/entry.ts: die drei
+    // Kapitelmodelle stehen alle im Ursprung und steckten waehrend einer
+    // Ueberblendung ineinander.
+    const eased = applyEntry(group, "structure", weight);
     group.rotation.y = (1 - eased) * 0.35;
 
     const { base, mask, edges, restLengths, nodeCount, topCount } = lattice;
