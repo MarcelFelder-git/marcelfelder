@@ -75,7 +75,6 @@ const RADIUS = 3.4;
 const COL_NODE = new THREE.Color("#5eb7e8");
 const COL_NODE_MAJOR = new THREE.Color("#c084fc");
 const COL_EDGE = new THREE.Color("#2b6a88");
-const COL_PULSE = new THREE.Color("#e0f2fe");
 /**
  * Luftperspektive: wohin ein Koerper geht, je weiter er hinten steht.
  *
@@ -101,6 +100,21 @@ const DEPTH_NODE = 0.8;
 const DEPTH_EDGE = 0.92;
 /** Signale am wenigsten - sie sollen auch hinten noch lesbar sein. */
 const DEPTH_PULSE = 0.5;
+
+/**
+ * Hoehe des Bodens, im Koordinatensystem der Gruppe.
+ *
+ * Knapp unter dem tiefsten Knoten (RADIUS * 0.62 plus Drift plus
+ * Knotenradius), damit nichts hindurchsticht, und knapp genug darunter,
+ * dass das Spiegelbild noch ins Bild passt: die Kamera steht fast auf
+ * Hoehe der Mitte, also bleibt nach unten nur ein schmales Band.
+ */
+const FLOOR_Y = -2.4;
+/** Ueber welche Strecke das Spiegelbild ausgeht. */
+const REFL_FADE = 4.0;
+
+/** Farbe des Lichts, das durch die Leitungen laeuft. */
+const COL_GLOW = new THREE.Color("#bfe4ff");
 
 interface Edge {
   a: number;
@@ -179,11 +193,111 @@ export function HeroMode() {
   const haloAltRef = useRef<THREE.Mesh>(null);
   const nodesRef = useRef<THREE.InstancedMesh>(null);
   const tubesRef = useRef<THREE.InstancedMesh>(null);
-  const pulsesRef = useRef<THREE.InstancedMesh>(null);
+  /** Spiegelbild: dieselben Matrizen, nur unter dem Boden. */
+  const nodesReflRef = useRef<THREE.InstancedMesh>(null);
+  const tubesReflRef = useRef<THREE.InstancedMesh>(null);
+  const mirrorSpinRef = useRef<THREE.Group>(null);
   const reduced = usePrefersReducedMotion();
 
   const graph = useMemo(buildGraph, []);
   const haloTexture = useMemo(makeHaloTexture, []);
+
+  /**
+   * Die Leitungen, mit einem Platz fuer das Licht darin.
+   *
+   * Frueher rutschten hier 18 kleine Kugeln ueber die Kanten. Das ist
+   * die Bildsprache von Netzwerk-Animationen aus Baukaesten, und mit
+   * Bloom darauf wirken Kugeln eher spielig als technisch. Jetzt gibt
+   * es die Kugeln nicht mehr: das Signal ist ein heller Abschnitt IN
+   * der Roehre, so wie Licht in einer Glasfaser.
+   *
+   * Das ist die seltene Aenderung, die etwas wegnimmt statt etwas
+   * hinzuzufuegen - eine ganze Objektklasse samt ihrem Draw Call faellt
+   * weg, und uebrig bleibt eine Eigenschaft der Leitung selbst.
+   *
+   * Getragen wird das von einem Instanzattribut mit drei Zahlen je
+   * Kante: wo das Licht steht (0..1), wie hell es ist, und wie lang die
+   * Kante ist. Die Laenge braucht es, damit der Lichtabschnitt auf
+   * einer kurzen und einer langen Kante gleich lang ausfaellt - ohne
+   * sie waere er auf langen Kanten ein Streifen und auf kurzen ein
+   * Fleck.
+   */
+  const tubeGeometry = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.013, 0.013, 1, 6, 1, true);
+    const attr = new THREE.InstancedBufferAttribute(
+      new Float32Array(graph.edges.length * 3),
+      3,
+    );
+    attr.setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute("aPulse", attr);
+    return g;
+  }, [graph]);
+
+  /**
+   * Standardmaterial mit einem Einschub statt eines eigenen Shaders.
+   *
+   * Einen ShaderMaterial von Hand zu schreiben hiesse, Beleuchtung,
+   * Umgebungsspiegelung und Tonwertkurve selbst nachzubauen - und die
+   * Roehren wuerden ihr Studiolicht verlieren, das sie ueberhaupt erst
+   * nach Metall aussehen laesst. `onBeforeCompile` haengt sich stattdessen
+   * in den fertigen Shader ein: alles bleibt, dazu kommt ein Summand auf
+   * die Eigenleuchtkraft.
+   *
+   * Der Glanz wird im Fragment gerechnet, nicht im Vertex. Die Roehre
+   * hat nur zwei Ringe aus Punkten - ein im Vertex berechneter Wert
+   * koennte zwischen ihnen nur linear ueberblenden und haette gar keine
+   * Aufloesung fuer einen begrenzten Lichtfleck.
+   */
+  const tubeMaterial = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: 0.9,
+      roughness: 0.35,
+      transparent: true,
+      opacity: 0,
+    });
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uGlow = { value: COL_GLOW };
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          "#include <common>",
+          `#include <common>
+           attribute vec3 aPulse;
+           varying float vAlong;
+           varying vec3 vPulse;`,
+        )
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+           // Der Zylinder liegt in seinem eigenen System von -0.5 bis
+           // 0.5 auf der Y-Achse, unabhaengig davon, wie lang die
+           // Instanz spaeter skaliert wird.
+           vAlong = position.y + 0.5;
+           vPulse = aPulse;`,
+        );
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          "#include <common>",
+          `#include <common>
+           uniform vec3 uGlow;
+           varying float vAlong;
+           varying vec3 vPulse;`,
+        )
+        .replace(
+          "#include <emissivemap_fragment>",
+          `#include <emissivemap_fragment>
+           // Abstand zum Licht, umgerechnet in Welteinheiten: erst
+           // dadurch ist der Lichtabschnitt ueberall gleich lang.
+           float dGlow = abs(vAlong - vPulse.x) * vPulse.z;
+           totalEmissiveRadiance +=
+             uGlow * exp(-dGlow * dGlow * 26.0) * vPulse.y;`,
+        );
+    };
+    // Ohne eigenen Schluessel gaebe three dem Material das compilierte
+    // Programm eines anderen Standardmaterials - ohne den Einschub.
+    m.customProgramCacheKey = () => "hero-tube-glow";
+    return m;
+  }, []);
 
   /**
    * Fernfeld: dieselbe Fibonacci-Verteilung wie der Graph, nur weiter
@@ -244,6 +358,8 @@ export function HeroMode() {
       live: new Float32Array(NODE_COUNT * 3),
       /** Wie weit vorn ein Knoten gerade steht, 0 = hinten, 1 = vorn. */
       depth: new Float32Array(NODE_COUNT),
+      /** Laenge jeder Kante, in der Kantenschleife nebenbei gemessen. */
+      edgeLen: new Float32Array(graph.edges.length),
       // Jeder Puls laeuft auf einer Kante von a nach b und setzt danach
       // auf einer neuen Kante neu an.
       pulseEdge: new Int32Array(PULSE_COUNT),
@@ -258,7 +374,7 @@ export function HeroMode() {
       up: new THREE.Vector3(0, 1, 0),
       quat: new THREE.Quaternion(),
     };
-  }, []);
+  }, [graph]);
 
   // Pulse initial auf zufaellige Kanten setzen.
   useMemo(() => {
@@ -284,6 +400,7 @@ export function HeroMode() {
       spawn,
       live,
       depth,
+      edgeLen,
       pulseEdge,
       pulseT,
       pulseSpeed,
@@ -370,6 +487,7 @@ export function HeroMode() {
 
     // --- Kanten als Roehren ausrichten ------------------------------
     const tubes = tubesRef.current;
+    const tubesRefl = tubesReflRef.current;
     if (tubes) {
       for (let e = 0; e < edges.length; e++) {
         const { a, b } = edges[e];
@@ -387,6 +505,10 @@ export function HeroMode() {
         edgeDummy.scale.set(1, length, 1);
         edgeDummy.updateMatrix();
         tubes.setMatrixAt(e, edgeDummy.matrix);
+        // Gebraucht wird sie gleich fuer das Licht in der Leitung: der
+        // Lichtabschnitt soll in Welteinheiten gemessen werden und
+        // nicht in Bruchteilen einer Kante.
+        edgeLen[e] = length;
 
         // Eine Kante bekommt die mittlere Tiefe ihrer beiden Enden. Sie
         // ueber ihre Laenge zu staffeln ginge nur mit einem eigenen
@@ -396,50 +518,71 @@ export function HeroMode() {
           e,
           color.copy(COL_EDGE).lerp(COL_DEPTH, (1 - n) * DEPTH_EDGE),
         );
+
+        if (tubesRefl) {
+          tubesRefl.setMatrixAt(e, edgeDummy.matrix);
+          // Das Spiegelbild verliert mit dem Abstand zum Boden. Der
+          // Bezugspunkt ist die Mitte der Kante, also genau die Hoehe,
+          // die schon in edgeDummy steht.
+          const fade = Math.max(
+            0,
+            1 - (edgeDummy.position.y - FLOOR_Y) / REFL_FADE,
+          );
+          tubesRefl.setColorAt(e, color.multiplyScalar(fade * fade));
+        }
       }
       tubes.instanceMatrix.needsUpdate = true;
       if (tubes.instanceColor) tubes.instanceColor.needsUpdate = true;
       (tubes.material as THREE.MeshStandardMaterial).opacity =
         eased * build * 0.8;
+
+      if (tubesRefl) {
+        tubesRefl.instanceMatrix.needsUpdate = true;
+        if (tubesRefl.instanceColor) tubesRefl.instanceColor.needsUpdate = true;
+        (tubesRefl.material as THREE.MeshStandardMaterial).opacity =
+          eased * build * 0.36;
+      }
     }
 
-    // --- Signale laufen ueber die Kanten ---------------------------
-    const pulses = pulsesRef.current;
-    if (pulses) {
-      for (let p = 0; p < PULSE_COUNT; p++) {
-        if (!reduced) pulseT[p] += pulseSpeed[p] * delta;
-        if (pulseT[p] >= 1) {
-          pulseT[p] = 0;
-          // Neue Kante: so wirkt es wie Verkehr im Netz und nicht wie
-          // eine feste Rundstrecke.
-          pulseEdge[p] = Math.floor(Math.random() * edges.length);
-        }
-        const { a, b } = edges[pulseEdge[p]];
-        const k = pulseT[p];
-        dummy.position.set(
-          live[a * 3] + (live[b * 3] - live[a * 3]) * k,
-          live[a * 3 + 1] + (live[b * 3 + 1] - live[a * 3 + 1]) * k,
-          live[a * 3 + 2] + (live[b * 3 + 2] - live[a * 3 + 2]) * k,
-        );
-        // Am Anfang und Ende der Kante kleiner: der Puls taucht auf und
-        // verschwindet, statt hart zu erscheinen.
-        const fade = Math.sin(k * Math.PI);
-        dummy.scale.setScalar(0.4 + fade * 0.8);
-        dummy.updateMatrix();
-        pulses.setMatrixAt(p, dummy.matrix);
-        // Zwischen den Enden interpoliert, wie die Position auch: ein
-        // Signal soll auf seinem Weg nach hinten verlieren und auf dem
-        // Weg nach vorn gewinnen, nicht an der Kante springen.
-        const n = depth[a] + (depth[b] - depth[a]) * k;
-        pulses.setColorAt(
-          p,
-          color.copy(COL_PULSE).lerp(COL_DEPTH, (1 - n) * DEPTH_PULSE),
-        );
+    // --- Signale laufen durch die Leitungen ------------------------
+    //
+    // Kein eigenes Objekt mehr, sondern ein Zustand der Kante: drei
+    // Zahlen pro Kante, die der Shader in einen Lichtabschnitt
+    // uebersetzt. Zuerst alles auf dunkel, dann schreiben die achtzehn
+    // Signale ihre Kante hell - 140 Nullen kosten weniger als eine
+    // einzige der Matrixrechnungen, die hier vorher standen.
+    const pulseAttr = tubeGeometry.getAttribute(
+      "aPulse",
+    ) as THREE.InstancedBufferAttribute;
+    const pa = pulseAttr.array as Float32Array;
+    for (let e = 0; e < edges.length; e++) pa[e * 3 + 1] = 0;
+
+    for (let p = 0; p < PULSE_COUNT; p++) {
+      if (!reduced) pulseT[p] += pulseSpeed[p] * delta;
+      if (pulseT[p] >= 1) {
+        pulseT[p] = 0;
+        // Neue Kante: so wirkt es wie Verkehr im Netz und nicht wie
+        // eine feste Rundstrecke.
+        pulseEdge[p] = Math.floor(Math.random() * edges.length);
       }
-      pulses.instanceMatrix.needsUpdate = true;
-      if (pulses.instanceColor) pulses.instanceColor.needsUpdate = true;
-      (pulses.material as THREE.MeshBasicMaterial).opacity = eased * build;
+      const e = pulseEdge[p];
+      const { a, b } = edges[e];
+      const k = pulseT[p];
+
+      // Am Anfang und Ende schwaecher, damit das Licht aus dem Knoten
+      // heraustritt und in den naechsten hineinlaeuft, statt an der
+      // Kante zu erscheinen und zu verschwinden.
+      const fade = 0.35 + Math.sin(k * Math.PI) * 0.65;
+      // Dieselbe Luftperspektive wie fuer alles andere, hier auf die
+      // Leuchtkraft statt auf die Farbe: hinten leuchtet es schwaecher.
+      const n = depth[a] + (depth[b] - depth[a]) * k;
+      const air = 1 - (1 - n) * DEPTH_PULSE;
+
+      pa[e * 3] = k;
+      pa[e * 3 + 1] = fade * air * eased * build * 6.0;
+      pa[e * 3 + 2] = edgeLen[e];
     }
+    pulseAttr.needsUpdate = true;
 
     // --- Fernfeld und Licht ----------------------------------------
     //
@@ -474,6 +617,7 @@ export function HeroMode() {
 
     // --- Knoten setzen ---------------------------------------------
     const mesh = nodesRef.current;
+    const meshRefl = nodesReflRef.current;
     if (mesh) {
       for (let i = 0; i < NODE_COUNT; i++) {
         dummy.position.set(live[i * 3], live[i * 3 + 1], live[i * 3 + 2]);
@@ -491,16 +635,48 @@ export function HeroMode() {
             .copy(major ? COL_NODE_MAJOR : COL_NODE)
             .lerp(COL_DEPTH, (1 - depth[i]) * DEPTH_NODE),
         );
+
+        if (meshRefl) {
+          // Dieselbe Matrix; gespiegelt wird auf Ebene der Gruppe.
+          meshRefl.setMatrixAt(i, dummy.matrix);
+          // Quadratisch ausgeblendet: ein Spiegelbild wird nach unten
+          // hin nicht gleichmaessig schwaecher, sondern schnell.
+          const fade = Math.max(
+            0,
+            1 - (live[i * 3 + 1] - FLOOR_Y) / REFL_FADE,
+          );
+          meshRefl.setColorAt(i, color.multiplyScalar(fade * fade));
+        }
       }
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       (mesh.material as THREE.MeshStandardMaterial).opacity =
         eased * (0.25 + build * 0.75);
+
+      if (meshRefl) {
+        meshRefl.instanceMatrix.needsUpdate = true;
+        if (meshRefl.instanceColor) meshRefl.instanceColor.needsUpdate = true;
+        (meshRefl.material as THREE.MeshStandardMaterial).opacity =
+          eased * build * 0.5;
+      }
+    }
+
+    // Das Spiegelbild dreht sich mit. Die Spiegelung selbst steckt in
+    // der Skalierung der Elterngruppe, deshalb reicht es, die Drehung
+    // zu uebernehmen.
+    if (mirrorSpinRef.current && spinRef.current) {
+      mirrorSpinRef.current.rotation.copy(spinRef.current.rotation);
     }
   });
 
   return (
-    <group ref={groupRef} visible={false}>
+    // Ein halbe Einheit angehoben.
+    // Die Kamera steht fast auf Hoehe der Mitte, also blieb unter dem
+    // Graphen kein Platz: ein Boden auf Hoehe des tiefsten Knotens lag
+    // genau am unteren Bildrand, und alles, was er spiegelt, faellt
+    // per Definition darunter. Mit dem Anheben entsteht das Band, in
+    // dem ueberhaupt etwas zu sehen ist.
+    <group ref={groupRef} visible={false} position={[0, 0.5, 0]}>
       {/* Weiche Lichtflaeche hinter allem. Additiv, damit sie nur
           aufhellt und nichts verdeckt, und weit genug hinten, dass sie
           als Raum und nicht als Scheibe gelesen wird. */}
@@ -556,59 +732,127 @@ export function HeroMode() {
         />
       </points>
 
+      {/* Der Boden.
+          Kein Spiegelmaterial, sondern eine additive Lichtpfuetze: eine
+          echte Spiegelung braucht ein zweites Rendering pro Bild, und
+          das waere fuer die zwei Zentimeter Flaeche, die hier unten ins
+          Bild ragen, nicht zu rechtfertigen. Was den Boden lesbar macht,
+          ist ohnehin nicht die Flaeche selbst, sondern das Licht, das
+          der Graph auf sie wirft. */}
+      <mesh
+        position={[0, FLOOR_Y, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={[16, 16, 1]}
+      >
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={haloTexture}
+          color="#1d5a80"
+          transparent
+          opacity={0.5}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Das Spiegelbild.
+          Dieselben Matrizen wie oben, nur haengt die Gruppe an einer
+          negativen Y-Skalierung: damit ist die Spiegelung eine Sache
+          der Transformation und nicht der Rechnung, und es gibt keine
+          zweite Stelle, an der Positionen entstehen koennen.
+
+          Die Verschiebung ist das Doppelte der Bodenhoehe, weil das
+          Spiegeln an einer Ebene aus Umklappen plus Verschieben
+          besteht: y' = 2f - y.
+
+          `side` muss beidseitig sein - eine negative Skalierung dreht
+          den Umlaufsinn der Dreiecke um, und einseitige Flaechen waeren
+          danach alle weggeschnitten. */}
+      <group position={[0, FLOOR_Y * 2, 0]} scale={[1, -1, 1]}>
+        <group ref={mirrorSpinRef}>
+          {/* Eigene Geometrie, obwohl die Roehren oben dieselbe Form
+              haben.
+              Beide Netze auf tubeGeometry zu setzen hat im Bild lange
+              helle Keile erzeugt - so sieht es aus, wenn Instanzmatrizen
+              nicht die sind, fuer die der Zeichenaufruf sie haelt.
+              Naheliegender Verdaechtiger ist das Instanzattribut auf
+              jener Geometrie: sie gehoert dann zwei Netzen mit
+              verschiedenen Programmen gleichzeitig. Nachgemessen habe
+              ich nur den Zusammenhang, nicht die Ursache im Renderer -
+              eine eigene Geometrie kostet ein paar hundert Byte und
+              nimmt die Frage aus dem Weg. */}
+          <instancedMesh
+            ref={tubesReflRef}
+            args={[undefined, undefined, graph.edges.length]}
+            frustumCulled={false}
+          >
+            <cylinderGeometry args={[0.013, 0.013, 1, 6, 1, true]} />
+            <meshStandardMaterial
+              color="#ffffff"
+              metalness={0.6}
+              roughness={0.6}
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0}
+              depthWrite={false}
+            />
+          </instancedMesh>
+
+          <instancedMesh
+            ref={nodesReflRef}
+            args={[undefined, undefined, NODE_COUNT]}
+            frustumCulled={false}
+          >
+            <icosahedronGeometry args={[0.075, 1]} />
+            <meshStandardMaterial
+              metalness={0.6}
+              roughness={0.55}
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0}
+              depthWrite={false}
+            />
+          </instancedMesh>
+        </group>
+      </group>
+
       {/* Alles, was sich dreht. Fernfeld und Licht stehen bewusst
           daneben: nur so koennen sie sich langsamer bewegen und die
           Parallaxe erzeugen, die dem Bild seine Tiefe gibt. */}
       <group ref={spinRef}>
-      {/* Kanten als duenne Metallroehren. `openEnded` spart die Deckel -
-          die sieht bei diesem Durchmesser ohnehin niemand. */}
-      {/* Materialfarbe weiss: der Ton kommt ueber die Instanzfarbe und
-          wuerde sich sonst mit dem Materialton multiplizieren. */}
-      <instancedMesh
-        ref={tubesRef}
-        args={[undefined, undefined, graph.edges.length]}
-        frustumCulled={false}
-      >
-        <cylinderGeometry args={[0.011, 0.011, 1, 6, 1, true]} />
-        <meshStandardMaterial
-          color="#ffffff"
-          metalness={0.9}
-          roughness={0.35}
-          transparent
-          opacity={0}
-        />
-      </instancedMesh>
+        {/* Kanten als duenne Metallroehren. `openEnded` spart die
+            Deckel - die sieht bei diesem Durchmesser ohnehin niemand.
+            Geometrie und Material kommen aus useMemo, weil beide mehr
+            koennen als die deklarative Kurzform hergibt: die Geometrie
+            traegt das Instanzattribut fuer das Licht, das Material den
+            Einschub in den Shader. */}
+        <instancedMesh
+          ref={tubesRef}
+          args={[undefined, undefined, graph.edges.length]}
+          frustumCulled={false}
+        >
+          <primitive object={tubeGeometry} attach="geometry" />
+          <primitive object={tubeMaterial} attach="material" />
+        </instancedMesh>
 
-      {/* Knoten als glaenzende Koerper. Metalness hoch, Roughness niedrig:
-          so faengt jeder Knoten die Leuchtflaechen der Umgebung als
-          Glanzlicht ein - genau das unterscheidet eine gerenderte
-          Oberflaeche von einer eingefaerbten Flaeche. */}
-      <instancedMesh
-        ref={nodesRef}
-        args={[undefined, undefined, NODE_COUNT]}
-        frustumCulled={false}
-      >
-        <icosahedronGeometry args={[0.075, 1]} />
-        <meshStandardMaterial
-          metalness={0.95}
-          roughness={0.16}
-          envMapIntensity={1.6}
-          transparent
-          opacity={0}
-        />
-      </instancedMesh>
-
-      {/* Signale: kleine, sehr helle Kugeln. Sie liegen ueber der
-          Bloom-Schwelle und bekommen dadurch ihren Schein. */}
-      <instancedMesh
-        ref={pulsesRef}
-        args={[undefined, undefined, PULSE_COUNT]}
-        frustumCulled={false}
-      >
-        <sphereGeometry args={[0.045, 12, 12]} />
-        {/* Weiss wie bei den Kanten, Ton siehe COL_PULSE. */}
-        <meshBasicMaterial color="#ffffff" toneMapped={false} transparent />
-      </instancedMesh>
+        {/* Knoten als glaenzende Koerper. Metalness hoch, Roughness
+            niedrig: so faengt jeder Knoten die Leuchtflaechen der
+            Umgebung als Glanzlicht ein - genau das unterscheidet eine
+            gerenderte Oberflaeche von einer eingefaerbten Flaeche. */}
+        <instancedMesh
+          ref={nodesRef}
+          args={[undefined, undefined, NODE_COUNT]}
+          frustumCulled={false}
+        >
+          <icosahedronGeometry args={[0.075, 1]} />
+          <meshStandardMaterial
+            metalness={0.95}
+            roughness={0.16}
+            envMapIntensity={1.6}
+            transparent
+            opacity={0}
+          />
+        </instancedMesh>
       </group>
     </group>
   );
