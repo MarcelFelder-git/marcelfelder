@@ -70,27 +70,37 @@ const DEEP_RADIUS = 38;
 /** Wie viele nächste Nachbarn jeder Knoten verbindet. */
 const NEIGHBOURS = 3;
 const PULSE_COUNT = 18;
-/**
- * Glieder je Signal. Das vorderste ist der Puls, die drei dahinter sind
- * sein Nachzieher.
- *
- * Ein einzelner Punkt, der eine Kante entlangfaehrt, ist bei dieser
- * Geschwindigkeit kaum als Bewegung zu lesen - das Auge sieht ihn mal
- * hier, mal da. Mit Schleif entsteht eine Richtung, und aus einem
- * springenden Punkt wird etwas, das fliesst. Kostet drei zusaetzliche
- * Instanzen pro Signal, also 54 insgesamt, und keinen einzigen weiteren
- * Draw Call.
- */
-const TRAIL = 4;
-/** Abstand der Glieder, gemessen im Fortschritt entlang der Kante. */
-const TRAIL_GAP = 0.05;
 const RADIUS = 3.4;
 
 const COL_NODE = new THREE.Color("#5eb7e8");
 const COL_NODE_MAJOR = new THREE.Color("#c084fc");
-/** Knoten, an dem gerade ein Signal ankommt oder der Zeiger steht. */
-const COL_NODE_HOT = new THREE.Color("#e8f6ff");
-const COL_PULSE = new THREE.Color("#dceeff");
+const COL_EDGE = new THREE.Color("#2b6a88");
+const COL_PULSE = new THREE.Color("#e0f2fe");
+/**
+ * Luftperspektive: wohin ein Koerper geht, je weiter er hinten steht.
+ *
+ * Der Graph war durchgehend gleich hell. Damit lagen vordere und hintere
+ * Haelfte gleichberechtigt uebereinander, und das Auge hatte 58 Knoten
+ * und 140 Kanten in einer Ebene zu sortieren - viel Betrieb auf wenig
+ * Flaeche. Perspektive allein loest das nicht: sie macht Entferntes
+ * kleiner, nicht ruhiger.
+ *
+ * Was Entferntes ruhig macht, ist die Luft dazwischen. Sie nimmt
+ * Kontrast weg und zieht die Farbe zum Ton des Dunstes - deshalb wird
+ * hier nicht abgedunkelt, sondern zu einem Ton hin gemischt. Abdunkeln
+ * allein sieht aus wie Schatten; die Verschiebung ins Blau des Grundes
+ * sieht aus wie Entfernung.
+ *
+ * Der Ton liegt bewusst ueber dem Grundton der Szene ([8, 9, 14]):
+ * hinten soll etwas zurueckweichen, nicht verschwinden.
+ */
+const COL_DEPTH = new THREE.Color("#102a3d");
+/** Wie weit die hinterste Reihe in den Dunst geht, 0..1. */
+const DEPTH_NODE = 0.8;
+/** Kanten gehen weiter zurueck als Knoten: sie sind der Betrieb. */
+const DEPTH_EDGE = 0.92;
+/** Signale am wenigsten - sie sollen auch hinten noch lesbar sein. */
+const DEPTH_PULSE = 0.5;
 
 interface Edge {
   a: number;
@@ -232,19 +242,10 @@ export function HeroMode() {
       /** Zeitpunkt des ersten sichtbaren Frames, fuer den Auftritt. */
       born: 0,
       live: new Float32Array(NODE_COUNT * 3),
+      /** Wie weit vorn ein Knoten gerade steht, 0 = hinten, 1 = vorn. */
+      depth: new Float32Array(NODE_COUNT),
       // Jeder Puls laeuft auf einer Kante von a nach b und setzt danach
       // auf einer neuen Kante neu an.
-      /**
-       * Wie hell ein Knoten gerade aufblitzt, 0..1.
-       *
-       * Wird auf 1 gesetzt, wenn ein Signal ihn erreicht, und klingt
-       * danach ab. Erst dadurch wird aus der Bewegung ein Vorgang: man
-       * sieht nicht nur, dass etwas laeuft, sondern dass es ankommt.
-       */
-      flash: new Float32Array(NODE_COUNT),
-      /** Naehe zum Zeiger, 0..1, traege nachgezogen. */
-      near: new Float32Array(NODE_COUNT),
-      ndc: new THREE.Vector3(),
       pulseEdge: new Int32Array(PULSE_COUNT),
       pulseT: new Float32Array(PULSE_COUNT),
       pulseSpeed: new Float32Array(PULSE_COUNT),
@@ -282,9 +283,7 @@ export function HeroMode() {
     const {
       spawn,
       live,
-      flash,
-      near,
-      ndc,
+      depth,
       pulseEdge,
       pulseT,
       pulseSpeed,
@@ -320,13 +319,6 @@ export function HeroMode() {
     // Weich am Ende, damit die Knoten einschwingen statt anzuschlagen.
     const build = 1 - Math.pow(1 - raw, 3);
 
-    // Blitze klingen ab. 2.6 pro Sekunde heisst: gut vier Zehntel
-    // sichtbar, lang genug zum Wahrnehmen und kurz genug, dass bei 18
-    // Signalen nicht der halbe Graph dauerhaft leuchtet.
-    for (let i = 0; i < NODE_COUNT; i++) {
-      if (flash[i] > 0) flash[i] = Math.max(0, flash[i] - delta * 2.6);
-    }
-
     const spin = spinRef.current;
     if (!reduced && spin) {
       spin.rotation.y = t * 0.055;
@@ -355,46 +347,25 @@ export function HeroMode() {
       live[i * 3 + 2] = spawn[i * 3 + 2] + (z - spawn[i * 3 + 2]) * build;
     }
 
-    // --- Naehe zum Zeiger -------------------------------------------
+    // --- Tiefe jedes Knotens messen ---------------------------------
     //
-    // Jeder Knoten wird auf den Bildschirm projiziert und mit der
-    // Zeigerposition verglichen. 58 Projektionen pro Frame kosten
-    // nichts, und es ist der einzige Weg, der auch dann stimmt, wenn
-    // sich der Graph gerade dreht: im Raum ist "nah am Cursor" keine
-    // definierte Groesse, auf dem Schirm schon.
+    // Gebraucht wird die z-Lage NACH der Drehung, denn welcher Teil des
+    // Graphen gerade hinten steht, aendert sich mit jeder Umdrehung.
+    // Die volle Matrix darauf anzuwenden waere Verschwendung: von den
+    // sechzehn Zahlen tragen genau drei zur z-Komponente bei, und die
+    // Verschiebung faellt heraus, weil hier die Lage IM Graphen zaehlt
+    // und nicht die im Raum. Drei Multiplikationen pro Knoten.
     //
-    // Kein Raycasting, weil der Canvas keine Zeigerereignisse annimmt -
-    // sonst liesse sich der Text darueber nicht mehr markieren.
-    if (spin && !reduced) {
-      const px = sceneState.pointer.x;
-      const py = sceneState.pointer.y;
-      for (let i = 0; i < NODE_COUNT; i++) {
-        ndc
-          .set(live[i * 3], live[i * 3 + 1], live[i * 3 + 2])
-          .applyMatrix4(spin.matrixWorld)
-          .project(state.camera);
-        const dx = ndc.x - px;
-        const dy = ndc.y - py;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        const target = Math.max(0, 1 - d / 0.34);
-        // Quadriert: der Uebergang soll eng sein, sonst leuchtet der
-        // halbe Graph, sobald die Maus im Bild ist.
-        near[i] += (target * target - near[i]) * 0.16;
-      }
-    } else {
-      for (let i = 0; i < NODE_COUNT; i++) near[i] *= 0.88;
-    }
-
-    // Nahe Knoten heben sich leicht aus dem Verbund heraus. Die Kanten
-    // folgen von selbst, weil sie aus `live` gebaut werden - genau
-    // deshalb steht das hier VOR der Kantenschleife.
+    // matrixWorld stammt aus dem vorigen Bild - der Renderer aktualisiert
+    // die Matrizen erst nach diesem Aufruf. Bei 0.055 rad/s sind das
+    // drei Tausendstel Grad Rueckstand.
+    const m = spinRef.current?.matrixWorld.elements;
     for (let i = 0; i < NODE_COUNT; i++) {
-      const lift = near[i];
-      if (lift < 0.002) continue;
-      const f = 1 + lift * 0.15;
-      live[i * 3] *= f;
-      live[i * 3 + 1] *= f;
-      live[i * 3 + 2] *= f;
+      const x = live[i * 3];
+      const y = live[i * 3 + 1];
+      const z = live[i * 3 + 2];
+      const dz = m ? m[2] * x + m[6] * y + m[10] * z : z;
+      depth[i] = Math.min(1, Math.max(0, (dz + RADIUS) / (2 * RADIUS)));
     }
 
     // --- Kanten als Roehren ausrichten ------------------------------
@@ -416,8 +387,18 @@ export function HeroMode() {
         edgeDummy.scale.set(1, length, 1);
         edgeDummy.updateMatrix();
         tubes.setMatrixAt(e, edgeDummy.matrix);
+
+        // Eine Kante bekommt die mittlere Tiefe ihrer beiden Enden. Sie
+        // ueber ihre Laenge zu staffeln ginge nur mit einem eigenen
+        // Shader, und bei elf Millimetern Durchmesser saehe das niemand.
+        const n = (depth[a] + depth[b]) * 0.5;
+        tubes.setColorAt(
+          e,
+          color.copy(COL_EDGE).lerp(COL_DEPTH, (1 - n) * DEPTH_EDGE),
+        );
       }
       tubes.instanceMatrix.needsUpdate = true;
+      if (tubes.instanceColor) tubes.instanceColor.needsUpdate = true;
       (tubes.material as THREE.MeshStandardMaterial).opacity =
         eased * build * 0.8;
     }
@@ -428,51 +409,32 @@ export function HeroMode() {
       for (let p = 0; p < PULSE_COUNT; p++) {
         if (!reduced) pulseT[p] += pulseSpeed[p] * delta;
         if (pulseT[p] >= 1) {
-          // Angekommen: der Zielknoten blitzt auf. Das ist der
-          // Unterschied zwischen "da bewegt sich etwas" und "da wird
-          // etwas uebertragen".
-          flash[edges[pulseEdge[p]].b] = 1;
           pulseT[p] = 0;
           // Neue Kante: so wirkt es wie Verkehr im Netz und nicht wie
           // eine feste Rundstrecke.
           pulseEdge[p] = Math.floor(Math.random() * edges.length);
         }
         const { a, b } = edges[pulseEdge[p]];
-
-        for (let s = 0; s < TRAIL; s++) {
-          const k = pulseT[p] - s * TRAIL_GAP;
-          const idx = p * TRAIL + s;
-          const shrink = 1 - s / TRAIL;
-
-          if (k <= 0) {
-            // Noch nicht losgelaufen: Glied unsichtbar schalten, statt
-            // es am Kantenanfang stapeln zu lassen.
-            dummy.scale.setScalar(0);
-            dummy.position.set(0, 0, 0);
-            dummy.updateMatrix();
-            pulses.setMatrixAt(idx, dummy.matrix);
-            pulses.setColorAt(idx, color.setScalar(0));
-            continue;
-          }
-
-          dummy.position.set(
-            live[a * 3] + (live[b * 3] - live[a * 3]) * k,
-            live[a * 3 + 1] + (live[b * 3 + 1] - live[a * 3 + 1]) * k,
-            live[a * 3 + 2] + (live[b * 3 + 2] - live[a * 3 + 2]) * k,
-          );
-          // Am Anfang und Ende der Kante kleiner: der Puls taucht auf und
-          // verschwindet, statt hart zu erscheinen.
-          const fade = Math.sin(k * Math.PI);
-          dummy.scale.setScalar((0.4 + fade * 0.8) * shrink);
-          dummy.updateMatrix();
-          pulses.setMatrixAt(idx, dummy.matrix);
-          // Der Schleif verblasst quadratisch. Linear sieht aus wie eine
-          // Perlenkette, quadratisch wie eine Spur.
-          pulses.setColorAt(
-            idx,
-            color.copy(COL_PULSE).multiplyScalar(shrink * shrink),
-          );
-        }
+        const k = pulseT[p];
+        dummy.position.set(
+          live[a * 3] + (live[b * 3] - live[a * 3]) * k,
+          live[a * 3 + 1] + (live[b * 3 + 1] - live[a * 3 + 1]) * k,
+          live[a * 3 + 2] + (live[b * 3 + 2] - live[a * 3 + 2]) * k,
+        );
+        // Am Anfang und Ende der Kante kleiner: der Puls taucht auf und
+        // verschwindet, statt hart zu erscheinen.
+        const fade = Math.sin(k * Math.PI);
+        dummy.scale.setScalar(0.4 + fade * 0.8);
+        dummy.updateMatrix();
+        pulses.setMatrixAt(p, dummy.matrix);
+        // Zwischen den Enden interpoliert, wie die Position auch: ein
+        // Signal soll auf seinem Weg nach hinten verlieren und auf dem
+        // Weg nach vorn gewinnen, nicht an der Kante springen.
+        const n = depth[a] + (depth[b] - depth[a]) * k;
+        pulses.setColorAt(
+          p,
+          color.copy(COL_PULSE).lerp(COL_DEPTH, (1 - n) * DEPTH_PULSE),
+        );
       }
       pulses.instanceMatrix.needsUpdate = true;
       if (pulses.instanceColor) pulses.instanceColor.needsUpdate = true;
@@ -519,17 +481,15 @@ export function HeroMode() {
         // groesser und in der Gegenfarbe. Ohne diese Abstufung liest sich
         // der Graph als gleichfoermige Punktwolke.
         const major = i % 7 === 0;
-        // Ankunft und Zeigernaehe zaehlen auf denselben Wert ein: beide
-        // heissen "hier passiert gerade etwas", und zwei getrennte
-        // Hervorhebungen waeren eine zu viel.
-        const boost = Math.min(1, flash[i] + near[i]);
-        dummy.scale.setScalar((major ? 1.8 : 1) * (1 + boost * 0.8));
+        dummy.scale.setScalar(major ? 1.8 : 1);
         dummy.rotation.set(t * 0.2 + i, t * 0.15 + i, 0);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
         mesh.setColorAt(
           i,
-          color.copy(major ? COL_NODE_MAJOR : COL_NODE).lerp(COL_NODE_HOT, boost),
+          color
+            .copy(major ? COL_NODE_MAJOR : COL_NODE)
+            .lerp(COL_DEPTH, (1 - depth[i]) * DEPTH_NODE),
         );
       }
       mesh.instanceMatrix.needsUpdate = true;
@@ -602,6 +562,8 @@ export function HeroMode() {
       <group ref={spinRef}>
       {/* Kanten als duenne Metallroehren. `openEnded` spart die Deckel -
           die sieht bei diesem Durchmesser ohnehin niemand. */}
+      {/* Materialfarbe weiss: der Ton kommt ueber die Instanzfarbe und
+          wuerde sich sonst mit dem Materialton multiplizieren. */}
       <instancedMesh
         ref={tubesRef}
         args={[undefined, undefined, graph.edges.length]}
@@ -609,7 +571,7 @@ export function HeroMode() {
       >
         <cylinderGeometry args={[0.011, 0.011, 1, 6, 1, true]} />
         <meshStandardMaterial
-          color="#2b6a88"
+          color="#ffffff"
           metalness={0.9}
           roughness={0.35}
           transparent
@@ -640,13 +602,11 @@ export function HeroMode() {
           Bloom-Schwelle und bekommen dadurch ihren Schein. */}
       <instancedMesh
         ref={pulsesRef}
-        args={[undefined, undefined, PULSE_COUNT * TRAIL]}
+        args={[undefined, undefined, PULSE_COUNT]}
         frustumCulled={false}
       >
         <sphereGeometry args={[0.045, 12, 12]} />
-        {/* Weiss als Grundfarbe: die Faerbung und das Verblassen des
-            Schleifs kommen aus der Instanzfarbe und wuerden sich sonst
-            mit dem Materialton multiplizieren. */}
+        {/* Weiss wie bei den Kanten, Ton siehe COL_PULSE. */}
         <meshBasicMaterial color="#ffffff" toneMapped={false} transparent />
       </instancedMesh>
       </group>
