@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, FileDown } from "lucide-react";
 import { PROFILE } from "@/content/resume";
+import { CV_PATH } from "@/content/site";
 import { ScrambleText, SplitHeading } from "@/components/motion/primitives";
 import { EASE_OUT } from "@/lib/motion";
 
@@ -152,6 +153,17 @@ export function Hero() {
               className="size-4 transition-transform group-hover:translate-y-0.5"
               strokeWidth={2}
             />
+          </a>
+          {/* Zweiter Weg, bewusst leiser: wer nur den Lebenslauf will,
+              soll ihn hier finden, ohne die Fahrt zu machen. Der
+              Recruiter im Gutachten hat genau das gesucht. */}
+          <a
+            href={CV_PATH}
+            download="Marcel-Felder-Lebenslauf.pdf"
+            className="flex items-center gap-2 border border-rule px-5 py-3 text-sm text-ink transition-colors hover:border-ink"
+          >
+            Lebenslauf
+            <FileDown className="size-4" strokeWidth={1.75} />
           </a>
         </motion.div>
       </motion.div>

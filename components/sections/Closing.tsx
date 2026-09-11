@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, FileDown } from "lucide-react";
 import { Reveal, SplitHeading } from "@/components/motion/primitives";
 import { CHAPTERS } from "@/content/resume";
-import { CONTACT_EMAIL, CONTACT_FACTS, SOCIALS } from "@/content/site";
+import { CONTACT_EMAIL, CONTACT_FACTS, CV_PATH, SOCIALS } from "@/content/site";
 import { EASE_OUT } from "@/lib/motion";
 
 /**
@@ -126,6 +126,16 @@ export function Outro() {
           zeigt, ist schlechter als kein Knopf. */}
       <Reveal delay={0.2}>
         <div className="mt-12 flex flex-wrap gap-3">
+          {/* Zuerst der Lebenslauf: das ist die Datei, die ein Recruiter
+              weiterleitet. GitHub und LinkedIn sind Nachschlagewerke. */}
+          <a
+            href={CV_PATH}
+            download="Marcel-Felder-Lebenslauf.pdf"
+            className="flex items-center gap-2 bg-ink px-5 py-3 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
+          >
+            Lebenslauf (PDF)
+            <FileDown className="size-4" strokeWidth={1.75} />
+          </a>
           {SOCIALS.filter((s) => s.href).map((s) => (
             <a
               key={s.label}

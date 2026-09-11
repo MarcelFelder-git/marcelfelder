@@ -24,7 +24,7 @@ import { useViewportMode } from "@/lib/store/useViewportMode";
 import { useAudioStore } from "@/lib/store/useAudioStore";
 import { CHAPTERS, RESUME_LINES, STACK_MARQUEE } from "@/content/resume";
 import { PROJECTS } from "@/content/projects";
-import { CONTACT_EMAIL, SOCIALS } from "@/content/site";
+import { CONTACT_EMAIL, CV_PATH, SOCIALS } from "@/content/site";
 
 /**
  * Dev Command Palette (Cmd/Ctrl + K).
@@ -231,6 +231,20 @@ const COMMANDS: Cmd[] = [
           (ch) => `  ${ch.index}  ${ch.label.padEnd(10)} ${ch.caption}`,
         ),
       ]),
+  },
+  {
+    id: "download cv",
+    label: "download cv",
+    hint: "Lebenslauf als PDF",
+    group: "System",
+    Icon: FileText,
+    run: (c) => {
+      const a = document.createElement("a");
+      a.href = CV_PATH;
+      a.download = "Marcel-Felder-Lebenslauf.pdf";
+      a.click();
+      c.close();
+    },
   },
   {
     id: "copy email",

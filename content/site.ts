@@ -13,6 +13,16 @@
  */
 export const CONTACT_EMAIL = "marcel.felder.bln@gmail.com";
 
+/**
+ * Der Lebenslauf zum Herunterladen.
+ *
+ * Der meistgenannte Punkt im Recruiter-Gutachten: Firma, Zeitraum, Rolle
+ * in zehn Sekunden, nicht aus Fliesstext gefiltert. Die Datei liegt unter
+ * public/lebenslauf und enthaelt keine Adresse und keine Telefonnummer -
+ * nur das, was ohnehin auf der Seite steht.
+ */
+export const CV_PATH = "/lebenslauf/Marcel-Felder-Lebenslauf.pdf";
+
 /** Wird unter der Mailadresse gezeigt. Leere Felder fallen weg. */
 export const CONTACT_FACTS = {
   /** z. B. "Frankfurt am Main, Umzug moeglich" */
