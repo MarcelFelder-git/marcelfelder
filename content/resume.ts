@@ -188,7 +188,7 @@ export const VITA: VitaEntry[] = [
     period: "2010 bis 2023",
     title: "Musik und Tontechnik",
     org: "freiberuflich",
-    body: "Produktion, Live-Tontechnik, Tourplanung. Dreizehn Jahre lang Projekte, die zu einem festen Termin fertig sein mussten.",
+    body: "Live- & Session Musiker, Produktion, Live-Tontechnik, Tourmanagement. 13 Jahre lang Projekte, die zu einem festen Termin fertig sein mussten.",
   },
   {
     period: "2014 bis 2022",

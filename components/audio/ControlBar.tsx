@@ -74,9 +74,7 @@ export function ControlBar() {
             aria-pressed={isRunning}
             className={cn(
               "flex items-center gap-2 px-3.5 py-2 text-sm font-medium transition-colors",
-              isRunning
-                ? "bg-accent text-paper"
-                : "text-ink hover:bg-raise",
+              isRunning ? "bg-accent text-paper" : "text-ink hover:bg-raise",
             )}
           >
             <Power className="size-4" strokeWidth={2} />
