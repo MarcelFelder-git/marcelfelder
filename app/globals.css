@@ -25,7 +25,10 @@
   --color-rule-soft: #191c26;
 
   --color-ink: #ededee;
-  --color-mute: #8b8b94;
+  /* 7,0:1 auf dem dunkelsten und 6,9:1 auf dem hellsten Szenengrund -
+     AAA statt AA. Vorher 5,7. Der Text steht ueber einer 3D-Szene, die
+     heller ist als ihr Grund; da ist Reserve keine Kuer. */
+  --color-mute: #9a9aa3;
   /* 5.05:1 gegen --color-paper - besteht WCAG AA (4.5:1) für Fließtext.
      Der ursprüngliche Wert (#55555e) lag bei 2.68:1 und war für die
      Metalabels, die er trägt (Feldnamen, Zeitstempel, Werkzeugtexte),

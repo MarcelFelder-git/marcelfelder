@@ -25,7 +25,7 @@ const GROUND = {
 /** Textfarben aus app/globals.css mit ihrer jeweiligen Mindestschwelle. */
 const TEXT = {
   "--color-ink    #ededee": { hex: "#ededee", min: 4.5 },
-  "--color-mute   #8b8b94": { hex: "#8b8b94", min: 4.5 },
+  "--color-mute   #9a9aa3": { hex: "#9a9aa3", min: 4.5 },
   "--color-faint  #808088": { hex: "#808088", min: 4.5 },
   // Cyan traegt Links und aktive Zustaende, ist also Text.
   "--color-accent #38bdf8": { hex: "#38bdf8", min: 4.5 },

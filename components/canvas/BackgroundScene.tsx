@@ -191,8 +191,10 @@ export default function BackgroundScene() {
     <LoadReporter />
     <Canvas
       // DPR gedeckelt: auf einem 3x-Display waere der Fuellratenbedarf
-      // neunmal so hoch, sichtbar besser wird es nicht.
-      dpr={[1, 1.75]}
+      // neunmal so hoch, sichtbar besser wird es nicht. Auf dem Telefon
+      // enger, weil dort Bloom und Chromatic Aberration ueber das ganze
+      // Bild laufen und die GPU passiv gekuehlt ist.
+      dpr={[1, typeof window !== "undefined" && window.innerWidth < 768 ? 1.5 : 1.75]}
       gl={{
         antialias: true,
         powerPreference: "high-performance",

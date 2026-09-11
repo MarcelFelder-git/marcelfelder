@@ -23,12 +23,27 @@ export const CONTACT_EMAIL = "marcel.felder.bln@gmail.com";
  */
 export const CV_PATH = "/lebenslauf/Marcel-Felder-Lebenslauf.pdf";
 
+/**
+ * Die nuechterne Zeile unter der Headline.
+ *
+ * Rolle, Stack, Standort, Verfuegbarkeit - ohne Bild und ohne Satz. Der
+ * Recruiter im Gutachten hat genau das gesucht und in der Headline nicht
+ * gefunden: "Was kann die Person, und kann ich sie ueberhaupt
+ * einstellen?" Beides steht jetzt in einer Zeile, bevor der Text anfaengt.
+ */
+export const HERO_FACTS = [
+  "Frontend-Entwickler",
+  "React · Next.js · TypeScript",
+  "Vollzeit",
+  "Köln oder remote",
+  "ab sofort",
+] as const;
+
 /** Wird unter der Mailadresse gezeigt. Leere Felder fallen weg. */
 export const CONTACT_FACTS = {
   /** z. B. "Frankfurt am Main, Umzug moeglich" */
   location: "Köln",
-  /** z. B. "Ab sofort verfuegbar, Vollzeit" */
-  availability: "",
+  availability: "Vollzeit, Köln oder remote, ab sofort",
 } as const;
 
 /** Eintraege ohne `href` werden nicht gerendert. */

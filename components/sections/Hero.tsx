@@ -1,40 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowDown, FileDown } from "lucide-react";
 import { PROFILE } from "@/content/resume";
-import { CV_PATH } from "@/content/site";
-import { ScrambleText, SplitHeading } from "@/components/motion/primitives";
+import { CV_PATH, HERO_FACTS } from "@/content/site";
+import { SplitHeading } from "@/components/motion/primitives";
 import { EASE_OUT } from "@/lib/motion";
 
-// Entwickler zuerst: das ist die Rolle, um die es geht. Die anderen zwei
-// erklaeren, warum er sie anders ausfuellt als andere Bewerber.
 /**
- * Felder, keine Titel.
+ * Hier wechselten drei Felder durch: Frontend-Entwicklung, Tontechnik,
+ * Bauingenieurwesen, mit Zaehler "01_03". Ein Gutachter nannte die Zeile
+ * "ohne klaren Job", ein anderer suchte genau an dieser Stelle Rolle,
+ * Stack und Verfuegbarkeit und fand ein Bild. Beide hatten recht: die
+ * Zeile war Dekor an dem Ort, an dem Fakten hingehoeren.
  *
- * Hier stand "FULLSTACK-ENTWICKLER, TONTECHNIKER, BAUINGENIEUR". Zwei
- * davon sind Berufsbezeichnungen, die Marcel so nicht fuehrt: der
- * Lebenslauf sagt "Frontend Developer, auf dem Weg zum Fullstack", und
- * das Bauingenieurstudium ist ohne Abschluss geblieben. Wer Seite und
- * Lebenslauf nebeneinanderlegt, darf keinen Widerspruch finden.
- *
- * Die Felder stimmen dagegen alle drei, und sie sagen dasselbe aus.
+ * Die drei Felder stehen weiter im Eyebrow darueber und im Text darunter.
+ * Diese Zeile sagt jetzt nur noch, was ein Recruiter in drei Sekunden
+ * wissen will. Inhalt in content/site.ts.
  */
-const ROLES = ["FRONTEND-ENTWICKLUNG", "TONTECHNIK", "BAUINGENIEURWESEN"];
-
 export function Hero() {
-  const [role, setRole] = useState(0);
-
-  // Die Rolle wechselt langsam genug, dass man sie liest, und schnell genug,
-  // dass man alle drei mitbekommt, bevor man weiterscrollt.
-  useEffect(() => {
-    const id = window.setInterval(
-      () => setRole((r) => (r + 1) % ROLES.length),
-      2900,
-    );
-    return () => window.clearInterval(id);
-  }, []);
 
   // Der Hero faehrt beim Scrollen langsamer weg als die Seite und blendet
   // aus - dadurch uebernimmt die 3D-Szene die Buehne, statt dass Text und
@@ -111,20 +96,15 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.9 }}
-          className="mt-8 flex flex-wrap items-baseline gap-x-4 gap-y-2 font-mono text-sm"
+          className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-1.5 font-mono text-[13px]"
         >
           <span className="text-faint">$</span>
-          <ScrambleText
-            key={ROLES[role]}
-            text={ROLES[role]}
-            className="text-ink"
-          />
-          <span className="text-faint">
-            / {String(role + 1).padStart(2, "0")}
-            <span className="text-faint">
-              _{String(ROLES.length).padStart(2, "0")}
+          {HERO_FACTS.map((fact, i) => (
+            <span key={fact} className="flex items-baseline gap-x-3">
+              {i > 0 && <span className="text-faint">·</span>}
+              <span className={i === 0 ? "text-ink" : "text-mute"}>{fact}</span>
             </span>
-          </span>
+          ))}
         </motion.div>
 
         <motion.p
