@@ -1,12 +1,9 @@
-# Flagship Portfolio — Structure · Signal · Code
+# marcelfelder
 
-Interaktives Engineering-Portfolio an der Schnittstelle von Bauingenieurwesen,
-Tontechnik und Fullstack-Entwicklung.
-
-Die Seite ist **scrollgetrieben**: eine einzige 3D-Szene liegt vollflächig
-hinter dem Inhalt und wechselt beim Scrollen zwischen drei Modellen, während
-der Scrollfortschritt die Kamera um die Szene fährt. Es gibt keine Umschalter
-und keine 3D-Kachel neben dem Text — der Hintergrund *ist* die Erzählung.
+Portfolio von Marcel Felder, Frontend-Entwickler (React, Next.js,
+TypeScript). Davor dreizehn Jahre Tontechnik und sechseinhalb Jahre
+Bauingenieurwesen. Die Seite ist selbst das erste Projekt: eine
+scrollgetriebene 3D-Szene, eine eigene Audio-Engine, kein UI-Kit.
 
 ## Schnellstart
 
@@ -18,120 +15,120 @@ npm install
 npm run dev
 ```
 
-Läuft auf http://localhost:3100 (Port in `package.json` bzw. `.claude/launch.json`).
+Läuft auf http://localhost:3000. Für die Produktion `npm run build`, wobei
+der Dev-Server dabei nicht laufen sollte: beide schreiben in `.next`.
 
 ## Was drin steckt
 
 | Bereich | Umsetzung |
 | --- | --- |
 | Framework | Next.js 15 App Router, React 19, TypeScript, Turbopack |
-| Styling | Tailwind v4 (Design-Tokens in `@theme`, keine `tailwind.config.ts`) |
-| 3D | Three.js + React Three Fiber 9, eigene GLSL-Shader (kein Postprocessing) |
-| Audio | Native Web Audio API — Oszillatoren, BiquadFilter, Delay-Bus, Analyser |
-| State | Zustand (zwei Stores), bewusst kein Context |
-| Motion | Framer Motion — Split-Headings, Scroll-Reveals, Parallax, Marquee |
+| Styling | Tailwind v4, Design-Tokens in `@theme`, keine Config-Datei |
+| 3D | Three.js über React Three Fiber 9, PBR mit selbstgebauter Lichtumgebung, eigene GLSL-Einschübe |
+| Postprocessing | Bloom, Chromatic Aberration, Vignette auf einem opaken Canvas |
+| Audio | Web Audio API: drei Oszillatoren, Biquad-Tiefpass, Delay-Bus, 512-Punkt-FFT |
+| State | Zustand für alles, was ein Re-Render braucht; ein mutierbares Modul für alles, was pro Frame läuft |
+| Motion | Framer Motion für den DOM, `useFrame` für die Szene |
+
+## Aufbau der Seite
+
+1. **Hero.** Ein Abhängigkeitsgraph aus 58 Knoten, mit Licht, das durch die
+   Leitungen läuft. Drei Tiefenebenen und Luftperspektive, damit ein Körper
+   im Raum steht und kein Diagramm.
+2. **Projekte.** Sechs Projekte als Fahrt durch einen Korridor. Jedes hängt
+   als Gerät an der Wand, Monitor für Desktop-Apps, Telefon für Mobile,
+   mit wechselnden Screenshots. Danach ein Register mit allen Links.
+3. **Profil.** Fundament, Werdegang, Stack. Dann drei Kapitel mit je einem
+   Modell: eine Komponenten-Matrix mit Compile-Sweep, eine Chladni-Platte
+   mit Sand, der sich auf den Knotenlinien sammelt, und ein Raumfachwerk,
+   das unter der Maus nachgibt.
+4. **Kontakt.** Mail, Standort, GitHub, LinkedIn.
 
 ## Wie die Szene gesteuert wird
 
-`ScrollDriver` misst in einem einzigen rAF-Loop, wie nah die Mitte jedes
-Kapitels an der Bildschirmmitte liegt, und schreibt daraus Gewichte nach
-`lib/scene/state.ts`. Alle drei Modelle sind gleichzeitig montiert; jedes
-liest sein Gewicht in `useFrame` und blendet sich darüber ein oder aus. Während
-eines Übergangs sind zwei Modelle gleichzeitig halb sichtbar — der Wechsel
-liest sich als Umbau, nicht als Schnitt. Dieselben Gewichte mischen auch die
-Kamerastationen, damit Geometrie und Blickwinkel eine Bewegung sind.
+`ScrollDriver` misst pro Frame, wie viel jeder Abschnitt vom Bildschirm
+einnimmt, normalisiert das zu Gewichten und dämpft sie. Die Gewichte
+liegen in `lib/scene/state.ts` als mutierbares Objekt, nicht als
+React-State: sie ändern sich in jedem Frame, und ein `setState` pro Frame
+würde den ganzen Baum durchrendern.
 
-Der State ist bewusst ein mutierbares Modul-Objekt statt React-State: die
-Werte ändern sich in jedem Frame, und ein `setState` pro Frame würde den
-gesamten Komponentenbaum durchrendern. Dasselbe Prinzip an drei weiteren
-Stellen — Fortschrittsbalken, Scroll-Readout und die audio-reaktive
-UI-Beleuchtung schreiben direkt in CSS-Custom-Properties.
+Alle Modelle sind gleichzeitig montiert. Jedes liest sein Gewicht in
+`useFrame` und blendet sich darüber ein; jedes hat eine eigene Richtung,
+aus der es hereinkommt (`lib/scene/entry.ts`), damit sich zwei Modelle im
+Übergang nicht am Ursprung durchdringen. Dieselben Gewichte mischen die
+Kamerastationen (`Rig`) und das Farbklima (`lib/scene/palette.ts`), das
+als CSS-Variable auch die Textkästen erreicht.
 
-## Die drei Modelle
+Alle Tempo-Regler liegen in `lib/scene/pacing.ts`.
 
-**Structure** — Ein zweilagiges Raumfachwerk, allseitig gelagert. Der Cursor
-bringt eine Einzellast auf; die Durchbiegung folgt einer Einflussfunktion
-(Gauß-Glocke × Auflager-Maske) statt einer FEM-Rechnung. Die Stäbe werden
-anschließend aus ihrer tatsächlichen Längenänderung eingefärbt: Verkürzung =
-Druck (cyan), Verlängerung = Zug (violett).
+## Warum das Postprocessing auf einem opaken Canvas läuft
 
-**Signal** — Drei konzentrische Ringe aus `InstancedMesh`-Balken, gespeist aus
-der 512-Punkt-FFT des `AnalyserNode`. Die Frequenz läuft über den *Winkel*,
-nicht über die Ringe — sonst bekäme der innerste Ring alle Tiefen und die
-äußeren blieben tot. Abgetastet wird nur bis ~3,8 kHz, weil der Tiefpass
-darüber ohnehin dichtmacht.
-
-**Code** — Drei gestaffelte Ebenen aus Token-Balken mit einem Compile-Sweep,
-hinterlegt mit einer GLSL-Shader-Ebene (Raster, Sweep-Band, Scanlines).
+Der EffectComposer reicht bei einem transparenten Canvas kein Alpha durch
+und legt den Bloom als grauen Schleier über die ganze Seite. Der Canvas
+ist deshalb opak, und die Szene malt ihren eigenen Grund. Was wie ein
+Hintergrund aussieht, ist die Szene selbst.
 
 ## Audio-Engine
 
-Signalfluss in `lib/audio/engine.ts`:
-
 ```
-3× Oscillator (detuned) → voiceGain → BiquadFilter (LP) ─┬→ masterGain
-                                                          └→ Delay ⟲ Feedback → wet ─┘
-                                       masterGain → AnalyserNode → Destination
+3× Oscillator (verstimmt) → voiceGain → BiquadFilter (LP) ─┬→ masterGain
+                                                            └→ Delay ⟲ Feedback → wet ─┘
+                                         masterGain → AnalyserNode → Destination
 ```
 
-Der `AudioContext` entsteht erst bei der ersten User-Geste (Autoplay-Policy).
-Alle fünf Fader sind auf 0..1 normalisiert; das Mapping auf Hz, Q und Cent
-liegt in der Engine, nicht im UI.
+Der `AudioContext` entsteht erst bei der ersten Geste. Alle Fader sind auf
+0..1 normalisiert, das Mapping auf Hz, Q und Cent liegt in der Engine.
+Die Steuerung sitzt nur im Klang-Kapitel, dort, wo man die Wirkung sieht:
+die FFT lenkt die Platte aus, der Pegel färbt das Licht der Seite.
 
-Die Filterfrequenz steuert zusätzlich die UI-Beleuchtung: `AmbientGlow`
-schreibt `--audio-glow` und `--audio-level` per rAF ins Root-Element — als
-CSS-Custom-Property, nicht als React-State, weil ein `setState` pro Frame den
-gesamten Baum durchrendern würde.
+## Befehlspalette
 
-## Command Palette
-
-`Cmd/Ctrl + K` öffnet ein Terminal mit `cat resume`, `view stack`,
-`play audio`, `view signal`, `copy email` und Sprungzielen. Ausgaben landen in
-einer Ausgabeansicht innerhalb der Palette; `Escape` führt zurück zur Liste.
-
-## Kein Postprocessing
-
-Der Bloom-Pass aus `@react-three/postprocessing` ist bewusst entfernt: bei
-einem transparenten Canvas reicht der EffectComposer kein Alpha durch und legt
-seinen Halo als grauen Schleier über die gesamte Fläche. In einer kleinen
-Kachel fällt das nicht auf, vollflächig ruiniert es die Seite. Das Leuchten
-kommt stattdessen aus den Farben selbst — ungetonte Basismaterialien auf fast
-schwarzem Grund.
+`Strg K` (Mac: `⌘ K`) oder Klick auf den Hinweis oben rechts. Navigation zu
+allen Abschnitten, Audio starten und stoppen, `cat resume`, `ls projects`,
+`view stack`, `copy email`, `open github`, `open linkedin`.
 
 ## Projektstruktur
 
 ```
-app/                 Routen, Root-Layout, globals.css (Design-System)
+app/                 Layout, Seite, Vorschaubild, Icon, robots, sitemap, /api/profile
+assets/fonts/        Space Grotesk Bold fuer Vorschaubild und Icon (OFL)
 components/
-  canvas/            Alles innerhalb von <Canvas> plus ScrollDriver
+  canvas/            Alles im <Canvas>: Szene, Rig, ScrollDriver, modes/
+  sections/          Hero, Showcase (Tunnel), Manifest (Profil), ChapterSection, Closing
+  audio/             Mischpult, Fader, Spektrum, Ambient-Glow
+  terminal/          Befehlspalette
+  layout/            HUD, Register, Boot-Sequenz
   motion/            Reveal, SplitHeading, Scramble, Counter, Parallax, Marquee
-  audio/             Mischpult, Fader, Analyzer, Ambient-Glow
-  terminal/          Command Palette
-  sections/          Hero, Manifest, ChapterSection, Capabilities, Closing
-  layout/            HUD, Reticle, Boot-Sequenz
+  projects/          Live-Vorschau der Projekte
+content/             Projekte, Lebenslauf, Kontakt. Typisiert, nichts erfunden.
 lib/
-  audio/engine.ts    Der Web-Audio-Graph (Singleton)
-  scene/state.ts     Scrollfortschritt und Kapitelgewichte (kein React-State)
-  store/             Zustand-Stores für aktives Kapitel und Audio
-content/             Texte, Kapitel, Kennzahlen, Vita — typisiert
+  audio/engine.ts    Der Web-Audio-Graph
+  scene/             Gewichte, Tempo, Palette, Tunnelgeometrie, Eintrittsrichtungen
+  store/             Zustand-Stores
+scripts/             Kontrastpruefung gegen WCAG AA
 ```
 
-Leitregel: `components/canvas/` ist eine Insel. Nichts darin importiert
-React-DOM-Komponenten, nichts außerhalb importiert Three.js direkt. Der
-einzige Draht zwischen beiden Welten sind die Zustand-Stores.
+Zwei Regeln, die das Bundle klein halten: `lib/scene/*` importiert nie
+three, und alles aus `components/canvas/` hängt hinter einem dynamischen
+Import. First Load JS liegt bei rund 215 kB, die 3D-Kette lädt danach.
 
 ## Barrierefreiheit
 
-`prefers-reduced-motion` friert die Szene auf einen statischen Frame ein und
-stellt CSS-Animationen ab. Die Fader sind native `<input type="range">` mit
-vertikalem `writing-mode` — Tastatursteuerung und ARIA-Werte bleiben erhalten.
-Ein Skip-Link führt am 3D-Bereich vorbei.
+`prefers-reduced-motion` stellt die Szene still und die Animationen ab.
+Alle Textfarben sind gegen alle Szenengründe gemessen
+(`node scripts/check-contrast.mjs`), schwächste Paarung 4,6:1. Das
+Register sind echte Sprungmarken, die Fader native `<input type="range">`,
+ein Skip-Link führt am 3D-Bereich vorbei.
 
-## Offen — muss von Marcel gefüllt werden
+## Deployment
 
-- **`VITA` in `content/resume.ts`** ist ein Platzhalter: Jahreszahlen,
-  Hochschule und Stationen stehen dort wörtlich als „eintragen". Ich habe
-  bewusst keine Biografie erfunden.
-- **Kontaktadresse und Social-Links** in `content/site.ts` sind Platzhalter
-  (`mail@marcelfelder.dev` existiert nicht).
-- Case Studies (`/work/[slug]`) und Component Playground (`/playground`)
+Vercel, ohne Umgebungsvariablen. Vorschaubild, Sitemap und kanonische
+Adresse leiten sich aus `VERCEL_PROJECT_PRODUCTION_URL` ab;
+`NEXT_PUBLIC_SITE_URL` sticht das, falls eine eigene Domain dazukommt.
+
+## Entstehung
+
+Gebaut im Pair-Programming mit Claude Code. Die Architektur, die Inhalte
+und jede Entscheidung, was auf die Seite gehört und was nicht, sind von
+mir; Inhalte stammen aus den Repositories und dem Lebenslauf, nichts ist
+erfunden.
