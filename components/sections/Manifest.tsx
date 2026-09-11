@@ -181,7 +181,11 @@ function ManifestLine({
   const end = (index + 0.85) / total;
 
   const opacity = useTransform(progress, [start, end], [0.12, 1]);
-  const x = useTransform(progress, [start, end], [reduced ? 0 : -24, 0]);
+  // Zwoelf statt vierundzwanzig: auf dem Telefon betraegt der Seitenrand
+  // nur 24 px, und eine noch nicht erreichte Zeile stand damit buendig
+  // am Bildrand, wie abgeschnitten. Auf breiten Schirmen bleibt der
+  // Einzug als Bewegung lesbar.
+  const x = useTransform(progress, [start, end], [reduced ? 0 : -12, 0]);
 
   return (
     <motion.p

@@ -16,7 +16,7 @@ export function Outro() {
     <footer
       id="kontakt"
       data-tone="light"
-      className="relative px-6 pb-16 pt-[24vh] sm:px-10 lg:px-16"
+      className="relative px-6 pb-28 pt-[24vh] sm:px-10 sm:pb-16 lg:px-16"
       aria-labelledby="outro-heading"
     >
       {/* Verlauf statt Kante.
