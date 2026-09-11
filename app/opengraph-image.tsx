@@ -77,7 +77,7 @@ export default async function OpenGraphImage() {
               background: "#38bdf8",
             }}
           />
-          REV. 03 · CODE · SIGNAL · STRUCTURE
+          CODE · SIGNAL · STRUCTURE
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>

@@ -89,7 +89,10 @@ export function Hero() {
             className="size-1.5 rounded-full bg-accent"
             style={{ animation: "blink 2.4s ease-in-out infinite" }}
           />
-          Rev. 03 - Code · Signal · Structure
+          {/* Hier stand "Rev. 03" davor: die interne Nummer des
+              Entwurfs, die aus dem Arbeitsprozess in den sichtbaren Text
+              gerutscht war. Fuer Besucher ohne Bedeutung, also weg. */}
+          Code · Signal · Structure
         </motion.div>
 
         <SplitHeading
