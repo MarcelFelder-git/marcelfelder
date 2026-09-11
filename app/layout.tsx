@@ -7,6 +7,7 @@ import { AudioBadge } from "@/components/audio/AudioBadge";
 import { BootSequence } from "@/components/layout/BootSequence";
 import { Hud, Reticle } from "@/components/layout/Hud";
 import "./globals.css";
+import { SITE_URL } from "@/lib/siteUrl";
 
 // Space Grotesk statt Inter: eckiger, geometrischer, technischer -
 // die Display-Groessen dieser Seite tragen die eigentliche Gestaltung,
@@ -22,25 +23,6 @@ const mono = JetBrains_Mono({
   variable: "--font-mono-stack",
   display: "swap",
 });
-
-/**
- * Basisadresse fuer Vorschaubilder und kanonische Links.
- *
- * Hier stand eine feste URL, geraten aus dem Projektnamen. Stimmt sie
- * nicht mit dem echten Deployment ueberein, zeigen alle Vorschaubilder
- * beim Teilen ins Leere - und das faellt frueh niemandem auf, weil die
- * Seite selbst tadellos aussieht.
- *
- * Vercel setzt beim Bauen `VERCEL_PROJECT_PRODUCTION_URL` auf die
- * Produktionsadresse des Projekts, egal wie es heisst. Damit stimmt die
- * Angabe von selbst, auch nach einer Umbenennung. NEXT_PUBLIC_SITE_URL
- * sticht das, falls spaeter eine eigene Domain dazukommt.
- */
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000");
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
