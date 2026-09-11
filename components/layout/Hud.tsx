@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { sceneState } from "@/lib/scene/state";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useModifierKey } from "@/hooks/useModifierKey";
+import { usePalette } from "@/lib/store/usePalette";
 import { cn } from "@/lib/utils";
 import { CHAPTERS as CONTENT_CHAPTERS } from "@/content/resume";
 
@@ -113,6 +115,8 @@ function useActiveSection() {
 export function Hud() {
   const barRef = useRef<HTMLDivElement>(null);
   const readoutRef = useRef<HTMLSpanElement>(null);
+  const modifier = useModifierKey();
+  const togglePalette = usePalette((s) => s.toggle);
 
   const activeSection = useActiveSection();
 
@@ -167,9 +171,21 @@ export function Hud() {
           <span className="meta hidden sm:inline">
             SCROLL <span ref={readoutRef}>000.0%</span>
           </span>
-          <kbd className="pointer-events-auto border border-rule bg-paper px-2 py-1 font-mono text-[10px] text-mute">
-            ⌘K
-          </kbd>
+          {/* Ein Schalter, kein Schild: oeffnet die Palette auch ohne
+              Tastatur. Beschriftet mit der Taste dieses Rechners, und
+              erst nach dem Mount - vorher ist nicht bekannt, welche. */}
+          <button
+            type="button"
+            onClick={togglePalette}
+            aria-label="Befehlspalette öffnen"
+            className="pointer-events-auto border border-rule bg-paper px-2 py-1 font-mono text-[10px] text-mute transition-colors hover:border-ink hover:text-ink"
+          >
+            {modifier ? (
+              <kbd className="font-mono">{modifier} K</kbd>
+            ) : (
+              <span className="opacity-0">Strg K</span>
+            )}
+          </button>
         </div>
       </header>
 

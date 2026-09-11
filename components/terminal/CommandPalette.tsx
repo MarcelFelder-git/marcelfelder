@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePalette } from "@/lib/store/usePalette";
 import { Command } from "cmdk";
 import {
   AudioWaveform,
@@ -179,7 +180,11 @@ const COMMANDS: Cmd[] = [
 const GROUPS = [...new Set(COMMANDS.map((c) => c.group))];
 
 export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+  // Im Store statt lokal, damit die Kopfzeile sie ebenfalls oeffnen
+  // kann - siehe lib/store/usePalette.ts.
+  const open = usePalette((s) => s.open);
+  const setOpen = usePalette((s) => s.setOpen);
+  const toggle = usePalette((s) => s.toggle);
   const [output, setOutput] = useState<string[] | null>(null);
 
   const setMode = useViewportMode((s) => s.setMode);
@@ -190,12 +195,12 @@ export function CommandPalette() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((v) => !v);
+        toggle();
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [toggle]);
 
   // Ausgabe verwerfen, sobald die Palette schliesst.
   useEffect(() => {
