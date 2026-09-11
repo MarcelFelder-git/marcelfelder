@@ -77,7 +77,10 @@ export function ChapterSection({
       <div
         className={cn(
           "sticky top-[16vh] flex",
-          side === "right" ? "justify-end" : "justify-start",
+          // Rechts bleibt Platz fuer das Register, das ab lg am rechten
+          // Rand klebt. Ohne den Abstand lag der Text bei 1440 px Breite
+          // bis x = 1430, das Register beginnt bei 1314.
+          side === "right" ? "justify-end lg:pr-32" : "justify-start",
         )}
       >
         <div className="relative w-full max-w-xl">

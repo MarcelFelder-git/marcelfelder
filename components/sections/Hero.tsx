@@ -66,7 +66,7 @@ export function Hero() {
       ref={ref}
       id="start"
       data-hero
-      className="relative flex min-h-[100svh] flex-col justify-center px-6 pb-28 pt-28 sm:px-10 lg:px-16"
+      className="relative flex min-h-[100svh] flex-col justify-center px-6 py-24 sm:px-10 lg:px-16"
     >
       <motion.div style={{ y, opacity }} className="relative max-w-4xl">
         {/* Scrim: die Szene liegt direkt hinter der Type, ohne Abdunklung
@@ -103,7 +103,7 @@ export function Hero() {
           immediate
           delay={0.25}
           highlight={["hören", "kann."]}
-          className="chromatic mt-7 text-balance text-[clamp(2.6rem,8vw,7rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
+          className="chromatic mt-7 text-balance text-[clamp(2.6rem,min(8vw,11.5vh),7rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
         />
 
         <motion.div

@@ -160,6 +160,9 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+    /* Siehe body: ohne clip auch hier waechst der Layout-Viewport auf dem
+       Telefon auf die Dokumentbreite. */
+    overflow-x: clip;
 
     /* Grundton der Szene als Komponenten, damit die Textkaesten darueber
        ihn mit eigener Deckkraft benutzen koennen. ScrollDriver
@@ -180,7 +183,14 @@
     background-attachment: fixed;
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    /* clip statt hidden, und auf html gleich mit (siehe unten): hidden auf
+       dem body allein laesst den Layout-Viewport auf dem Telefon trotzdem
+       auf die Dokumentbreite wachsen, und Chrome zoomt die ganze Seite
+       heraus. clip erzeugt ausserdem keinen Scroll-Container und laesst
+       position: sticky in den Kapiteln in Ruhe. Gemessen: 462 px
+       Dokumentbreite bei 390 px Fenster, Ursache waren dekorative
+       Elemente mit negativen Raendern. */
+    overflow-x: clip;
   }
 
   /* Display-Typo läuft grundsätzlich eng. Der Größensprung zwischen
