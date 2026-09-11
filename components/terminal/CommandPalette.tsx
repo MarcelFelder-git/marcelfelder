@@ -4,21 +4,27 @@ import { useCallback, useEffect, useState } from "react";
 import { usePalette } from "@/lib/store/usePalette";
 import { Command } from "cmdk";
 import {
+  ArrowDownToLine,
   AudioWaveform,
   Boxes,
   Braces,
-  Copy,
+  ExternalLink,
   FileText,
+  FolderOpen,
+  Home,
   Layers,
+  Mail,
   MessageSquare,
   Play,
   Square,
   TerminalSquare,
+  User,
 } from "lucide-react";
 import { useViewportMode } from "@/lib/store/useViewportMode";
 import { useAudioStore } from "@/lib/store/useAudioStore";
 import { CHAPTERS, RESUME_LINES, STACK_MARQUEE } from "@/content/resume";
-import { CONTACT_EMAIL } from "@/content/site";
+import { PROJECTS } from "@/content/projects";
+import { CONTACT_EMAIL, SOCIALS } from "@/content/site";
 
 /**
  * Dev Command Palette (Cmd/Ctrl + K).
@@ -45,34 +51,69 @@ interface CommandContext {
   close: () => void;
 }
 
+/**
+ * Sprung zu einem Abschnitt der Seite.
+ *
+ * Ueber die id, nicht ueber gemerkte Positionen: die Abschnitte sind
+ * echte Sprungmarken (siehe Hud), und was fuer die Tastatur und die
+ * Adresszeile gilt, gilt auch hier. Gibt es das Ziel nicht, passiert
+ * nichts - besser als ein Sprung ins Leere.
+ */
+function jump(id: string, block: ScrollLogicalPosition = "start") {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block });
+}
+
+/**
+ * Die Befehle spiegeln die Seite, wie sie jetzt ist.
+ *
+ * Hier stand noch "goto workshop" - der Abschnitt ist seit Rev 13 weg,
+ * der Befehl fuehrte ins Leere. Und die Kapitelhinweise beschrieben
+ * Modelle, die es nicht mehr gibt: "Spektrum-Modus" fuer ein Kapitel,
+ * in dem inzwischen eine Chladni-Platte steht.
+ *
+ * Reihenfolge der Gruppen ist die Reihenfolge der Seite: erst wohin,
+ * dann was hoeren, dann was nachlesen.
+ */
 const COMMANDS: Cmd[] = [
+  // --- Navigation ------------------------------------------------
   {
-    id: "view structure",
-    label: "view structure",
-    hint: "Fachwerk-Modus",
-    group: "Viewport",
-    Icon: Boxes,
+    id: "goto start",
+    label: "goto start",
+    hint: "Zum Anfang",
+    group: "Navigation",
+    Icon: Home,
     run: (c) => {
-      c.setMode("structure");
+      jump("start");
       c.close();
     },
   },
   {
-    id: "view signal",
-    label: "view signal",
-    hint: "Spektrum-Modus",
-    group: "Viewport",
-    Icon: AudioWaveform,
+    id: "goto projects",
+    label: "goto projects",
+    hint: "Sechs Projekte, Fahrt durch den Korridor",
+    group: "Navigation",
+    Icon: FolderOpen,
     run: (c) => {
-      c.setMode("signal");
+      jump("projects");
       c.close();
     },
   },
   {
-    id: "view code",
-    label: "view code",
-    hint: "Komponenten-Matrix",
-    group: "Viewport",
+    id: "goto profile",
+    label: "goto profile",
+    hint: "Fundament, Werdegang, Stack",
+    group: "Navigation",
+    Icon: User,
+    run: (c) => {
+      jump("fundament");
+      c.close();
+    },
+  },
+  {
+    id: "goto code",
+    label: "goto code",
+    hint: "Kapitel 01 · Komponenten-Matrix",
+    group: "Navigation",
     Icon: Braces,
     run: (c) => {
       c.setMode("code");
@@ -80,9 +121,44 @@ const COMMANDS: Cmd[] = [
     },
   },
   {
+    id: "goto signal",
+    label: "goto signal",
+    hint: "Kapitel 02 · Chladni-Platte",
+    group: "Navigation",
+    Icon: AudioWaveform,
+    run: (c) => {
+      c.setMode("signal");
+      c.close();
+    },
+  },
+  {
+    id: "goto structure",
+    label: "goto structure",
+    hint: "Kapitel 03 · Raumfachwerk",
+    group: "Navigation",
+    Icon: Boxes,
+    run: (c) => {
+      c.setMode("structure");
+      c.close();
+    },
+  },
+  {
+    id: "goto contact",
+    label: "goto contact",
+    hint: "Zum Kontakt",
+    group: "Navigation",
+    Icon: ArrowDownToLine,
+    run: (c) => {
+      jump("kontakt", "center");
+      c.close();
+    },
+  },
+
+  // --- Audio -----------------------------------------------------
+  {
     id: "play audio",
     label: "play audio",
-    hint: "Engine starten",
+    hint: "Engine starten und zur Platte springen",
     group: "Audio",
     Icon: Play,
     run: (c) => {
@@ -102,6 +178,8 @@ const COMMANDS: Cmd[] = [
       c.close();
     },
   },
+
+  // --- System ----------------------------------------------------
   {
     id: "cat resume",
     label: "cat resume",
@@ -109,6 +187,22 @@ const COMMANDS: Cmd[] = [
     group: "System",
     Icon: FileText,
     run: (c) => c.print(RESUME_LINES),
+  },
+  {
+    id: "ls projects",
+    label: "ls projects",
+    hint: "Alle Projekte mit Live-Adresse",
+    group: "System",
+    Icon: FolderOpen,
+    run: (c) =>
+      c.print([
+        "PROJECTS",
+        "",
+        ...PROJECTS.map(
+          (p) =>
+            `  ${p.index}  ${p.title.padEnd(20)} ${p.links.live ?? p.links.repo}`,
+        ),
+      ]),
   },
   {
     id: "view stack",
@@ -122,17 +216,6 @@ const COMMANDS: Cmd[] = [
         "",
         ...STACK_MARQUEE.map((item) => `  ${item}`),
       ]),
-  },
-  {
-    id: "copy email",
-    label: "copy email",
-    hint: "Kontaktadresse kopieren",
-    group: "System",
-    Icon: Copy,
-    run: (c) => {
-      void navigator.clipboard?.writeText(CONTACT_EMAIL);
-      c.print([`copied to clipboard: ${CONTACT_EMAIL}`]);
-    },
   },
   {
     id: "cat chapters",
@@ -150,31 +233,30 @@ const COMMANDS: Cmd[] = [
       ]),
   },
   {
-    id: "goto workshop",
-    label: "goto workshop",
-    hint: "Zum Agenten & Träger-Solver springen",
-    group: "Navigation",
-    Icon: MessageSquare,
+    id: "copy email",
+    label: "copy email",
+    hint: "Kontaktadresse kopieren",
+    group: "System",
+    Icon: Mail,
     run: (c) => {
-      document
-        .getElementById("workshop-heading")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-      c.close();
+      void navigator.clipboard?.writeText(CONTACT_EMAIL);
+      c.print([`copied to clipboard: ${CONTACT_EMAIL}`]);
     },
   },
-  {
-    id: "goto contact",
-    label: "goto contact",
-    hint: "Zum Kontakt springen",
-    group: "Navigation",
-    Icon: MessageSquare,
-    run: (c) => {
-      document
-        .getElementById("outro-heading")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      c.close();
-    },
-  },
+  // Die Profile aus site.ts, damit hier nichts steht, was dort fehlt.
+  ...SOCIALS.map(
+    (social): Cmd => ({
+      id: `open ${social.label.toLowerCase()}`,
+      label: `open ${social.label.toLowerCase()}`,
+      hint: `${social.label} in neuem Tab`,
+      group: "System",
+      Icon: ExternalLink,
+      run: (c) => {
+        window.open(social.href, "_blank", "noopener,noreferrer");
+        c.close();
+      },
+    }),
+  ),
 ];
 
 const GROUPS = [...new Set(COMMANDS.map((c) => c.group))];

@@ -50,11 +50,12 @@ export default function Home() {
         </ChapterSection>
       ))}
 
-      {/* Die Werkstatt (Agent + Traeger-Solver) ist bewusst nicht mehr
-          eingehaengt. Die Komponenten liegen weiterhin unter
-          components/sections/Workshop.tsx und sind mit einem Import und
-          einer Zeile hier wieder da; ohne den Import landen sie in
-          keinem Bundle und kosten nichts. */}
+      {/* Die Werkstatt (Agent + Traeger-Solver) gibt es nicht mehr.
+          Sie lag eine Weile ausgehaengt im Repo, "fuer den Fall". Der
+          Fall kam nicht, dafuer zeigte die Befehlspalette weiter einen
+          Sprung dorthin. Toter Code ist kein Vorrat, sondern ein Anlass
+          fuer genau solche Fehler. Letzter Stand im Verlauf:
+          git show e9f8a0c:components/sections/Workshop.tsx */}
       {/* Der Werdegang steht im Fundament, nicht hier.
           Als eigener Abschnitt am Ende war er eine hohe Zeitleiste
           zwischen der Fahrt und dem Kontakt, und er hat den Schluss von
