@@ -1,8 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, useProgress } from "@react-three/drei";
+import {
+  Environment,
+  Lightformer,
+  PerformanceMonitor,
+  useProgress,
+} from "@react-three/drei";
 import {
   EffectComposer,
   Bloom,
@@ -20,6 +25,7 @@ import { sceneState } from "@/lib/scene/state";
 import { GROUND, RIM, blend } from "@/lib/scene/palette";
 import { tunnelExit } from "@/lib/scene/tunnel";
 import { useSceneLoad } from "@/lib/store/useSceneLoad";
+import { guessTier, useQuality } from "@/lib/store/useQuality";
 
 /**
  * Die Szene liegt vollflaechig HINTER der Seite, nicht in einer Kachel
@@ -185,18 +191,71 @@ function LoadReporter() {
   return null;
 }
 
+/**
+ * Waechter fuer die Bildrate. Muss innerhalb des Canvas stehen, weil
+ * PerformanceMonitor ueber useFrame misst.
+ *
+ * Nur nach unten, nie zurueck: ein Rechner, der einmal eingebrochen
+ * ist, bricht wieder ein, und ein Hin und Her zwischen den Stufen sieht
+ * schlimmer aus als eine niedrige.
+ */
+function QualityGuard() {
+  const tier = useQuality((s) => s.tier);
+  const setTier = useQuality((s) => s.setTier);
+  const done = useSceneLoad((s) => s.done);
+  // Erst messen, wenn alles geladen ist und die Shader kompiliert sind:
+  // die ersten Sekunden ruckeln auf jedem Rechner, und das ist kein
+  // Urteil ueber die Grafikkarte.
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!done) return;
+    const id = window.setTimeout(() => setArmed(true), 2500);
+    return () => window.clearTimeout(id);
+  }, [done]);
+  if (tier === "low" || !armed) return null;
+  return (
+    <PerformanceMonitor
+      // Nach zwei Messfenstern von je 250 ms unter 45 fps geht es runter.
+      // Kuerzer, und ein einzelner Ruckler beim Laden wuerde reichen.
+      ms={250}
+      iterations={4}
+      bounds={() => [45, 200]}
+      onDecline={({ fps }) => setTier("low", `${Math.round(fps)} fps`)}
+      onFallback={({ fps }) => setTier("low", `Fallback, ${Math.round(fps)} fps`)}
+    />
+  );
+}
+
 export default function BackgroundScene() {
+  const tier = useQuality((s) => s.tier);
+  const setTier = useQuality((s) => s.setTier);
+
+  // Erste Einschaetzung vor dem ersten Frame, damit ein bekannt
+  // schwacher Rechner gar nicht erst in voller Aufloesung anfaengt.
+  useEffect(() => {
+    const g = guessTier();
+    if (g.tier === "low") setTier("low", g.reason);
+  }, [setTier]);
+
+  const mobile = typeof window !== "undefined" && window.innerWidth < 768;
+  // DPR gedeckelt: auf einem 3x-Display waere der Fuellratenbedarf
+  // neunmal so hoch, sichtbar besser wird es nicht. Auf dem Telefon
+  // enger, weil dort Bloom und Chromatic Aberration ueber das ganze
+  // Bild laufen und die GPU passiv gekuehlt ist. In der niedrigen Stufe
+  // genau 1: auf einem Retina-Display halbiert das die Pixel dreimal.
+  const dpr: [number, number] = tier === "low" ? [1, 1] : [1, mobile ? 1.5 : 1.75];
+
   return (
     <>
     <LoadReporter />
     <Canvas
-      // DPR gedeckelt: auf einem 3x-Display waere der Fuellratenbedarf
-      // neunmal so hoch, sichtbar besser wird es nicht. Auf dem Telefon
-      // enger, weil dort Bloom und Chromatic Aberration ueber das ganze
-      // Bild laufen und die GPU passiv gekuehlt ist.
-      dpr={[1, typeof window !== "undefined" && window.innerWidth < 768 ? 1.5 : 1.75]}
+      dpr={dpr}
       gl={{
-        antialias: true,
+        // Kein Antialias auf dem Canvas: die Szene laeuft durch den
+        // EffectComposer, und dessen Ziel hat eigenes Multisampling.
+        // Das hier waere ein zweiter Multisample-Puffer, den nie jemand
+        // sieht - auf einem Retina-Display ein paar Dutzend Megabyte.
+        antialias: false,
         powerPreference: "high-performance",
         alpha: false,
         toneMapping: THREE.ACESFilmicToneMapping,
@@ -259,20 +318,31 @@ export default function BackgroundScene() {
             minimaler Farbversatz zu den Raendern hin und eine Vignette.
             Beide sind bewusst am unteren Rand der Wahrnehmbarkeit - man
             soll sie nicht sehen, sondern ihr Fehlen vermissen. */}
-        <EffectComposer>
+        {/* multisampling: der Standard des Composers ist 8. Bei DPR 1.75
+            auf einem Retina-Display ist das ein Ziel mit 2520 x 1575
+            Pixeln mal acht Samples - auf einer integrierten GPU allein
+            eine Diashow, und der Bloom glaettet die Kanten ohnehin. Zwei
+            Samples oben, keins unten. */}
+        <EffectComposer multisampling={tier === "low" ? 0 : 2}>
           <Bloom
             intensity={0.85}
             luminanceThreshold={0.62}
             luminanceSmoothing={0.35}
             mipmapBlur
           />
-          <ChromaticAberration
-            offset={CHROMATIC_OFFSET}
-            radialModulation
-            modulationOffset={0.4}
-          />
+          {/* Der Farbversatz ist ein eigener Vollbild-Pass und liegt am
+              unteren Rand der Wahrnehmbarkeit. In der niedrigen Stufe
+              ist er das Erste, das gehen darf. */}
+          {tier === "low" ? null : (
+            <ChromaticAberration
+              offset={CHROMATIC_OFFSET}
+              radialModulation
+              modulationOffset={0.4}
+            />
+          )}
           <Vignette eskil={false} offset={0.28} darkness={0.72} />
         </EffectComposer>
+        <QualityGuard />
       </Suspense>
     </Canvas>
     </>

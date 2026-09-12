@@ -183,7 +183,9 @@
     background-image:
       radial-gradient(70rem 45rem at 15% -10%, rgb(56 189 248 / 0.05), transparent 60%),
       radial-gradient(60rem 40rem at 95% 20%, rgb(168 85 247 / 0.045), transparent 60%);
-    background-attachment: fixed;
+    /* Kein background-attachment: fixed. Auf dem Mac malt der Browser
+       damit bei jedem Scrollschritt den ganzen Hintergrund neu, und der
+       Body ist hinter dem Canvas ohnehin nur beim Laden zu sehen. */
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
     /* clip statt hidden, und auf html gleich mit (siehe unten): hidden auf
@@ -293,8 +295,13 @@
      helle abdunkelt, statt alles grau zu überziehen. */
   .grain {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
-    opacity: 0.14;
+    /* Kein mix-blend-mode. Eine Blend-Ebene ueber einem WebGL-Canvas
+       zwingt den Compositor, das Canvas-Bild jeden Frame in eine
+       Zwischenflaeche zu kopieren und zu mischen - auf dem Mac und in
+       Safari waren das vier Millionen Pixel pro Frame zusaetzlich zur
+       Szene. Auf fast schwarzem Grund sieht normales Ueberlagern bei
+       halber Deckkraft praktisch gleich aus. */
+    opacity: 0.07;
   }
 
   /* --- Leuchten: nur an Kanten, nie flächig ------------------------- */

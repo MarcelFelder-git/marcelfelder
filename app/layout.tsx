@@ -71,7 +71,7 @@ export default function RootLayout({
             hinter ihr nichts mehr davon zu sehen. */}
         <div
           aria-hidden
-          className="pointer-events-none fixed inset-0 z-[2] mix-blend-screen"
+          className="pointer-events-none fixed inset-0 z-[2]"
         >
           <div className="absolute inset-0 column-grid opacity-40" />
           <div
