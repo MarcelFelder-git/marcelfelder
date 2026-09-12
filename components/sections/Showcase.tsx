@@ -353,33 +353,54 @@ function FlatList({ onPreview }: { onPreview: (p: Project) => void }) {
 function ProjectIndex() {
   return (
     <div className="relative border-y border-rule bg-paper/90">
-      <div className="px-6 py-10 sm:px-10 lg:px-16">
-        <h3 className="meta mb-5">Register, alle Projekte</h3>
+      {/* Rechts mehr Rand ab lg: dort klebt das Register der Seite, und
+          der Pfeil der dritten Spalte lag bei 1440 px darunter. */}
+      <div className="px-6 py-12 sm:px-10 lg:pl-16 lg:pr-32">
+        <h3 className="meta mb-6">Register, alle Projekte</h3>
+        {/* Dieselbe Struktur wie vorher, nur mit Luft und Bausteinen.
+            Mit 20 px Innenabstand und einem 15-px-Titel las sich das
+            Raster nach der Fahrt wie eine Notiz. Jetzt haben die Zellen
+            Platz, der Titel Gewicht, und der Bereich steht als Chips da
+            wie die Stack-Tags auf den Karten - dieselbe Sprache wie der
+            Rest der Seite, statt Klartext mit Mittelpunkten. */}
         <ul className="grid gap-px bg-rule sm:grid-cols-2 lg:grid-cols-3">
-          {PROJECTS.map((project) => (
+          {PROJECTS.map((project, i) => (
             <li key={project.id} className="bg-paper">
               <a
                 href={project.links.live ?? project.links.repo}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="group flex h-full flex-col gap-1 p-5 transition-colors hover:bg-raise"
+                // Jede zweite Zelle zieht beim Hover den Zweitakzent,
+                // damit beide Farben im Raster vorkommen, ohne dass es
+                // bunt wird.
+                data-alt={i % 2 === 1 ? "" : undefined}
+                className="group flex h-full flex-col p-7 transition-colors hover:bg-raise sm:p-8 lg:p-9"
               >
-                <span className="flex items-baseline gap-2">
-                  <span className="font-mono text-[11px] text-accent">
+                <span className="flex items-start justify-between gap-3">
+                  <span className="font-mono text-[11px] tracking-[0.08em] text-accent group-data-[alt]:group-hover:text-accent-alt">
                     {project.index}
                   </span>
-                  <span className="font-medium text-ink group-hover:text-accent">
-                    {project.title}
-                  </span>
                   <ArrowUpRight
-                    className="ml-auto size-3.5 shrink-0 text-faint transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent"
-                    strokeWidth={2}
+                    className="size-4 shrink-0 text-faint transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent group-data-[alt]:group-hover:text-accent-alt"
+                    strokeWidth={1.75}
                   />
                 </span>
-                <span className="text-[13px] leading-snug text-mute">
+                <span className="mt-4 text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">
+                  {project.title}
+                </span>
+                <span className="mt-2.5 max-w-[30ch] text-[14.5px] leading-relaxed text-mute">
                   {project.tagline}
                 </span>
-                <span className="meta mt-1">{project.scope}</span>
+                <span className="mt-auto flex flex-wrap gap-2 pt-5">
+                  {project.scope.split(" · ").map((chip) => (
+                    <span
+                      key={chip}
+                      className="border border-rule px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.08em] text-mute transition-colors group-hover:border-accent/40 group-hover:text-ink group-data-[alt]:group-hover:border-accent-alt/40"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </span>
               </a>
             </li>
           ))}
