@@ -6,6 +6,8 @@ import { AmbientGlow } from "@/components/audio/AmbientGlow";
 import { AudioBadge } from "@/components/audio/AudioBadge";
 import { BootSequence } from "@/components/layout/BootSequence";
 import { Hud, Reticle } from "@/components/layout/Hud";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SITE_URL } from "@/lib/siteUrl";
 
@@ -100,6 +102,14 @@ export default function RootLayout({
         <AudioBadge />
         <CommandPalette />
         <BootSequence />
+
+        {/* Beide cookielos, deshalb ohne Banner. Analytics zaehlt Besuche
+            und Herkunft; Speed Insights liefert Core Web Vitals von echten
+            Geraeten, nach Browser aufgeschluesselt - die einzige Messung,
+            die sagt, ob die Seite auf einem fremden MacBook laeuft, ohne
+            eines zu haben. Beide laden erst nach dem Inhalt. */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
