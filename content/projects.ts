@@ -247,3 +247,83 @@ export const PROJECTS: Project[] = [
     },
   },
 ];
+
+/* ================================================================== */
+/* Englisch                                                            */
+/* ================================================================== */
+
+/**
+ * Nur die Texte, nicht die Daten.
+ *
+ * Links, Bilder, Stack und Jahr gibt es einmal, oben in PROJECTS. Hier
+ * stehen die englischen Fassungen der Saetze, und `projectsFor` legt
+ * sie ueber die deutschen Eintraege. So kann eine Adresse nicht in
+ * einer Sprache stimmen und in der anderen veralten.
+ */
+type ProjectText = Pick<Project, "tagline" | "body" | "detail" | "scope"> & {
+  alt: string;
+};
+
+const EN: Record<string, ProjectText> = {
+  solarsurge: {
+    tagline:
+      "Cools the flat down while the sun is still delivering. Not in the evening, when power costs the most.",
+    body: "Dashboard and mobile app for a climate control that runs on solar surplus. If there's surplus at midday and it's going to get hot later, the flat gets pre-cooled on its own power. The evening stays comfortable, without expensive grid power at peak time.",
+    detail:
+      "The shared Reading type from packages/db travels via import type all the way into the mobile app. If the schema changes, the compiler complains, not the browser.",
+    scope: "Fullstack · Cloud · Mobile",
+    alt: "SolarSurge dashboard with live metrics, rule conditions and history chart",
+  },
+  aurora: {
+    tagline: "Cycle tracking for two: one person tracks, one person supports.",
+    body: "A PWA for endometriosis pain management and anti-inflammatory nutrition. Not a fertility calendar. Two views, synced live: one for logging symptoms, one for the partner. That one shows what's going on right now and what has helped so far.",
+    detail:
+      "Row Level Security is the real security boundary, not the frontend: every table is scoped by couple_id and checked against the user's own profile via SECURITY DEFINER.",
+    scope: "Fullstack · Realtime · PWA",
+    alt: "Aurora app: cycle overview with symptom logging",
+  },
+  latent: {
+    tagline:
+      "A darkroom in the browser: drop in a photo, pick an emulsion, watch it develop.",
+    body: "Film emulation that runs entirely on the GPU: characteristic curves per colour layer, wavelength-dependent halation, grain that reacts to exposure, scanner profiles. Nothing gets uploaded, there is no backend. The app installs and works offline, because there's nothing to be cut off from.",
+    detail:
+      "The order of the five GPU passes is what matters. Scattered light is added to the exposure and only then runs through the characteristic curve, the way light scatters in the emulsion before development. Put it on the finished image instead and you can tell it's a filter right away.",
+    scope: "Frontend · GPU · Colour science",
+    alt: "Latent: developed photo with characteristic curve, histogram and film selection",
+  },
+  aufmischen: {
+    tagline:
+      "Portfolio engine for a music producer. She keeps the content up to date herself.",
+    body: "Commissioned work for a producer based in Frankfurt and Berlin. Headless architecture: music, audio references, tour dates and bio live in a CMS, the frontend serves them fast.",
+    detail:
+      "Sanity as a headless CMS separates editing from presentation: she changes tour dates without anyone needing to deploy.",
+    scope: "Commissioned · Headless CMS",
+    alt: "AUFMISCHEN artist portfolio, start view",
+  },
+  "nxt-hud": {
+    tagline:
+      "Search, filter and save games. Plus a mini game that tests what you know.",
+    body: "Web app for discovering video games, reading live from the RAWG API. Search, filters, detail views and a personal watchlist with login. 'Guess the Game' came in as a bonus.",
+    detail:
+      "Auth with NextAuth and Prisma, so the watchlist belongs to a real account instead of living in LocalStorage.",
+    scope: "Frontend · API integration · Auth",
+    alt: "NXT VideoGame HUD: game catalogue with filters and detail view",
+  },
+  "art-robbery": {
+    tagline: "Browser game: an art heist where every museum hides a forgery.",
+    body: "You're a master thief going after the world's most famous paintings. In every museum, a forgery hangs next to the original. Pick right, dodge security, get out.",
+    detail:
+      "Game state via useContext instead of a state library: at this size, an extra dependency is just ballast.",
+    scope: "Frontend · Game logic",
+    alt: "Art Robbery: museum view with painting selection",
+  },
+};
+
+export function projectsFor(locale: "de" | "en"): Project[] {
+  if (locale === "de") return PROJECTS;
+  return PROJECTS.map((p) => {
+    const t = EN[p.id];
+    if (!t) return p;
+    return { ...p, ...t, media: { ...p.media, alt: t.alt } };
+  });
+}

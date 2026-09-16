@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Power, SlidersHorizontal } from "lucide-react";
 import { FADERS, useAudioStore } from "@/lib/store/useAudioStore";
 import { Fader } from "./Fader";
+import { useT } from "@/lib/content";
 import { SpectrumMeter } from "./SpectrumMeter";
 import { cn } from "@/lib/utils";
 import { EASE_OUT } from "@/lib/motion";
@@ -29,6 +30,7 @@ import { EASE_OUT } from "@/lib/motion";
  * zuschuetten.
  */
 export function ControlBar() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const isRunning = useAudioStore((s) => s.isRunning);
   const toggle = useAudioStore((s) => s.toggle);
@@ -78,7 +80,7 @@ export function ControlBar() {
             )}
           >
             <Power className="size-4" strokeWidth={2} />
-            {isRunning ? "Engine läuft" : "Audio starten"}
+            {isRunning ? t.audio.running : t.audio.start}
           </button>
 
           <div

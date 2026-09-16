@@ -6,6 +6,9 @@ import { sceneState } from "@/lib/scene/state";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { useModifierKey } from "@/hooks/useModifierKey";
 import { usePalette } from "@/lib/store/usePalette";
+import { useT } from "@/lib/content";
+import { localePath, useLocale } from "@/lib/i18n";
+import type { UI } from "@/content/ui";
 import { cn } from "@/lib/utils";
 import { CHAPTERS as CONTENT_CHAPTERS } from "@/content/resume";
 
@@ -23,9 +26,13 @@ import { CHAPTERS as CONTENT_CHAPTERS } from "@/content/resume";
  * Inhalt, damit das Register nicht auseinanderlaeuft, wenn sich dort
  * etwas aendert.
  */
-const NAV_SECTIONS: { id: string; label: string; covers: string[] }[] = [
-  { id: "start", label: "Start", covers: ["start"] },
-  { id: "projects", label: "Projekte", covers: ["projects"] },
+const NAV_SECTIONS: {
+  id: string;
+  label: keyof UI["nav"];
+  covers: string[];
+}[] = [
+  { id: "start", label: "start", covers: ["start"] },
+  { id: "projects", label: "projects", covers: ["projects"] },
   {
     // Vier Abschnitte, ein Eintrag.
     //
@@ -35,7 +42,7 @@ const NAV_SECTIONS: { id: string; label: string; covers: string[] }[] = [
     // ausfuehren. Der Sprung geht auf den Anfang dieser Strecke,
     // markiert wird sie auf ihrer ganzen Laenge.
     id: "fundament",
-    label: "Profil",
+    label: "profile",
     covers: [
       "fundament",
       ...[...CONTENT_CHAPTERS]
@@ -43,7 +50,7 @@ const NAV_SECTIONS: { id: string; label: string; covers: string[] }[] = [
         .map((c) => c.id),
     ],
   },
-  { id: "kontakt", label: "Kontakt", covers: ["kontakt"] },
+  { id: "kontakt", label: "contact", covers: ["kontakt"] },
 ];
 
 /**
@@ -117,6 +124,9 @@ export function Hud() {
   const readoutRef = useRef<HTMLSpanElement>(null);
   const modifier = useModifierKey();
   const togglePalette = usePalette((s) => s.toggle);
+  const t = useT();
+  const locale = useLocale();
+  const other = locale === "de" ? "en" : "de";
 
   const activeSection = useActiveSection();
 
@@ -169,7 +179,7 @@ export function Hud() {
         </a>
         <div className="flex items-center gap-4">
           <span className="meta hidden sm:inline">
-            SCROLL <span ref={readoutRef}>000.0%</span>
+            {t.nav.scroll} <span ref={readoutRef}>000.0%</span>
           </span>
           {/* Ein Schalter, kein Schild: oeffnet die Palette auch ohne
               Tastatur. Beschriftet mit der Taste dieses Rechners, und
@@ -177,15 +187,30 @@ export function Hud() {
           <button
             type="button"
             onClick={togglePalette}
-            aria-label="Befehlspalette öffnen"
+            aria-label={t.nav.paletteOpen}
             className="pointer-events-auto border border-rule bg-paper px-2 py-1 font-mono text-[10px] text-mute transition-colors hover:border-ink hover:text-ink"
           >
             {modifier ? (
-              <kbd className="font-mono">{modifier} K</kbd>
+              <kbd className="font-mono">
+                {modifier === "Strg" && locale === "en" ? "Ctrl" : modifier} K
+              </kbd>
             ) : (
               <span className="opacity-0">Strg K</span>
             )}
           </button>
+          {/* Sprachwechsel als echter Link auf die andere Adresse. Kein
+              Schalter im Zustand: die englische Seite muss unter /en
+              verlinkbar sein, sonst nuetzt sie in einer englischen
+              Bewerbung nichts. */}
+          <a
+            href={localePath(other)}
+            hrefLang={other}
+            lang={other}
+            aria-label={t.nav.switchTo}
+            className="pointer-events-auto border border-rule bg-paper px-2 py-1 font-mono text-[10px] text-mute transition-colors hover:border-ink hover:text-ink"
+          >
+            {t.nav.switchShort}
+          </a>
         </div>
       </header>
 
@@ -196,7 +221,7 @@ export function Hud() {
           Tab oeffnen und kopieren, und sie funktionieren auch, wenn das
           JavaScript noch nicht geladen ist. */}
       <nav
-        aria-label="Seitenregister"
+        aria-label={t.nav.railLabel}
         // Eigene Kennung, weil das Register auf halber Hoehe klebt und
         // die Kopfzeile oben: am Seitenende liegt hinter dem einen
         // laengst Helles, waehrend ueber der anderen noch Dunkles steht.
@@ -221,7 +246,7 @@ export function Hud() {
                   current ? "text-ink" : "text-faint group-hover:text-mute",
                 )}
               >
-                {section.label}
+                {t.nav[section.label]}
               </span>
               <span
                 className={cn(

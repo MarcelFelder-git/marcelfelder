@@ -4,7 +4,8 @@ import { Showcase } from "@/components/sections/Showcase";
 import { ChapterSection } from "@/components/sections/ChapterSection";
 import { Outro } from "@/components/sections/Closing";
 import { ControlBar } from "@/components/audio/ControlBar";
-import { CHAPTERS } from "@/content/resume";
+import { contentFor } from "@/lib/content-data";
+import { isLocale } from "@/lib/locale";
 
 /**
  * Server Component.
@@ -18,7 +19,13 @@ import { CHAPTERS } from "@/content/resume";
  * Jedes Kapitel steuert ueber `data-chapter` das Modell im Hintergrund -
  * die DOM-Reihenfolge ist damit zugleich die Dramaturgie der 3D-Szene.
  */
-export default function Home() {
+export default async function Home({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const { CHAPTERS } = contentFor(isLocale(locale) ? locale : "de");
   // Kapitel nach ihrer Nummer, nicht nach Position in der Datei: so bleibt
   // die inhaltliche Gruppierung in content/resume.ts unabhaengig von der
   // Reihenfolge auf der Seite.

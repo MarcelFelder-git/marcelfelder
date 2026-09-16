@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePalette } from "@/lib/store/usePalette";
 import { Command } from "cmdk";
 import {
@@ -22,9 +22,7 @@ import {
 } from "lucide-react";
 import { useViewportMode } from "@/lib/store/useViewportMode";
 import { useAudioStore } from "@/lib/store/useAudioStore";
-import { CHAPTERS, RESUME_LINES, STACK_MARQUEE } from "@/content/resume";
-import { PROJECTS } from "@/content/projects";
-import { CONTACT_EMAIL, CV_PATH, SOCIALS } from "@/content/site";
+import { useContent, type Content } from "@/lib/content";
 
 /**
  * Dev Command Palette (Cmd/Ctrl + K).
@@ -74,13 +72,17 @@ function jump(id: string, block: ScrollLogicalPosition = "start") {
  * Reihenfolge der Gruppen ist die Reihenfolge der Seite: erst wohin,
  * dann was hoeren, dann was nachlesen.
  */
-const COMMANDS: Cmd[] = [
+function buildCommands(c: Content): Cmd[] {
+  const { PROJECTS, CHAPTERS, RESUME_LINES, STACK_MARQUEE, CONTACT_EMAIL, SOCIALS, CV_PATH, CV_FILE } = c;
+  const h = c.t.palette.hints;
+  const g = c.t.palette.groups;
+  return [
   // --- Navigation ------------------------------------------------
   {
     id: "goto start",
     label: "goto start",
-    hint: "Zum Anfang",
-    group: "Navigation",
+    hint: h.start,
+    group: g.nav,
     Icon: Home,
     run: (c) => {
       jump("start");
@@ -90,8 +92,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "goto projects",
     label: "goto projects",
-    hint: "Sechs Projekte, Fahrt durch den Korridor",
-    group: "Navigation",
+    hint: h.projects,
+    group: g.nav,
     Icon: FolderOpen,
     run: (c) => {
       jump("projects");
@@ -101,8 +103,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "goto profile",
     label: "goto profile",
-    hint: "Fundament, Werdegang, Stack",
-    group: "Navigation",
+    hint: h.profile,
+    group: g.nav,
     Icon: User,
     run: (c) => {
       jump("fundament");
@@ -112,8 +114,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "goto code",
     label: "goto code",
-    hint: "Kapitel 01 · Komponenten-Matrix",
-    group: "Navigation",
+    hint: h.code,
+    group: g.nav,
     Icon: Braces,
     run: (c) => {
       c.setMode("code");
@@ -123,8 +125,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "goto signal",
     label: "goto signal",
-    hint: "Kapitel 02 · Chladni-Platte",
-    group: "Navigation",
+    hint: h.signal,
+    group: g.nav,
     Icon: AudioWaveform,
     run: (c) => {
       c.setMode("signal");
@@ -134,8 +136,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "goto structure",
     label: "goto structure",
-    hint: "Kapitel 03 · Raumfachwerk",
-    group: "Navigation",
+    hint: h.structure,
+    group: g.nav,
     Icon: Boxes,
     run: (c) => {
       c.setMode("structure");
@@ -145,8 +147,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "goto contact",
     label: "goto contact",
-    hint: "Zum Kontakt",
-    group: "Navigation",
+    hint: h.contact,
+    group: g.nav,
     Icon: ArrowDownToLine,
     run: (c) => {
       jump("kontakt", "center");
@@ -158,8 +160,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "play audio",
     label: "play audio",
-    hint: "Engine starten und zur Platte springen",
-    group: "Audio",
+    hint: h.play,
+    group: g.audio,
     Icon: Play,
     run: (c) => {
       c.startAudio();
@@ -170,8 +172,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "stop audio",
     label: "stop audio",
-    hint: "Engine anhalten",
-    group: "Audio",
+    hint: h.stop,
+    group: g.audio,
     Icon: Square,
     run: (c) => {
       c.stopAudio();
@@ -183,16 +185,16 @@ const COMMANDS: Cmd[] = [
   {
     id: "cat resume",
     label: "cat resume",
-    hint: "Kurzprofil ausgeben",
-    group: "System",
+    hint: h.resume,
+    group: g.system,
     Icon: FileText,
     run: (c) => c.print(RESUME_LINES),
   },
   {
     id: "ls projects",
     label: "ls projects",
-    hint: "Alle Projekte mit Live-Adresse",
-    group: "System",
+    hint: h.projectsList,
+    group: g.system,
     Icon: FolderOpen,
     run: (c) =>
       c.print([
@@ -207,8 +209,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "view stack",
     label: "view stack",
-    hint: "Technologie-Stack ausgeben",
-    group: "System",
+    hint: h.stack,
+    group: g.system,
     Icon: Layers,
     run: (c) =>
       c.print([
@@ -220,8 +222,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "cat chapters",
     label: "cat chapters",
-    hint: "Kapitelübersicht",
-    group: "System",
+    hint: h.chapters,
+    group: g.system,
     Icon: MessageSquare,
     run: (c) =>
       c.print([
@@ -235,13 +237,13 @@ const COMMANDS: Cmd[] = [
   {
     id: "download cv",
     label: "download cv",
-    hint: "Lebenslauf als PDF",
-    group: "System",
+    hint: h.cv,
+    group: g.system,
     Icon: FileText,
     run: (c) => {
       const a = document.createElement("a");
       a.href = CV_PATH;
-      a.download = "Marcel-Felder-Lebenslauf.pdf";
+      a.download = CV_FILE;
       a.click();
       c.close();
     },
@@ -249,8 +251,8 @@ const COMMANDS: Cmd[] = [
   {
     id: "copy email",
     label: "copy email",
-    hint: "Kontaktadresse kopieren",
-    group: "System",
+    hint: h.email,
+    group: g.system,
     Icon: Mail,
     run: (c) => {
       void navigator.clipboard?.writeText(CONTACT_EMAIL);
@@ -262,8 +264,8 @@ const COMMANDS: Cmd[] = [
     (social): Cmd => ({
       id: `open ${social.label.toLowerCase()}`,
       label: `open ${social.label.toLowerCase()}`,
-      hint: `${social.label} in neuem Tab`,
-      group: "System",
+      hint: h.open(social.label),
+      group: g.system,
       Icon: ExternalLink,
       run: (c) => {
         window.open(social.href, "_blank", "noopener,noreferrer");
@@ -271,9 +273,8 @@ const COMMANDS: Cmd[] = [
       },
     }),
   ),
-];
-
-const GROUPS = [...new Set(COMMANDS.map((c) => c.group))];
+  ];
+}
 
 export function CommandPalette() {
   // Im Store statt lokal, damit die Kopfzeile sie ebenfalls oeffnen
@@ -286,6 +287,9 @@ export function CommandPalette() {
   const setMode = useViewportMode((s) => s.setMode);
   const start = useAudioStore((s) => s.start);
   const stop = useAudioStore((s) => s.stop);
+  const content = useContent();
+  const COMMANDS = useMemo(() => buildCommands(content), [content]);
+  const GROUPS = useMemo(() => [...new Set(COMMANDS.map((c) => c.group))], [COMMANDS]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -341,7 +345,7 @@ export function CommandPalette() {
               wuerde cmdk die Enter-Auswahl nicht mehr sehen. */}
           <Command.Input
             onKeyDown={handleEscape}
-            placeholder={output ? "Escape für zurück" : "Befehl eingeben…"}
+            placeholder={output ? content.t.palette.escBack : content.t.palette.placeholder}
             readOnly={!!output}
             className="w-full bg-transparent py-3.5 font-mono text-sm text-ink outline-none placeholder:text-faint"
           />

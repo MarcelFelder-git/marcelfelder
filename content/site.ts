@@ -22,6 +22,8 @@ export const CONTACT_EMAIL = "marcel.felder.bln@gmail.com";
  * nur das, was ohnehin auf der Seite steht.
  */
 export const CV_PATH = "/lebenslauf/Marcel-Felder-Lebenslauf.pdf";
+export const CV_PATH_EN = "/lebenslauf/Marcel-Felder-CV-EN.pdf";
+export const CV_FILE = { de: "Marcel-Felder-Lebenslauf.pdf", en: "Marcel-Felder-CV-EN.pdf" } as const;
 
 /**
  * Die nuechterne Zeile unter der Headline.
@@ -44,6 +46,19 @@ export const CONTACT_FACTS = {
   /** z. B. "Frankfurt am Main, Umzug moeglich" */
   location: "Köln",
   availability: "Vollzeit, Köln oder remote, ab sofort",
+} as const;
+
+export const HERO_FACTS_EN = [
+  "Frontend developer",
+  "React · Next.js · TypeScript",
+  "Full-time",
+  "Cologne or remote",
+  "available now",
+] as const;
+
+export const CONTACT_FACTS_EN = {
+  location: "Cologne",
+  availability: "Full-time, Cologne or remote, available now",
 } as const;
 
 /** Eintraege ohne `href` werden nicht gerendert. */

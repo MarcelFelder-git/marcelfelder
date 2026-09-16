@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Power } from "lucide-react";
 import { useAudioStore } from "@/lib/store/useAudioStore";
 import { useViewportMode } from "@/lib/store/useViewportMode";
+import { useT } from "@/lib/content";
 import { EASE_OUT } from "@/lib/motion";
 
 /**
@@ -24,6 +25,7 @@ export function AudioBadge() {
   const isRunning = useAudioStore((s) => s.isRunning);
   const toggle = useAudioStore((s) => s.toggle);
   const mode = useViewportMode((s) => s.mode);
+  const t = useT();
 
   const visible = isRunning && mode !== "signal";
 
@@ -46,7 +48,7 @@ export function AudioBadge() {
               className="size-1.5 animate-pulse rounded-full bg-accent"
             />
             <Power className="size-4" strokeWidth={2} />
-            Ton aus
+            {t.audio.off}
           </button>
         </motion.div>
       )}

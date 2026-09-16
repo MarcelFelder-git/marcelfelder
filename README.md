@@ -30,6 +30,18 @@ der Dev-Server dabei nicht laufen sollte: beide schreiben in `.next`.
 | State | Zustand für alles, was ein Re-Render braucht; ein mutierbares Modul für alles, was pro Frame läuft |
 | Motion | Framer Motion für den DOM, `useFrame` für die Szene |
 
+## Zwei Sprachen
+
+Deutsch liegt auf `/`, Englisch auf `/en`. Kein Umschalter im Zustand,
+sondern zwei Adressen: ein Link in einer englischen Bewerbung muss
+englisch aufgehen. Die Sprache kommt aus dem Routensegment
+(`app/[locale]`), die Middleware schreibt `/` still auf `/de` um. Inhalte
+liegen zweisprachig in `content/` (`resume.ts` und `resume.en.ts`,
+englische Projekttexte in `projects.ts`, Beschriftungen in `ui.ts`);
+die Komponenten holen sich ihre Sprache ueber `useContent()`. Beide
+Seiten verweisen per `hreflang` aufeinander. Keine Umleitung nach
+Browser-Sprache, mit Absicht.
+
 ## Aufbau der Seite
 
 1. **Hero.** Ein Abhängigkeitsgraph aus 58 Knoten, mit Licht, das durch die
@@ -90,7 +102,8 @@ allen Abschnitten, Audio starten und stoppen, `cat resume`, `ls projects`,
 ## Projektstruktur
 
 ```
-app/                 Layout, Seite, Vorschaubild, Icon, robots, sitemap, /api/profile
+app/[locale]/        Layout, Seite, Vorschaubild je Sprache
+app/                 Icon, robots, sitemap, /api/profile; middleware.ts haelt / auf Deutsch
 assets/fonts/        Space Grotesk Bold fuer Vorschaubild und Icon (OFL)
 components/
   canvas/            Alles im <Canvas>: Szene, Rig, ScrollDriver, modes/
@@ -100,7 +113,7 @@ components/
   layout/            HUD, Register, Boot-Sequenz
   motion/            Reveal, SplitHeading, Scramble, Counter, Parallax, Marquee
   projects/          Live-Vorschau der Projekte
-content/             Projekte, Lebenslauf, Kontakt. Typisiert, nichts erfunden.
+content/             Projekte, Lebenslauf, Kontakt, Beschriftungen, je Sprache. Typisiert, nichts erfunden.
 lib/
   audio/engine.ts    Der Web-Audio-Graph
   scene/             Gewichte, Tempo, Palette, Tunnelgeometrie, Eintrittsrichtungen

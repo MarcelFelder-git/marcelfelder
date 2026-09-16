@@ -3,8 +3,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowDown, FileDown } from "lucide-react";
-import { PROFILE } from "@/content/resume";
-import { CV_PATH, HERO_FACTS } from "@/content/site";
+import { useContent } from "@/lib/content";
 import { SplitHeading } from "@/components/motion/primitives";
 import { EASE_OUT } from "@/lib/motion";
 
@@ -20,6 +19,7 @@ import { EASE_OUT } from "@/lib/motion";
  * wissen will. Inhalt in content/site.ts.
  */
 export function Hero() {
+  const { PROFILE, HERO_FACTS, CV_PATH, CV_FILE, t } = useContent();
 
   // Der Hero faehrt beim Scrollen langsamer weg als die Seite und blendet
   // aus - dadurch uebernimmt die 3D-Szene die Buehne, statt dass Text und
@@ -88,7 +88,7 @@ export function Hero() {
           // einen Sichtbereichs-Ausloeser warten. Siehe `immediate`.
           immediate
           delay={0.25}
-          highlight={["hören", "kann."]}
+          highlight={[...t.hero.highlight]}
           className="chromatic mt-7 text-balance text-[clamp(2.6rem,min(8vw,11.5vh),7rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
         />
 
@@ -128,7 +128,7 @@ export function Hero() {
             href="#projects"
             className="group flex items-center gap-2 bg-accent px-5 py-3 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
           >
-            Projekte ansehen
+            {t.hero.cta}
             <ArrowDown
               className="size-4 transition-transform group-hover:translate-y-0.5"
               strokeWidth={2}
@@ -139,10 +139,10 @@ export function Hero() {
               Recruiter im Gutachten hat genau das gesucht. */}
           <a
             href={CV_PATH}
-            download="Marcel-Felder-Lebenslauf.pdf"
+            download={CV_FILE}
             className="flex items-center gap-2 border border-rule px-5 py-3 text-sm text-ink transition-colors hover:border-ink"
           >
-            Lebenslauf
+            {t.hero.cv}
             <FileDown className="size-4" strokeWidth={1.75} />
           </a>
         </motion.div>
@@ -160,13 +160,13 @@ export function Hero() {
             className="size-4 animate-bounce text-accent"
             strokeWidth={2}
           />
-          <span className="meta">Scrollen bewegt die Kamera</span>
+          <span className="meta">{t.hero.footLeft}</span>
         </div>
 
         <span className="meta hidden text-right sm:block">
-          Signale laufen
+          {t.hero.footRight[0]}
           <br />
-          durch den Graphen
+          {t.hero.footRight[1]}
         </span>
       </motion.div>
     </section>

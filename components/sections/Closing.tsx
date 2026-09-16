@@ -3,8 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowUpRight, FileDown } from "lucide-react";
 import { Reveal, SplitHeading } from "@/components/motion/primitives";
-import { CHAPTERS } from "@/content/resume";
-import { CONTACT_EMAIL, CONTACT_FACTS, CV_PATH, SOCIALS } from "@/content/site";
+import { useContent } from "@/lib/content";
 import { EASE_OUT } from "@/lib/motion";
 
 /**
@@ -12,6 +11,8 @@ import { EASE_OUT } from "@/lib/motion";
  * hierher gescrollt hat, soll nicht nach einem Kontaktformular suchen.
  */
 export function Outro() {
+  const { CHAPTERS, CONTACT_EMAIL, CONTACT_FACTS, CV_PATH, CV_FILE, SOCIALS, t } =
+    useContent();
   return (
     <footer
       id="kontakt"
@@ -31,16 +32,16 @@ export function Outro() {
       />
 
       <div className="flex items-baseline gap-4 border-t border-rule pt-5">
-        <p className="meta-accent shrink-0">Kontakt</p>
+        <p className="meta-accent shrink-0">{t.closing.threshold}</p>
         <span aria-hidden className="h-px flex-1 bg-rule-soft" />
       </div>
 
       <SplitHeading
         as="h2"
         id="outro-heading"
-        text="Reden wir über das nächste System."
+        text={t.closing.heading}
         className="chromatic mt-10 max-w-3xl text-balance text-[clamp(2rem,5vw,4.2rem)] font-semibold leading-[1.02] tracking-[-0.03em]"
-        highlight={["System."]}
+        highlight={[...t.closing.highlight]}
       />
 
       <Reveal delay={0.1}>
@@ -69,7 +70,7 @@ export function Outro() {
           <dl className="mt-10 flex flex-col gap-x-12 gap-y-2 sm:flex-row">
             {CONTACT_FACTS.location && (
               <div className="flex items-baseline gap-3">
-                <dt className="meta">Standort</dt>
+                <dt className="meta">{t.closing.location}</dt>
                 <dd className="text-[15px] text-mute">
                   {CONTACT_FACTS.location}
                 </dd>
@@ -77,7 +78,7 @@ export function Outro() {
             )}
             {CONTACT_FACTS.availability && (
               <div className="flex items-baseline gap-3">
-                <dt className="meta">Verfügbar</dt>
+                <dt className="meta">{t.closing.available}</dt>
                 <dd className="text-[15px] text-mute">
                   {CONTACT_FACTS.availability}
                 </dd>
@@ -130,10 +131,10 @@ export function Outro() {
               weiterleitet. GitHub und LinkedIn sind Nachschlagewerke. */}
           <a
             href={CV_PATH}
-            download="Marcel-Felder-Lebenslauf.pdf"
+            download={CV_FILE}
             className="flex items-center gap-2 bg-ink px-5 py-3 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
           >
-            Lebenslauf (PDF)
+            {t.closing.cv}
             <FileDown className="size-4" strokeWidth={1.75} />
           </a>
           {SOCIALS.filter((s) => s.href).map((s) => (
@@ -153,12 +154,10 @@ export function Outro() {
 
       <div className="mt-20 flex flex-col gap-4 border-t border-rule/70 pt-8 sm:flex-row sm:items-center sm:justify-between">
         <span className="meta">
-          © {new Date().getFullYear()} Marcel Felder. Gebaut mit Next.js,
-          Three.js und der Web Audio API, im Pair-Programming mit Claude
-          Code.
+          © {new Date().getFullYear()} Marcel Felder. {t.closing.footer}
         </span>
         <a href="#top" className="meta transition-colors hover:text-accent">
-          Zurück nach oben
+          {t.closing.top}
         </a>
       </div>
     </footer>

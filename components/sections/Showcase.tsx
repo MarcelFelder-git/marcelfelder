@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Code2, Play, SquareArrowOutUpRight } from "lucide-react";
-import { PROJECTS, type Project } from "@/content/projects";
+import { type Project } from "@/content/projects";
+import { useContent } from "@/lib/content";
 import { Reveal } from "@/components/motion/primitives";
 import { GlitchText } from "@/components/motion/GlitchText";
 import { LivePreview } from "@/components/projects/LivePreview";
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
  * koennte man per Tastatur nicht an alle Projekte kommen.
  */
 export function Showcase() {
+  const { PROJECTS, t } = useContent();
   const reduced = usePrefersReducedMotion();
   const [preview, setPreview] = useState<Project | null>(null);
 
@@ -56,10 +58,10 @@ export function Showcase() {
           className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,rgba(var(--ground-rgb),0.95)_30%,rgba(var(--ground-rgb),0.95))]"
         />
         <div className="flex items-baseline gap-4 border-t border-rule pt-5">
-          <p className="meta-accent shrink-0">Projekte</p>
+          <p className="meta-accent shrink-0">{t.showcase.label}</p>
           <span aria-hidden className="h-px flex-1 bg-rule-soft" />
           <p className="meta shrink-0">
-            {String(PROJECTS.length).padStart(2, "0")} Stück · alle im Repo
+            {t.showcase.count(String(PROJECTS.length).padStart(2, "0"))}
           </p>
         </div>
         {/* Wieder mit Gewicht.
@@ -72,12 +74,14 @@ export function Showcase() {
           id="projects-heading"
           className="mt-6 max-w-2xl text-balance text-[clamp(1.9rem,3.4vw,2.9rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-ink"
         >
-          Gebaut, deployt, <span className="text-accent">nachlesbar</span>.
+          {t.showcase.heading.split(t.showcase.highlight)[0]}
+          <span className="text-accent">{t.showcase.highlight}</span>
+          {t.showcase.heading.split(t.showcase.highlight)[1]}
         </h2>
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-mute">
           {reduced
-            ? "Jede Karte verlinkt Live-Deployment und Quellcode."
-            : "Scrollen fährt durch den Korridor. Jedes Gerät an der Wand ist ein Projekt."}
+            ? t.showcase.subReduced
+            : t.showcase.sub}
         </p>
       </header>
 
@@ -105,6 +109,7 @@ export function Showcase() {
 /* ================================================================== */
 
 function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
+  const { PROJECTS, t } = useContent();
   const ref = useRef<HTMLDivElement>(null);
   const [station, setStation] = useState(0);
   // Wie nah man der aktuellen Station ist - treibt die Ankunftsanzeige.
@@ -206,7 +211,7 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
                 arrival > 0.55 ? "text-accent" : "text-faint",
               )}
             >
-              Station {String(station + 1).padStart(2, "0")} /{" "}
+              {t.showcase.station} {String(station + 1).padStart(2, "0")} /{" "}
               {String(PROJECTS.length).padStart(2, "0")}
             </span>
             <span className="relative h-px flex-1 bg-rule">
@@ -221,7 +226,7 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
                 arrival > 0.55 ? "text-accent opacity-100" : "opacity-0",
               )}
             >
-              angekommen
+              {t.showcase.arrived}
             </span>
           </div>
 
@@ -286,6 +291,7 @@ function TunnelRide({ onPreview }: { onPreview: (p: Project) => void }) {
 /* ================================================================== */
 
 function FlatList({ onPreview }: { onPreview: (p: Project) => void }) {
+  const { PROJECTS } = useContent();
   return (
     <div className="flex flex-col gap-px bg-rule">
       {PROJECTS.map((project, i) => (
@@ -351,12 +357,13 @@ function FlatList({ onPreview }: { onPreview: (p: Project) => void }) {
 /* ================================================================== */
 
 function ProjectIndex() {
+  const { PROJECTS, t } = useContent();
   return (
     <div className="relative border-y border-rule bg-paper/90">
       {/* Rechts mehr Rand ab lg: dort klebt das Register der Seite, und
           der Pfeil der dritten Spalte lag bei 1440 px darunter. */}
       <div className="px-6 py-12 sm:px-10 lg:pl-16 lg:pr-32">
-        <h3 className="meta mb-6">Register, alle Projekte</h3>
+        <h3 className="meta mb-6">{t.showcase.register}</h3>
         {/* Dieselbe Struktur wie vorher, nur mit Luft und Bausteinen.
             Mit 20 px Innenabstand und einem 15-px-Titel las sich das
             Raster nach der Fahrt wie eine Notiz. Jetzt haben die Zellen
@@ -419,6 +426,7 @@ function ProjectLinks({
   project: Project;
   onPreview?: (p: Project) => void;
 }) {
+  const { t } = useContent();
   return (
     <div className="mt-7 flex flex-wrap items-center gap-3">
       {project.links.live && onPreview && (
@@ -426,7 +434,7 @@ function ProjectLinks({
           onClick={() => onPreview(project)}
           className="group flex items-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-paper transition-transform hover:-translate-y-px"
         >
-          Live-Vorschau
+          {t.showcase.live}
           <SquareArrowOutUpRight className="size-4" strokeWidth={2} />
         </button>
       )}
@@ -442,14 +450,14 @@ function ProjectLinks({
         className="invert-hover flex items-center gap-2 border border-rule px-4 py-2.5 text-sm text-mute"
       >
         <Code2 className="size-4" strokeWidth={1.75} />
-        Quellcode
+        {t.showcase.source}
       </a>
       {!project.links.live && (
-        <span className="meta">kein öffentliches Deployment</span>
+        <span className="meta">{t.showcase.noDeploy}</span>
       )}
       {project.aiAssisted && (
         <span className="meta w-full pt-1">
-          Entstanden im KI-Pair-Programming, Architektur von mir
+          {t.showcase.ai}
         </span>
       )}
     </div>
@@ -461,6 +469,7 @@ function ProjectLinks({
  * Bei vorhandenem Video übernimmt es bei Hover oder Fokus das Standbild.
  */
 function ProjectMediaFrame({ project }: { project: Project }) {
+  const { t } = useContent();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const reduced = usePrefersReducedMotion();
@@ -523,7 +532,7 @@ function ProjectMediaFrame({ project }: { project: Project }) {
           playsInline
           preload="none"
           poster={project.media.image}
-          aria-label={`Videovorschau: ${project.title}`}
+          aria-label={`${t.showcase.videoAlt}${project.title}`}
           className={cn(
             "absolute inset-0 size-full object-cover object-left-top transition-opacity duration-500",
             playing ? "opacity-100" : "opacity-0",
@@ -558,7 +567,7 @@ function ProjectMediaFrame({ project }: { project: Project }) {
           className="pointer-events-none absolute bottom-4 left-4 flex items-center gap-2 bg-paper/85 px-2.5 py-1.5"
         >
           <Play className="size-3 text-accent" strokeWidth={2.5} />
-          <span className="meta">Hover für Loop</span>
+          <span className="meta">{t.showcase.hoverLoop}</span>
         </motion.div>
       )}
     </div>

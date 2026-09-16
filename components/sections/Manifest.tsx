@@ -2,12 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import {
-  MANIFEST,
-  STACK_MARQUEE,
-  STACK_MARQUEE_B,
-  VITA,
-} from "@/content/resume";
+import { useContent } from "@/lib/content";
 import { Marquee, Reveal } from "@/components/motion/primitives";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
@@ -35,6 +30,7 @@ import { cn } from "@/lib/utils";
  * nicht gelesen.
  */
 export function Manifest() {
+  const { MANIFEST, STACK_MARQUEE, STACK_MARQUEE_B, t } = useContent();
   const ref = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
 
@@ -51,7 +47,7 @@ export function Manifest() {
       // Tunnel. Er beansprucht den Hintergrund gar nicht, dadurch bleibt
       // die Korridorszene stehen und klingt aus, waehrend man liest.
       className="relative px-6 pb-[12vh] pt-[10vh] sm:px-10 lg:px-16"
-      aria-label="Fundament"
+      aria-label={t.manifest.threshold}
     >
       {/* Gerichtet statt radial: der Text steht links, das Modell soll
           rechts frei bleiben. Ein zentriertes Radial verdeckt genau das
@@ -74,7 +70,7 @@ export function Manifest() {
           jeder Abschnittswechsel der Seite jetzt dieselbe Linie benutzt,
           liest sich das als System statt als Zierde. */}
       <div className="flex items-baseline gap-4 border-t border-rule pt-5">
-        <p className="meta-accent shrink-0">Fundament</p>
+        <p className="meta-accent shrink-0">{t.manifest.threshold}</p>
         <span aria-hidden className="h-px flex-1 bg-rule-soft" />
       </div>
 
@@ -125,16 +121,17 @@ export function Manifest() {
  * schlechter als keine.
  */
 function Track() {
+  const { VITA, t } = useContent();
   const entries = VITA.filter((entry) => !entry.draft);
   if (entries.length === 0) return null;
 
   return (
     <div className="mt-28">
       <div className="flex items-baseline gap-4 border-t border-rule pt-5">
-        <p className="meta-accent shrink-0">Werdegang</p>
+        <p className="meta-accent shrink-0">{t.manifest.track}</p>
         <span aria-hidden className="h-px flex-1 bg-rule-soft" />
         <p className="meta shrink-0">
-          {entries[0].period.split(" ")[0]} bis heute
+          {t.manifest.since}
         </p>
       </div>
 

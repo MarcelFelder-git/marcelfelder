@@ -8,8 +8,12 @@ import { BootSequence } from "@/components/layout/BootSequence";
 import { Hud, Reticle } from "@/components/layout/Hud";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import "./globals.css";
+import "../globals.css";
 import { SITE_URL } from "@/lib/siteUrl";
+import { notFound } from "next/navigation";
+import { LocaleProvider } from "@/lib/i18n";
+import { LOCALES, isLocale, localePath, type Locale } from "@/lib/locale";
+import { UI_TEXT } from "@/content/ui";
 
 // Space Grotesk statt Inter: eckiger, geometrischer, technischer -
 // die Display-Groessen dieser Seite tragen die eigentliche Gestaltung,
@@ -26,42 +30,69 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Marcel Felder · Frontend-Entwickler (React, Next.js, TypeScript)",
-    template: "%s · Marcel Felder",
-  },
-  description:
-    "Frontend-Entwickler aus Köln, auf dem Weg zum Fullstack. Sechs gebaute Projekte mit Live-Deployment und Quellcode, dazu dreizehn Jahre Tontechnik und sechseinhalb Jahre Bauingenieurwesen als Fundament.",
-  openGraph: {
-    type: "website",
-    locale: "de_DE",
-    siteName: "Marcel Felder",
-    title: "Marcel Felder · Frontend-Entwickler (React, Next.js, TypeScript)",
-    description:
-      "Sechs gebaute Projekte mit Live-Deployment und Quellcode. Diese Seite: Next.js 15, TypeScript, React Three Fiber, ohne UI-Bibliothek und ohne fertiges Theme.",
-  },
-};
+type Params = Promise<{ locale: string }>;
+
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }));
+}
+
+/**
+ * Metadaten je Sprache, mit Verweis auf die jeweils andere.
+ *
+ * `alternates.languages` ist das hreflang: Google lernt daraus, dass
+ * `/` und `/en` dieselbe Seite in zwei Sprachen sind, statt sie als
+ * doppelten Inhalt zu werten. x-default zeigt auf Deutsch, weil das die
+ * Adresse ist, die bisher verschickt wurde.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Params;
+}): Promise<Metadata> {
+  const { locale: raw } = await params;
+  const locale: Locale = isLocale(raw) ? raw : "de";
+  const t = UI_TEXT[locale].meta;
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: t.title, template: "%s · Marcel Felder" },
+    description: t.description,
+    alternates: {
+      canonical: localePath(locale),
+      languages: { de: "/", en: "/en", "x-default": "/" },
+    },
+    openGraph: {
+      type: "website",
+      locale: locale === "de" ? "de_DE" : "en_GB",
+      alternateLocale: locale === "de" ? "en_GB" : "de_DE",
+      siteName: "Marcel Felder",
+      title: t.title,
+      description: t.ogDescription,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#08090e",
   colorScheme: "dark",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  params,
+}: Readonly<{ children: React.ReactNode; params: Params }>) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
   return (
-    <html lang="de" className={`${grotesk.variable} ${mono.variable}`}>
+    <html lang={locale} className={`${grotesk.variable} ${mono.variable}`}>
       <body className="min-h-dvh bg-paper font-sans antialiased">
+        <LocaleProvider locale={locale}>
         {/* Skip-Link: die Seite ist 3D- und animationslastig, Tastaturnutzer
             brauchen den Ausweg */}
         <a
           href="#top"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-paper"
         >
-          Zum Inhalt springen
+          {locale === "de" ? "Zum Inhalt springen" : "Skip to content"}
         </a>
 
         {/* Die 3D-Szene liegt hinter dem gesamten Inhalt */}
@@ -110,6 +141,7 @@ export default function RootLayout({
             eines zu haben. Beide laden erst nach dem Inhalt. */}
         <Analytics />
         <SpeedInsights />
+        </LocaleProvider>
       </body>
     </html>
   );

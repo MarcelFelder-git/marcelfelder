@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Loader2, Monitor, Smartphone, X } from "lucide-react";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/content";
 
 /**
  * Live-Vorschau eines Deployments in einem Overlay.
@@ -29,6 +30,7 @@ export function LivePreview({
   title: string;
   onClose: () => void;
 }) {
+  const t = useT();
   const [loaded, setLoaded] = useState(false);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [mounted, setMounted] = useState(false);
@@ -66,7 +68,7 @@ export function LivePreview({
         className="fixed inset-0 z-[70] flex flex-col bg-paper/95"
         role="dialog"
         aria-modal="true"
-        aria-label={`Live-Vorschau: ${title}`}
+        aria-label={`${t.preview.aria}${title}`}
       >
         {/* --- Leiste -------------------------------------------------- */}
         <div className="flex items-center gap-3 border-b border-rule px-4 py-3 sm:px-6">
@@ -84,7 +86,7 @@ export function LivePreview({
               <button
                 onClick={() => setDevice("desktop")}
                 aria-pressed={device === "desktop"}
-                aria-label="Desktop-Breite"
+                aria-label={t.preview.desktop}
                 className={cn(
                   "p-2 transition-colors",
                   device === "desktop"
@@ -97,7 +99,7 @@ export function LivePreview({
               <button
                 onClick={() => setDevice("mobile")}
                 aria-pressed={device === "mobile"}
-                aria-label="Mobile Breite"
+                aria-label={t.preview.mobile}
                 className={cn(
                   "p-2 transition-colors",
                   device === "mobile"
@@ -115,14 +117,14 @@ export function LivePreview({
               rel="noreferrer noopener"
               className="invert-hover flex items-center gap-1.5 border border-rule px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-mute"
             >
-              Neuer Tab
+              {t.preview.newTab}
               <ArrowUpRight className="size-3" strokeWidth={2} />
             </a>
 
             <button
               ref={closeRef}
               onClick={onClose}
-              aria-label="Vorschau schließen"
+              aria-label={t.preview.close}
               className="bg-accent p-2 text-paper"
             >
               <X className="size-4" strokeWidth={2.25} />
@@ -135,13 +137,13 @@ export function LivePreview({
           {!loaded && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 font-mono text-[12px] text-faint">
               <Loader2 className="size-4 animate-spin" />
-              Deployment wird geladen…
+              {t.preview.loading}
             </div>
           )}
 
           <iframe
             src={url}
-            title={`Live-Vorschau von ${title}`}
+            title={`${t.preview.iframe}${title}`}
             onLoad={() => setLoaded(true)}
             // sandbox erlaubt genau so viel, wie eine Vorschau braucht.
             // Ohne allow-same-origin liefe kein Deployment, das Storage
@@ -158,8 +160,7 @@ export function LivePreview({
         </div>
 
         <p className="border-t border-rule px-4 py-2.5 text-center font-mono text-[11px] text-faint sm:px-6">
-          Fremde Seite in einem Rahmen. Escape schließt, &bdquo;Neuer
-          Tab&ldquo; öffnet sie richtig.
+          {t.preview.note}
         </p>
       </motion.div>
     </AnimatePresence>,

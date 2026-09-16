@@ -1,6 +1,10 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { UI_TEXT } from "@/content/ui";
+import { isLocale } from "@/lib/locale";
+import { PROFILE } from "@/content/resume";
+import { PROFILE_EN } from "@/content/resume.en";
 
 /**
  * Vorschaubild fuer LinkedIn, Mail-Clients, Messenger.
@@ -22,12 +26,26 @@ import { join } from "node:path";
  * eingecheckt, dann stabil.
  */
 
-export const alt =
-  "Marcel Felder, Frontend-Entwickler. Sechs gebaute Projekte mit Live-Deployment und Quellcode.";
+export const alt = "Marcel Felder, Frontend-Entwickler / frontend developer";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default async function OpenGraphImage() {
+export default async function OpenGraphImage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: raw } = await params;
+  const locale = isLocale(raw) ? raw : "de";
+  const t = UI_TEXT[locale].meta;
+  // Headline in zwei Zeilen, die zweite mit Akzent auf dem letzten
+  // Wortpaar: "die man hoeren kann." / "you can hear."
+  const claim = (locale === "de" ? PROFILE : PROFILE_EN).claim;
+  const [first, ...rest] = claim.split(", ");
+  const second = rest.join(", ");
+  const cut = locale === "de" ? "die man " : "you can ";
+  const secondPlain = second.startsWith(cut) ? cut.trim() : "";
+  const secondAccent = second.startsWith(cut) ? second.slice(cut.length) : second;
   const grotesk = await readFile(
     join(process.cwd(), "assets/fonts/SpaceGrotesk-Bold.ttf"),
   );
@@ -91,13 +109,13 @@ export default async function OpenGraphImage() {
               flexDirection: "column",
             }}
           >
-            <span>Ich baue Systeme,</span>
+            <span>{first},</span>
             {/* Satori zieht benachbarte Spans ohne Leerzeichen zusammen.
                 Flex mit Abstand statt eines Leerzeichens, das nicht
                 ankommt. */}
             <span style={{ display: "flex", gap: 24 }}>
-              <span>die man</span>
-              <span style={{ color: "#38bdf8" }}>hören kann.</span>
+              {secondPlain ? <span>{secondPlain}</span> : null}
+              <span style={{ color: "#38bdf8" }}>{secondAccent}</span>
             </span>
           </div>
           <div
@@ -108,8 +126,7 @@ export default async function OpenGraphImage() {
               maxWidth: 900,
             }}
           >
-            Marcel Felder · Frontend-Entwickler mit React, Next.js und
-            TypeScript. Sechs Projekte, alle live, alle mit Quellcode.
+            {t.ogSub}
           </div>
         </div>
 
@@ -123,7 +140,7 @@ export default async function OpenGraphImage() {
             letterSpacing: "0.08em",
           }}
         >
-          <span>Köln</span>
+          <span>{t.ogCity}</span>
           <span style={{ color: "#a855f7" }}>
             Next.js 15 · React Three Fiber · Web Audio API
           </span>
