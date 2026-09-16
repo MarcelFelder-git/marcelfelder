@@ -14,7 +14,7 @@ import type { VitaEntry } from "./resume";
 export const PROFILE_EN = {
   name: "Marcel Felder",
   title: "Structural · Signal · Software",
-  claim: "I build systems you can hear.",
+  claim: "Marcel Felder",
   summary:
     "Frontend developer working with React, Next.js and TypeScript, heading towards fullstack. Before that, thirteen years of audio engineering and six and a half years of structural engineering. All three fields come down to the same question: how is this built, and what happens when you put load on it?",
 } as const;

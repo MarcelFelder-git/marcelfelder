@@ -40,12 +40,10 @@ export default async function OpenGraphImage({
   const t = UI_TEXT[locale].meta;
   // Headline in zwei Zeilen, die zweite mit Akzent auf dem letzten
   // Wortpaar: "die man hoeren kann." / "you can hear."
-  const claim = (locale === "de" ? PROFILE : PROFILE_EN).claim;
-  const [first, ...rest] = claim.split(", ");
-  const second = rest.join(", ");
-  const cut = locale === "de" ? "die man " : "you can ";
-  const secondPlain = second.startsWith(cut) ? cut.trim() : "";
-  const secondAccent = second.startsWith(cut) ? second.slice(cut.length) : second;
+  // Vorname weiss, Nachname im Akzent - wie im Hero.
+  const [first, ...rest] = (locale === "de" ? PROFILE : PROFILE_EN).claim.split(" ");
+  const secondAccent = rest.join(" ");
+  const eyebrow = UI_TEXT[locale].hero.eyebrow.toUpperCase();
   const grotesk = await readFile(
     join(process.cwd(), "assets/fonts/SpaceGrotesk-Bold.ttf"),
   );
@@ -95,7 +93,7 @@ export default async function OpenGraphImage({
               background: "#38bdf8",
             }}
           />
-          CODE · SIGNAL · STRUCTURE
+          {eyebrow}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -109,12 +107,11 @@ export default async function OpenGraphImage({
               flexDirection: "column",
             }}
           >
-            <span>{first},</span>
+            <span>{first}</span>
             {/* Satori zieht benachbarte Spans ohne Leerzeichen zusammen.
                 Flex mit Abstand statt eines Leerzeichens, das nicht
                 ankommt. */}
             <span style={{ display: "flex", gap: 24 }}>
-              {secondPlain ? <span>{secondPlain}</span> : null}
               <span style={{ color: "#38bdf8" }}>{secondAccent}</span>
             </span>
           </div>

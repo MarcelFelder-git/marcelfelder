@@ -78,7 +78,7 @@ export function Hero() {
           {/* Hier stand "Rev. 03" davor: die interne Nummer des
               Entwurfs, die aus dem Arbeitsprozess in den sichtbaren Text
               gerutscht war. Fuer Besucher ohne Bedeutung, also weg. */}
-          Code · Signal · Structure
+          {t.hero.eyebrow}
         </motion.div>
 
         <SplitHeading
@@ -89,7 +89,7 @@ export function Hero() {
           immediate
           delay={0.25}
           highlight={[...t.hero.highlight]}
-          className="chromatic mt-7 text-balance text-[clamp(2.6rem,min(8vw,11.5vh),7rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
+          className="chromatic mt-7 text-balance text-[clamp(3rem,min(10.5vw,13vh),9.5rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
         />
 
         <motion.div

@@ -3,7 +3,12 @@ import type { Chapter } from "@/types";
 export const PROFILE = {
   name: "Marcel Felder",
   title: "Structural · Signal · Software",
-  claim: "Ich baue Systeme, die man hören kann.",
+  // Der Name, kein Satz.
+  // Hier standen acht Anlaeufe fuer einen Leitsatz, und keiner hat
+  // gehalten: jede Zeile nach dem Muster "Ich baue X, die Y" wird ein
+  // Slogan. Ein Portfolio braucht keinen. Es braucht den Namen, und
+  // darunter die Fakten - die stehen in der Zeile unter der Headline.
+  claim: "Marcel Felder",
   summary:
     "Frontend-Entwickler mit React, Next.js und TypeScript, auf dem Weg zum Fullstack. Davor dreizehn Jahre Tontechnik und sechseinhalb Jahre Bauingenieurwesen. In allen drei Feldern geht es um dieselbe Frage: wie ist das gebaut, und was passiert, wenn es belastet wird.",
 } as const;

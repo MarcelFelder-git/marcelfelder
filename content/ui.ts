@@ -22,7 +22,7 @@ const de = {
     ogAlt:
       "Marcel Felder, Frontend-Entwickler. Sechs gebaute Projekte mit Live-Deployment und Quellcode.",
     ogSub:
-      "Marcel Felder · Frontend-Entwickler mit React, Next.js und TypeScript. Sechs Projekte, alle live, alle mit Quellcode.",
+      "Frontend-Entwickler mit React, Next.js und TypeScript. Vorher dreizehn Jahre Tontechnik und sechseinhalb Jahre Bauingenieurwesen.",
     ogCity: "Köln",
   },
   nav: {
@@ -37,11 +37,14 @@ const de = {
     switchShort: "EN",
   },
   hero: {
+    // Der Eyebrow ist der Beweis: das, was ein Recruiter zuerst sucht,
+    // klein und sachlich ueber dem Namen.
+    eyebrow: "Sechs Projekte · alle live · alle mit Quellcode",
     cta: "Projekte ansehen",
     cv: "Lebenslauf",
     footLeft: "Scrollen bewegt die Kamera",
     footRight: ["Signale laufen", "durch den Graphen"],
-    highlight: ["hören", "kann."],
+    highlight: ["Felder"],
   },
   showcase: {
     label: "Projekte",
@@ -130,7 +133,7 @@ const en: UI = {
     ogAlt:
       "Marcel Felder, frontend developer. Six built projects, all live with source code.",
     ogSub:
-      "Marcel Felder · Frontend developer working with React, Next.js and TypeScript. Six projects, all live, all with source code.",
+      "Frontend developer working with React, Next.js and TypeScript. Before that: thirteen years of audio engineering and six and a half of structural engineering.",
     ogCity: "Cologne",
   },
   nav: {
@@ -145,11 +148,12 @@ const en: UI = {
     switchShort: "DE",
   },
   hero: {
+    eyebrow: "Six projects · all live · all with source code",
     cta: "See the projects",
     cv: "CV",
     footLeft: "Scrolling moves the camera",
     footRight: ["Signals travel", "through the graph"],
-    highlight: ["hear."],
+    highlight: ["Felder"],
   },
   showcase: {
     label: "Projects",

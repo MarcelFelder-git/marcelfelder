@@ -19,9 +19,12 @@ export function middleware(req: NextRequest) {
     url.pathname = "/de";
     return NextResponse.rewrite(url);
   }
-  if (pathname === "/de" || pathname.startsWith("/de/")) {
+  // Nur die Seite selbst, nicht ihre Metadaten-Routen: das Vorschaubild
+  // liegt unter /de/opengraph-image und muss erreichbar bleiben, sonst
+  // zeigt jede geteilte deutsche Adresse ein leeres Kaertchen.
+  if (pathname === "/de" || pathname === "/de/") {
     const url = req.nextUrl.clone();
-    url.pathname = pathname.replace(/^\/de/, "") || "/";
+    url.pathname = "/";
     return NextResponse.redirect(url, 308);
   }
   return NextResponse.next();
@@ -30,5 +33,5 @@ export function middleware(req: NextRequest) {
 export const config = {
   // Nur Seiten. Statische Dateien, Bilder, API und Metadaten-Routen
   // laufen am Middleware vorbei.
-  matcher: ["/", "/de", "/de/:path*", "/en", "/en/:path*"],
+  matcher: ["/", "/de", "/de/"],
 };
