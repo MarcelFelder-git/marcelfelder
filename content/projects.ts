@@ -85,8 +85,44 @@ export const PROJECTS: Project[] = [
     aiAssisted: true,
   },
   {
-    id: "aurora",
+    id: "switchforge",
     index: "02",
+    title: "SwitchForge",
+    tagline:
+      "Eine Tastatur, die man in 3D zusammenstellt und hört, bevor man sie kauft.",
+    body: "Shop mit genau einem Produkt: einer Tastatur, die man selbst konfiguriert. Layout, Gehäusefarbe, Keycaps, Switches, Beleuchtung, Gravur. Tippt man auf der eigenen Tastatur, drückt das 3D-Modell dieselben Tasten und spielt den Klang der gewählten Switches, im Browser synthetisiert. Der Warenkorb geht an Stripe Checkout, ein Webhook macht aus der bezahlten Sitzung eine Bestellung mit Statusseite und Mini-Admin.",
+    detail:
+      "Der Preis wird auf Client und Server aus derselben pricing.ts gerechnet, der Client schickt nur Options-IDs. Der Stripe-Webhook ist idempotent: die Event-ID wird vor der Verarbeitung gespeichert und bei einem Fehler wieder entfernt. Sonst werden aus einem Retry drei Bestellungen.",
+    stack: [
+      "SvelteKit 2 / Svelte 5",
+      "TypeScript",
+      "Threlte / Three.js",
+      "Web Audio API",
+      "Stripe Checkout + Webhooks",
+      "Neon Postgres / Drizzle",
+      "Resend",
+    ],
+    scope: "Fullstack · 3D · Payments",
+    year: "2026",
+    links: {
+      live: "https://switchforge.vercel.app",
+      repo: "https://github.com/MarcelFelder-git/switchforge",
+    },
+    media: {
+      image: "/projects/switchforge-01.jpg",
+      stills: [
+        "/projects/switchforge-02.jpg",
+        "/projects/switchforge-03.jpg",
+        "/projects/switchforge-04.jpg",
+      ],
+      orientation: "landscape",
+      alt: "SwitchForge: 3D-Konfigurator einer mechanischen Tastatur mit Live-Preis",
+    },
+    aiAssisted: true,
+  },
+  {
+    id: "aurora",
+    index: "03",
     title: "Aurora",
     tagline:
       "Zyklus-Tracking für zwei: eine Person trackt, eine Person unterstützt.",
@@ -121,7 +157,7 @@ export const PROJECTS: Project[] = [
   },
   {
     id: "latent",
-    index: "03",
+    index: "04",
     title: "Latent",
     tagline:
       "Eine Dunkelkammer im Browser: Foto rein, Emulsion wählen, entwickeln zusehen.",
@@ -154,7 +190,7 @@ export const PROJECTS: Project[] = [
 
   {
     id: "aufmischen",
-    index: "04",
+    index: "05",
     title: "AUFMISCHEN",
     tagline:
       "Portfolio-Engine für eine Musikproduzentin, Inhalte pflegt sie selbst.",
@@ -189,7 +225,7 @@ export const PROJECTS: Project[] = [
   },
   {
     id: "nxt-hud",
-    index: "05",
+    index: "06",
     title: "NXT VideoGame HUD",
     tagline:
       "Spiele suchen, filtern und merken. Dazu ein Minigame, das dein Wissen testet.",
@@ -219,33 +255,6 @@ export const PROJECTS: Project[] = [
       alt: "NXT VideoGame HUD: Spielekatalog mit Filtern und Detailansicht",
     },
   },
-  {
-    id: "art-robbery",
-    index: "06",
-    title: "Art Robbery",
-    tagline:
-      "Browsergame: Kunstraub, bei dem jedes Museum eine Fälschung versteckt.",
-    body: "Du bist Meisterdieb und hast es auf die berühmtesten Gemälde der Welt abgesehen. In jedem Museum hängt neben dem Original eine Fälschung. Richtig wählen, der Security ausweichen, rauskommen.",
-    detail:
-      "Spielzustand über useContext statt über eine State-Library: bei dieser Größe ist eine zusätzliche Abhängigkeit nur Ballast.",
-    stack: ["React", "JavaScript", "Express", "TanStack Query", "CSS Modules"],
-    scope: "Frontend · Spiellogik",
-    year: "2025",
-    links: {
-      live: "https://01-art-robbery.vercel.app",
-      repo: "https://github.com/MarcelFelder-git/01_art_robbery",
-    },
-    media: {
-      image: "/projects/art-robbery-01.jpg",
-      stills: ["/projects/art-robbery-02.jpg", "/projects/art-robbery-03.jpg"],
-      orientation: "landscape",
-      video: {
-        mp4: "/projects/art-robbery.mp4",
-        webm: "/projects/art-robbery.webm",
-      },
-      alt: "Art Robbery: Museumsansicht mit Gemäldeauswahl",
-    },
-  },
 ];
 
 /* ================================================================== */
@@ -273,6 +282,15 @@ const EN: Record<string, ProjectText> = {
       "The shared Reading type from packages/db travels via import type all the way into the mobile app. If the schema changes, the compiler complains, not the browser.",
     scope: "Fullstack · Cloud · Mobile",
     alt: "SolarSurge dashboard with live metrics, rule conditions and history chart",
+  },
+  switchforge: {
+    tagline:
+      "A keyboard you build in 3D and hear before you buy it.",
+    body: "A shop with exactly one product: a keyboard you configure yourself. Layout, case colour, keycaps, switches, lighting, engraving. Type on your own keyboard and the 3D board presses the same keys and plays the sound of the switches you picked, synthesised in the browser. The cart hands over to Stripe Checkout, and a webhook turns the paid session into an order with a status page and a mini admin.",
+    detail:
+      "Pricing runs on client and server from the same pricing.ts; the client only ever sends option IDs. The Stripe webhook is idempotent: the event id is stored before processing and removed again on failure. Otherwise one retry turns into three orders.",
+    scope: "Fullstack · 3D · Payments",
+    alt: "SwitchForge: 3D configurator for a mechanical keyboard with live pricing",
   },
   aurora: {
     tagline: "Cycle tracking for two: one person tracks, one person supports.",
@@ -308,14 +326,6 @@ const EN: Record<string, ProjectText> = {
       "Auth with NextAuth and Prisma, so the watchlist belongs to a real account instead of living in LocalStorage.",
     scope: "Frontend · API integration · Auth",
     alt: "NXT VideoGame HUD: game catalogue with filters and detail view",
-  },
-  "art-robbery": {
-    tagline: "Browser game: an art heist where every museum hides a forgery.",
-    body: "You're a master thief going after the world's most famous paintings. In every museum, a forgery hangs next to the original. Pick right, dodge security, get out.",
-    detail:
-      "Game state via useContext instead of a state library: at this size, an extra dependency is just ballast.",
-    scope: "Frontend · Game logic",
-    alt: "Art Robbery: museum view with painting selection",
   },
 };
 
