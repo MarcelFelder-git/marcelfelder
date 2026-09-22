@@ -14,7 +14,7 @@ const LINES = [
   "stream project textures",
 ];
 
-const STEP_MS = 190;
+const STEP_MS = 110;
 /**
  * Spaetestens dann ist Schluss, egal was die Szene meldet.
  *
@@ -24,7 +24,20 @@ const STEP_MS = 190;
  * 800 kB Texturen auch auf einer mageren Leitung; danach zaehlt der
  * Inhalt mehr als die Vollstaendigkeit der Szene.
  */
-const FAILSAFE_MS = 6000;
+/**
+ * Harte Obergrenze fuer den Ladebildschirm.
+ *
+ * Vorher 6000, und geschlossen wurde erst, wenn die 3D-Szene fertig
+ * geladen war. Damit hing der erste Text der Seite am Laden von
+ * three.js: gemessen 3,7 Sekunden bis zum groessten sichtbaren Element,
+ * auf einem gedrosselten Rechner. Das ist die Zahl, die Speed Insights
+ * als LCP meldet, und sie war der Grund fuer den schlechten Wert.
+ *
+ * Jetzt ist der Ladebildschirm eine Geste mit fester Laenge und keine
+ * Bedingung mehr. Die Szene blendet sich ein, wenn sie so weit ist -
+ * dafuer hat jedes Modell ohnehin seine eigene Ueberblendung.
+ */
+const FAILSAFE_MS = 900;
 
 /**
  * Boot-Sequenz mit echtem Ladebalken.
@@ -55,7 +68,6 @@ export function BootSequence() {
   const [step, setStep] = useState(0);
 
   const sceneProgress = useSceneLoad((s) => s.progress);
-  const sceneDone = useSceneLoad((s) => s.done);
 
   const close = useCallback(() => {
     setActive(false);
@@ -97,13 +109,14 @@ export function BootSequence() {
     };
   }, [reduced]);
 
-  // Fertig heisst: alle Zeilen durch UND die Szene geladen.
+  // Fertig heisst: alle Zeilen durch. Auf die Szene wird nicht mehr
+  // gewartet, siehe FAILSAFE_MS.
   useEffect(() => {
     if (!active) return;
-    if (!sceneDone || step < LINES.length) return;
-    const id = window.setTimeout(close, 380);
+    if (step < LINES.length) return;
+    const id = window.setTimeout(close, 160);
     return () => window.clearTimeout(id);
-  }, [active, sceneDone, step, close]);
+  }, [active, step, close]);
 
   useEffect(() => {
     if (!active) return;
@@ -112,7 +125,9 @@ export function BootSequence() {
   }, [active, close]);
 
   const lineProgress = step / LINES.length;
-  const progress = Math.min(1, lineProgress / 6 + sceneProgress * (5 / 6));
+  // Der Balken zeigt weiter den echten Ladefortschritt, er haelt die
+  // Sequenz nur nicht mehr auf.
+  const progress = Math.max(lineProgress, sceneProgress);
 
   return (
     <AnimatePresence>

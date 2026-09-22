@@ -34,7 +34,7 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
  * aus `BackgroundScene` als Glanzlicht ein, sie nicht. Genau daher kam
  * der Eindruck, dass sie weniger echt wirkt als der Tunnel.
  *
- * Jetzt ist es ein MeshPhysicalMaterial, in das die Auslenkung per
+ * Jetzt ist es ein MeshStandardMaterial, in das die Auslenkung per
  * `onBeforeCompile` eingehaengt wird. Beleuchtung, Umgebungsspiegelung
  * und Tonwertkurve macht three, die Verformung machen wir - und die
  * Platte bekommt endlich Reflexe, die sich mit ihr bewegen.
@@ -242,7 +242,16 @@ export function SignalMode() {
    * Fehlermeldung, die Platte blieb einfach unsichtbar.
    */
   const material = useMemo(() => {
-    const m = new THREE.MeshPhysicalMaterial({
+    // Standard statt Physical.
+    //
+    // Gesetzt werden hier nur Farbe, Metalness, Roughness und
+    // Umgebungsstaerke - alles davon kann auch das Standardmaterial.
+    // Physical bringt zusaetzlich Clearcoat, Transmission, Sheen,
+    // Iridescence und Anisotropie mit, und zwar als Shader-Code, der
+    // beim ersten Zeichnen uebersetzt werden muss. Im Profil war das
+    // einer der teuersten Posten beim Aufbau der Szene, fuer
+    // Eigenschaften, die diese Platte nie benutzt.
+    const m = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       metalness: 0.92,
       roughness: 0.24,

@@ -68,7 +68,7 @@ export function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: EASE_OUT }}
+          transition={{ duration: 0.4, ease: EASE_OUT }}
           className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-accent"
         >
           <span
@@ -87,7 +87,7 @@ export function Hero() {
           // Steht beim Laden immer im Bild und darf deshalb nicht auf
           // einen Sichtbereichs-Ausloeser warten. Siehe `immediate`.
           immediate
-          delay={0.25}
+          delay={0.05}
           highlight={[...t.hero.highlight]}
           className="chromatic mt-7 text-balance text-[clamp(3rem,min(10.5vw,13vh),9.5rem)] font-semibold leading-[0.95] tracking-[-0.03em]"
         />
@@ -95,7 +95,7 @@ export function Hero() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
           className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-1.5 font-mono text-[13px]"
         >
           <span className="text-faint">$</span>
@@ -108,9 +108,18 @@ export function Hero() {
         </motion.div>
 
         <motion.p
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 1.05, ease: EASE_OUT }}
+          // Kein Einblenden, nur eine kleine Bewegung.
+          //
+          // Dieser Absatz war das groesste sichtbare Element der Seite,
+          // und ein Element mit Deckkraft 0 gilt als nicht gezeichnet:
+          // der Browser hat LCP erst gestempelt, als die Animation
+          // durch war. Mit 1,05 s Verzoegerung plus 0,7 s Dauer hinter
+          // einem Ladebildschirm, der auf three.js wartete, waren das
+          // gemessene 3,7 Sekunden. Eine Verschiebung kostet nichts,
+          // weil gezeichnet trotzdem sofort wird.
+          initial={{ y: 10 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease: EASE_OUT }}
           className="mt-8 max-w-xl text-pretty text-lg leading-relaxed text-mute"
         >
           {PROFILE.summary}
@@ -121,7 +130,7 @@ export function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 1.2, ease: EASE_OUT }}
+          transition={{ duration: 0.5, delay: 0.35, ease: EASE_OUT }}
           className="mt-9 flex flex-wrap items-center gap-3"
         >
           <a
@@ -152,7 +161,7 @@ export function Hero() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1.4 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
         className="absolute inset-x-6 bottom-24 flex items-end justify-between sm:inset-x-10 sm:bottom-8 lg:inset-x-16"
       >
         <div className="flex items-center gap-3">

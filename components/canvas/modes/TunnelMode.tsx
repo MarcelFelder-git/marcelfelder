@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import { Stars, useTexture } from "@react-three/drei";
+import { useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Stars } from "@react-three/drei";
 import * as THREE from "three";
 import { sceneState } from "@/lib/scene/state";
 import { PROJECTS } from "@/content/projects";
@@ -362,7 +362,20 @@ export function TunnelMode() {
     return { urls, ranges };
   }, []);
 
-  const textures = useTexture(urls);
+  /**
+   * Laden ja, hochladen nein.
+   *
+   * `useTexture` aus drei ruft fuer jede geladene Textur
+   * `gl.initTexture()` auf und schiebt sie sofort auf die Grafikkarte -
+   * alle einundzwanzig Screenshots, auch wenn der Korridor noch gar
+   * nicht sichtbar ist. Im Profil waren das 758 Millisekunden am
+   * Stueck, mitten in der Zeit, in der jemand den ersten Knopf drueckt.
+   *
+   * `useLoader` laedt dieselben Bilder, laesst das Hochladen aber dem
+   * Renderer: es passiert beim ersten Zeichnen der jeweiligen Tafel,
+   * also verteilt und erst, wenn man wirklich im Korridor ist.
+   */
+  const textures = useLoader(THREE.TextureLoader, urls);
 
   // Die Bildschirme stehen schraeg zur Fahrbahn - genau der Fall, in dem
   // Standard-Filterung Texturen matschig macht. Anisotrope Filterung

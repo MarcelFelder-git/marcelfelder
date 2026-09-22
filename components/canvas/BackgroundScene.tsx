@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Children, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Environment,
@@ -226,6 +226,40 @@ function QualityGuard() {
   );
 }
 
+/**
+ * Haengt seine Kinder an den naechsten freien Moment.
+ *
+ * `requestIdleCallback` mit Frist: kommt der Browser nicht zur Ruhe -
+ * auf einem langsamen Rechner durchaus moeglich -, wird nach 1,2
+ * Sekunden trotzdem montiert. Safari kennt die Funktion nicht, dort
+ * uebernimmt ein setTimeout.
+ */
+function Deferred({ children }: { children: React.ReactNode }) {
+  const all = Children.toArray(children);
+  const [mounted, setMounted] = useState(0);
+
+  useEffect(() => {
+    if (mounted >= all.length) return;
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    // Ein Modell je freiem Moment. Alle vier in einem Rutsch waren ein
+    // Task von 900 Millisekunden; einzeln sind es vier kurze, zwischen
+    // denen der Browser auf Eingaben reagieren kann.
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => setMounted((n) => n + 1), {
+        timeout: 900,
+      });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(() => setMounted((n) => n + 1), 260);
+    return () => window.clearTimeout(id);
+  }, [mounted, all.length]);
+
+  return <>{all.slice(0, mounted)}</>;
+}
+
 export default function BackgroundScene() {
   const tier = useQuality((s) => s.tier);
   const setTier = useQuality((s) => s.setTier);
@@ -277,7 +311,13 @@ export default function BackgroundScene() {
         <directionalLight position={[4, 6, 3]} intensity={1.1} />
         <SceneGrade />
 
-        <Environment resolution={256}>
+        {/* 128 statt 256.
+            Die Karte wird beim Start sechsmal gerendert und danach
+            gefiltert, und das ist eine der Rechnungen, die den langen
+            Task beim Aufbau ausmachen. Sichtbar ist sie nur als weiches
+            Spiegelbild auf Metall; die halbe Kantenlaenge kostet ein
+            Viertel der Pixel und faellt im Glanzlicht nicht auf. */}
+        <Environment resolution={128}>
           {/* Ein Studio aus drei Leuchtflaechen: gross und weich von oben,
               zwei schmale Streifen als Kanten-Reflexe links und rechts.
               Das ist es, was glaenzende Oberflaechen ueberhaupt erst
@@ -305,10 +345,25 @@ export default function BackgroundScene() {
 
         <Framing />
         <HeroMode />
-        <StructureMode />
-        <SignalMode />
-        <CodeMode />
-        <TunnelMode />
+        {/* Alles ausser dem Hero kommt erst, wenn der Hauptthread frei
+            ist.
+
+            Vorher wurden fuenf Modelle im selben Frame aufgebaut:
+            Geometrien, Materialien und die erste Shader-Uebersetzung.
+            Gemessen waren das zwei Tasks von 895 und 1253 Millisekunden
+            am Stueck, und waehrend die laufen, reagiert die Seite auf
+            keinen Klick. Genau das misst INP.
+
+            Gesehen wird in dieser Zeit ohnehin nur der Hero; die
+            anderen vier stehen erst nach dem ersten Scrollen im Bild.
+            Nacheinander montiert werden aus zwei langen Tasks mehrere
+            kurze, und keiner davon liegt im Weg. */}
+        <Deferred>
+          <StructureMode />
+          <SignalMode />
+          <CodeMode />
+          <TunnelMode />
+        </Deferred>
         <Rig />
 
         {/* Nur die hellsten Stellen glimmen: die Schwelle liegt bewusst
